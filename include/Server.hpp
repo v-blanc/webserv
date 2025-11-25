@@ -1,27 +1,28 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   main.cpp                                           :+:      :+:    :+:   */
+/*   Server.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/25 12:57:33 by vblanc            #+#    #+#             */
-/*   Updated: 2025/11/25 15:12:44 by vblanc           ###   ########.fr       */
+/*   Created: 2025/11/25 15:08:33 by vblanc            #+#    #+#             */
+/*   Updated: 2025/11/25 15:11:42 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "Server.hpp"
-#include <iostream>
+#ifndef SERVER_H
+#define SERVER_H
 
-int main(int argc, char **argv)
+#include "Config.hpp"
+
+class Server
 {
-    (void)argv;
+public:
+    Server();
+    ~Server();
 
-    if (argc != 2)
-    {
-        std::cerr << "Error: ./webser [configuration file]" << std::endl;
-        return (1);
-    }
-    
-    return (0);
-}
+private:
+    Config _config;
+};
+
+#endif

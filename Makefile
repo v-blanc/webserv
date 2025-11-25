@@ -8,7 +8,7 @@ INCDIR := include
 SRCDIR := src
 OBJDIR := build
 
-FILES := main.cpp
+FILES := Config.cpp Server.cpp main.cpp
 
 SRCS := $(addprefix $(SRCDIR)/, $(FILES))
 OBJS := $(addprefix $(OBJDIR)/, $(FILES:.cpp=.o))

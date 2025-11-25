@@ -1,27 +1,33 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   main.cpp                                           :+:      :+:    :+:   */
+/*   Config.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/25 12:57:33 by vblanc            #+#    #+#             */
-/*   Updated: 2025/11/25 15:12:44 by vblanc           ###   ########.fr       */
+/*   Created: 2025/11/25 14:31:40 by vblanc            #+#    #+#             */
+/*   Updated: 2025/11/25 15:13:27 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "Server.hpp"
-#include <iostream>
+#include "Config.hpp"
 
-int main(int argc, char **argv)
+Config::Config()
 {
-    (void)argv;
+}
 
-    if (argc != 2)
-    {
-        std::cerr << "Error: ./webser [configuration file]" << std::endl;
-        return (1);
-    }
-    
-    return (0);
+Config::Config(std::string fileName) : _fileName(fileName)
+{
+}
+
+Config::~Config()
+{
+}
+
+void Config::openFile(void) const
+{
+}
+
+void Config::closeFile(void) const
+{
 }

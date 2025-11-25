@@ -1,27 +1,35 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   main.cpp                                           :+:      :+:    :+:   */
+/*   Config.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/25 12:57:33 by vblanc            #+#    #+#             */
-/*   Updated: 2025/11/25 15:12:44 by vblanc           ###   ########.fr       */
+/*   Created: 2025/11/25 14:30:16 by vblanc            #+#    #+#             */
+/*   Updated: 2025/11/25 15:13:37 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "Server.hpp"
+#ifndef CONFIG_H
+#define CONFIG_H
+
 #include <iostream>
+#include <string>
 
-int main(int argc, char **argv)
+// Attributes and methods can be renamed or removed, and params can be changed
+
+class Config
 {
-    (void)argv;
+public:
+    Config();
+    Config(std::string fileName);
+    ~Config();
 
-    if (argc != 2)
-    {
-        std::cerr << "Error: ./webser [configuration file]" << std::endl;
-        return (1);
-    }
-    
-    return (0);
-}
+private:
+    std::string _fileName;
+
+    void openFile(void) const;
+    void closeFile(void) const;
+};
+
+#endif
