@@ -1,28 +1,14 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   Server.hpp                                         :+:      :+:    :+:   */
+/*   define.h                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/25 15:08:33 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/04 13:00:16 by vblanc           ###   ########.fr       */
+/*   Created: 2025/12/04 12:35:58 by vblanc            #+#    #+#             */
+/*   Updated: 2025/12/04 18:02:50 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef SERVER_H
-#define SERVER_H
-
-#include "Config.hpp"
-
-class Server
-{
-public:
-    Server(const char *configFileName);
-    ~Server();
-
-private:
-    Config _config;
-};
-
-#endif
+#define SUCCESS 0
+#define ERROR 1
