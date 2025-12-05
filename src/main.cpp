@@ -6,11 +6,11 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 12:57:33 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/05 17:13:05 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/05 18:20:07 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "Server.hpp"
+#include "Parser.hpp"
 
 int openFile(std::ifstream &file, std::string fileName)
 {
@@ -33,40 +33,6 @@ void closeFile(std::ifstream &file)
 
 // ######################################################################################################
 
-static const char *tokenName(Token::Type t)
-{
-    switch (t)
-    {
-    case Token::WORD:
-        return "WORD";
-    case Token::LBRACE:
-        return "LBRACE";
-    case Token::RBRACE:
-        return "RBRACE";
-    case Token::SEMICOLON:
-        return "SEMICOLON";
-    case Token::END:
-        return "END";
-    default:
-        return "UNKNOWN";
-    }
-}
-
-static void testLexer(Lexer lexer)
-{
-    for (;;)
-    {
-        Token t = lexer.currToken();
-        std::cout << tokenName(t.type) << " (line " << t.line << ")";
-        if (t.type == Token::WORD)
-            std::cout << " : [" << t.content << "]";
-        std::cout << "\n";
-        if (t.type == Token::END)
-            break;
-        lexer.nextToken();
-    }
-}
-
 int main(int argc, char **argv)
 {
     if (argc != 2)
@@ -78,9 +44,21 @@ int main(int argc, char **argv)
     std::ifstream file(argv[1]);
     openFile(file, argv[1]);
 
-    Lexer lexer(file);
+    // Lexer lexer(file);
+    
+    try
+    {
+        Parser p(file);
+        Node root = p.parse();
+        printNode(root);
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Error: " << e.what() << "\n";
+        return 1;
+    }
 
-    testLexer(lexer);
+    // printLexer(lexer);
 
     closeFile(file);
 

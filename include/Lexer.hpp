@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/05 10:44:22 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/05 17:11:36 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/05 18:23:32 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -54,5 +54,8 @@ private:
     void nextChar();
     void skipWhiteSpaceAndComments();
 };
+
+// TODO: Debug
+void printLexer(Lexer lexer);
 
 #endif
