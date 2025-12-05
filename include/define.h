@@ -6,9 +6,15 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/04 12:35:58 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/04 18:02:50 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/05 11:46:54 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
+#ifndef DEFINE_H
+#define DEFINE_H
+
+// RETURN VALUES
 #define SUCCESS 0
 #define ERROR 1
+
+#endif

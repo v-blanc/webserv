@@ -6,9 +6,12 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/04 11:15:17 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/04 18:03:13 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/05 11:45:23 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
+
+#ifndef COLORS_H
+#define COLORS_H
 
 // DEFAULT
 #define DEFAULT "\033[0m"
@@ -37,3 +40,5 @@
 #define BG_MAGENTA "\033[45m"
 #define BG_CYAN "\033[46m"
 #define BG_WHITE "\033[47m"
+
+#endif
