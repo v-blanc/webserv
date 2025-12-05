@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 12:57:33 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/05 19:51:23 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/05 20:01:50 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,7 @@ int main(int argc, char **argv)
 {
     if (argc != 2)
     {
-        std::cerr << RED "Error: ./webser [configuration file]" DEFAULT << std::endl;
+        std::cerr << RED "Usage: ./webser configuration" DEFAULT << std::endl;
         return (ERROR);
     }
 
