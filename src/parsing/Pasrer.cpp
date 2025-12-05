@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/05 17:26:32 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/05 18:19:27 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/05 18:47:02 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,12 +28,7 @@ Node Parser::parse()
     root.line = 1;
 
     while (this->_currToken.type != Token::END)
-    {
-        if (this->_currToken.type == Token::RBRACE)
-            throw std::runtime_error("test");
-
         root.children.push_back(this->parseStatement());
-    }
 
     return root;
 }
@@ -41,7 +36,7 @@ Node Parser::parse()
 Node Parser::parseStatement()
 {
     if (this->_currToken.type != Token::WORD)
-        throw std::runtime_error("test 2");
+        throw std::runtime_error("unexpected \"*type*\" in ...");
 
     Node node;
     node.name = this->_currToken.content;
@@ -67,11 +62,11 @@ Node Parser::parseStatement()
             node.children.push_back(parseStatement());
 
         if (this->_currToken.type != Token::RBRACE)
-            throw std::runtime_error("test 3");
+            throw std::runtime_error("unexpected end of file, expecting \"}\" in ...");
         this->nextToken();
         break;
     default:
-        throw std::runtime_error("test 4");
+        throw std::runtime_error("unexpected \"*type*\" in ...");
         break;
     }
 
