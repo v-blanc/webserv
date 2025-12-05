@@ -1,22 +1,28 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   Config.cpp                                         :+:      :+:    :+:   */
+/*   GlobalConfig.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/25 14:31:40 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/05 17:10:51 by vblanc           ###   ########.fr       */
+/*   Created: 2025/11/25 14:30:16 by vblanc            #+#    #+#             */
+/*   Updated: 2025/12/05 18:24:02 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "Config.hpp"
+#ifndef GLOBALCONFIG_H
+#define GLOBALCONFIG_H
 
-Config::Config(const char *fileName)
-{
-    (void) fileName;
-}
+#include "Parser.hpp"
 
-Config::~Config()
+class GlobalConfig
 {
-}
+public:
+    GlobalConfig(const char *fileName);
+    ~GlobalConfig();
+
+private:
+    std::string _fileName;
+};
+
+#endif

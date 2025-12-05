@@ -1,30 +1,22 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   Config.hpp                                         :+:      :+:    :+:   */
+/*   GlobalConfig.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/25 14:30:16 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/05 17:10:45 by vblanc           ###   ########.fr       */
+/*   Created: 2025/11/25 14:31:40 by vblanc            #+#    #+#             */
+/*   Updated: 2025/12/05 18:22:10 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef CONFIG_H
-#define CONFIG_H
+#include "GlobalConfig.hpp"
 
-#include "Lexer.hpp"
-
-// Attributes and methods can be renamed or removed, and params can be changed
-
-class Config
+GlobalConfig::GlobalConfig(const char *fileName)
 {
-public:
-    Config(const char *fileName);
-    ~Config();
+    (void)fileName;
+}
 
-private:
-    std::string _fileName;
-};
-
-#endif
+GlobalConfig::~GlobalConfig()
+{
+}
