@@ -1,26 +1,25 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   main.cpp                                           :+:      :+:    :+:   */
+/*   ServerConfig.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/25 12:57:33 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/05 19:51:23 by vblanc           ###   ########.fr       */
+/*   Created: 2025/12/05 19:35:55 by vblanc            #+#    #+#             */
+/*   Updated: 2025/12/05 19:39:56 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "GlobalConfig.hpp"
+#ifndef SERVERCONFIG_HPP
+#define SERVERCONFIG_HPP
 
-int main(int argc, char **argv)
+class ServerConfig
 {
-    if (argc != 2)
-    {
-        std::cerr << RED "Error: ./webser [configuration file]" DEFAULT << std::endl;
-        return (ERROR);
-    }
+public:
+    ServerConfig();
+    ~ServerConfig();
 
-    GlobalConfig globalConfig(argv[1]);
+private:
+};
 
-    return (SUCCESS);
-}
+#endif

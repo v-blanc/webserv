@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/05 12:00:57 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/05 18:22:55 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/05 19:51:14 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -89,7 +89,7 @@ void Lexer::nextChar()
     this->_c = this->_file.get();
     if (this->_c == '\n')
         this->_line++;
-    if (this->_c == std::char_traits<char>::eof())
+    if (this->_file.eof())
         this->_c = EOF;
 }
 
