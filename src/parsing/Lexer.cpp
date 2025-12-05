@@ -6,46 +6,82 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/05 12:00:57 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/05 12:23:42 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/05 17:09:43 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Lexer.hpp"
 
-Lexer::Lexer(const char *fileName) : _fileName(fileName), _file(fileName), _line(0)
+Lexer::Lexer(std::ifstream &file) : _file(file), _line(1), _pushed(false)
 {
-    this->openFile();
-
     this->nextChar();
-    while (this->_c != EOF)
-    {
-        std::cout << _c;
-        this->nextChar();
-    }
 }
 
 Lexer::~Lexer()
 {
-    this->closeFile();
 }
 
-int Lexer::openFile(void)
+static int isSpecialChar(char c)
 {
-    if (!this->_file.is_open())
+    return (c == '#' || c == '{' || c == '}' || c == ';' || c == EOF);
+}
+
+Token Lexer::nextToken()
+{
+    if (this->_pushed)
     {
-        std::cerr << RED "Error with ‘" ITALIC << this->_fileName << DEFAULT RED "’ configuration file: \"" ITALIC;
-        if (this->_file.fail())
-            std::cerr << strerror(errno);
-        std::cerr << "\"" DEFAULT << std::endl;
-        return (ERROR);
+        this->_pushed = false;
+        return this->_lastToken;
     }
-    std::cout << GREEN "Configuration file ‘" ITALIC << this->_fileName << DEFAULT GREEN "’ was opened sucessfully!" DEFAULT << std::endl;
-    return (SUCCESS);
+
+    skipWhiteSpaceAndComments();
+
+    Token t;
+    t.line = this->_line;
+
+    switch (this->_c)
+    {
+    case '{':
+        t.type = Token::LBRACE;
+        t.content = "{";
+        this->nextChar();
+        break;
+    case '}':
+        t.type = Token::RBRACE;
+        t.content = "}";
+        this->nextChar();
+        break;
+    case ';':
+        t.type = Token::SEMICOLON;
+        t.content = ";";
+        this->nextChar();
+        break;
+    case EOF:
+        t.type = Token::END;
+        t.content = "";
+        break;
+    default:
+        t.type = Token::WORD;
+        while (!isSpecialChar(this->_c) && !isspace(this->_c))
+        {
+            t.content.push_back(this->_c);
+            this->nextChar();
+        }
+
+        if (t.content.empty())
+            return this->nextToken();
+        break;
+    }
+
+    this->_lastToken = t;
+    return t;
 }
 
-void Lexer::closeFile(void)
+Token Lexer::currToken()
 {
-    this->_file.close();
+    Token t = this->nextToken();
+    this->_pushed = true;
+    return t;
 }
 
 void Lexer::nextChar()
@@ -55,4 +91,20 @@ void Lexer::nextChar()
         this->_line++;
     if (this->_c == std::char_traits<char>::eof())
         this->_c = EOF;
+}
+
+void Lexer::skipWhiteSpaceAndComments()
+{
+    while (true)
+    {
+        while (this->_c != EOF && isspace(this->_c))
+            this->nextChar();
+        if (this->_c == '#')
+        {
+            while (this->_c != EOF && this->_c != '\n')
+                this->nextChar();
+            continue;
+        }
+        break;
+    }
 }

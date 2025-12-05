@@ -6,14 +6,15 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 14:31:40 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/05 12:19:53 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/05 17:10:51 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Config.hpp"
 
-Config::Config(const char *fileName) : _lexer(fileName)
+Config::Config(const char *fileName)
 {
+    (void) fileName;
 }
 
 Config::~Config()

@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 15:08:33 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/04 13:00:16 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/05 15:50:28 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,11 +18,10 @@
 class Server
 {
 public:
-    Server(const char *configFileName);
+    Server();
     ~Server();
 
 private:
-    Config _config;
 };
 
 #endif

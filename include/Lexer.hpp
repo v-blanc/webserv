@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/05 10:44:22 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/05 12:23:47 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/05 17:11:36 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,26 +32,27 @@ struct Token
 
     std::string content;
     int line;
-    int col;
 };
 
 class Lexer
 {
 public:
-    Lexer(const char *fileName);
+    Lexer(std::ifstream &_file);
     ~Lexer();
 
-private:
-    std::string _fileName;
-    std::ifstream _file;
-    int _line;
-    char _c;
-    Token _last;
+    Token nextToken();
+    Token currToken();
 
-    int openFile(void);
-    void closeFile(void);
+private:
+    std::ifstream &_file;
+
+    char _c;
+    int _line;
+    Token _lastToken;
+    bool _pushed;
 
     void nextChar();
+    void skipWhiteSpaceAndComments();
 };
 
 #endif
