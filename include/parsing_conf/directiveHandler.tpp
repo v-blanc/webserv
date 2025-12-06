@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/06 14:21:38 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/06 17:48:50 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/06 18:45:59 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -131,6 +131,52 @@ void handleCgiHandlerDirective(Config &config, Node &node, std::string &directiv
             if (seen.count(cgiHandler.at(i)))
                 throwDuplicateValues(directive, node.args.at(0), config.getFileName(), node.line);
             seen.insert(cgiHandler.at(i));
+        }
+    }
+}
+
+template <typename Config>
+void handleUpdloadStoreDirective(Config &config, Node &node, std::string &directive)
+{
+    if (!config.getRoot().empty())
+        throwDirectiveIsDuplicate(directive, config.getFileName(), node.line);
+    else if (node.args.size() != 1)
+        throwInvalidNumberOfArguments(directive, config.getFileName(), node.line);
+    else
+        config.setUploadStore(node.args.at(0));
+}
+
+template <typename Config>
+void handleReturnDirective(Config &config, Node &node, std::string &directive)
+{
+    if (!config.getRoot().empty())
+        throwDirectiveIsDuplicate(directive, config.getFileName(), node.line);
+    else if (node.args.size() != 1 && node.args.size() != 2)
+        throwInvalidNumberOfArguments(directive, config.getFileName(), node.line);
+    else if (node.args.size() == 1)
+        config.setReturn(make_pair(node.args.at(0), ""));
+    else
+        config.setReturn(make_pair(node.args.at(0), node.args.at(0)));
+}
+
+template <typename Config>
+void handleLimitExceptDirective(Config &config, Node &node, std::string &directive)
+{
+    if (!config.getRoot().empty())
+        throwDirectiveIsDuplicate(directive, config.getFileName(), node.line);
+    else
+    {
+        for (std::size_t i = 0; i < node.args.size(); i++)
+            config.pushBackLimitExcept(node.args.at(i));
+
+        std::vector<std::string> limitExcept = config.getLimitExcept();
+        std::set<std::string> seen;
+
+        for (size_t i = 0; i < limitExcept.size(); ++i)
+        {
+            if (seen.count(limitExcept.at(i)))
+                throwDuplicateValues(directive, node.args.at(0), config.getFileName(), node.line);
+            seen.insert(limitExcept.at(i));
         }
     }
 }

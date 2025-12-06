@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/05 19:39:00 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/06 18:04:56 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/06 19:31:16 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,15 +14,29 @@
 
 ServerConfig::ServerConfig(Node &node, std::string &fileName, int autoindex, long long clientMaxBodySize,
                            std::string root, std::vector<std::string> errorPage)
-    : _node(node), _fileName(fileName)
+    : _node(node), _fileName(fileName), _autoindex(-1), _clientMaxBodySize(-1)
 {
-    // Inherited values
-    this->_autoindex = autoindex;
-    this->_clientMaxBodySize = clientMaxBodySize;
-    this->_root = root;
-    this->_errorPage = errorPage;
-
     this->fillServerConfig();
+
+    // Inherited values
+    if (this->_autoindex == -1)
+        this->_autoindex = autoindex;
+    if (this->_clientMaxBodySize == -1)
+        this->_clientMaxBodySize = clientMaxBodySize;
+    if (this->_root.empty())
+        this->_root = root;
+    if (this->_errorPage.size() == 0)
+        this->_errorPage = errorPage;
+
+    // Handle location direction
+    for (std::size_t i = 0; i < this->_node.children.size(); i++)
+    {
+        Node currNode = this->_node.children.at(i);
+        std::string directive = this->_node.children.at(i).directive;
+
+        if (directive == "location")
+            handleLocationDirective(currNode, directive);
+    }
 }
 
 ServerConfig::~ServerConfig()
@@ -35,7 +49,7 @@ void ServerConfig::handleLocationDirective(Node &node, std::string &directive)
         throwInvalidNumberOfArguments(directive, this->_fileName, node.line);
     else
         this->_locationConfig.push_back(LocationConfig(
-            node, this->_fileName, this->_autoindex, this->_clientMaxBodySize, this->_root, this->_index, this->_errorPage, this->_cgiHandler));
+            node, node.args.at(0), this->_fileName, this->_autoindex, this->_clientMaxBodySize, this->_root, this->_index, this->_errorPage, this->_cgiHandler));
 }
 
 void ServerConfig::fillServerConfig()
@@ -46,7 +60,7 @@ void ServerConfig::fillServerConfig()
         std::string directive = this->_node.children.at(i).directive;
 
         if (directive == "location")
-            handleLocationDirective(currNode, directive);
+            continue;
         else if (directive == "autoindex")
             handleAutoindex(*this, currNode, directive);
         else if (directive == "client_max_body_size")
@@ -67,6 +81,7 @@ void ServerConfig::fillServerConfig()
             throwUnknownDirective(directive, this->_fileName, currNode.line);
     }
 
+    // Default values
     if (this->_index.size() == 0)
         this->_index.push_back("index.html");
     if (this->_listen.size() == 0)

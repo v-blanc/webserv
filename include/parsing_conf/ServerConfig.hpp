@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/05 19:35:55 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/06 18:04:40 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/06 18:24:05 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,6 +33,7 @@ public:
     std::vector<std::string> getListen() const { return this->_listen; };
     std::vector<std::string> getServerName() const { return this->_serverName; };
     std::vector<stringPair> getCgiHandler() const { return this->_cgiHandler; };
+    std::vector<LocationConfig> getLocationConfig() const { return this->_locationConfig; };
 
     // Setter
     void setAutoindex(const int autoindex) { this->_autoindex = autoindex; };

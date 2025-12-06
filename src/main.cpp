@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 12:57:33 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/05 20:01:50 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/06 19:27:48 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,7 @@ int main(int argc, char **argv)
     }
 
     GlobalConfig globalConfig(argv[1]);
+    printGlobalConfig(globalConfig);
 
     return (SUCCESS);
 }

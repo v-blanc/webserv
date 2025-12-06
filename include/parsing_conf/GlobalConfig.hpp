@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 14:30:16 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/06 17:48:05 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/06 19:11:45 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,6 +30,7 @@ public:
     std::string getRoot() const { return this->_root; };
     std::vector<std::string> getIndex() const { return this->_index; };
     std::vector<std::string> getErrorPage() const { return this->_errorPage; };
+    std::vector<ServerConfig> getServerConfig() const { return this->_serverConfig; };
 
     // Setter
     void setAutoindex(const int autoindex) { this->_autoindex = autoindex; };
@@ -59,9 +60,9 @@ private:
     // Fill Global Config
     void handleServerDirective(Node &node, std::string &directive);
     void fillGlobalConfig();
-
-    // TODO: Debug
-    void printGlobalConfig();
 };
+
+// TODO: Debug
+void printGlobalConfig(GlobalConfig &globalConfig);
 
 #endif
