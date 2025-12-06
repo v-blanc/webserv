@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/06 12:15:31 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/06 15:43:45 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/06 18:01:06 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -101,10 +101,37 @@ void throwInvalidClientMaxValue(std::string directive, std::string fileName, std
     throw std::runtime_error(errorMessage);
 }
 
-void throwUnknownDirective(std::string directive, std::string fileName, std::string line)
+void throwDuplicateValues(std::string directive, std::string value, std::string fileName, std::string line)
 {
-    std::string errorMessage = RED + getTimeOfDay() + "unknown directive \"" + directive + "\" in ";
+    std::string errorMessage = RED + getTimeOfDay() + "duplicate " + directive + " \"" + value + "\" in ";
     errorMessage += fileName + ":" + line + DEFAULT;
 
+    throw std::runtime_error(errorMessage);
+}
+
+static bool isKnownDirective(std::string &directive)
+{
+    std::string known[10] = {"server", "autoindex", "client_max_body_size", "root", "index",
+                                      "error_page", "location", "listen", "server_name", "cgi_handler"};
+
+    for (std::size_t i = 0; i < 10; i++)
+        if (directive == known[i])
+            return (true);
+    return (false);
+}
+
+void throwUnknownDirective(std::string directive, std::string fileName, std::string line)
+{
+    std::string errorMessage;
+    if (isKnownDirective(directive))
+    {
+        errorMessage = RED + getTimeOfDay() + "\"" + directive + "\" directive is not allowed here in ";
+        errorMessage += fileName + ":" + line + DEFAULT;
+    }
+    else
+    {
+        errorMessage = RED + getTimeOfDay() + "unknown directive \"" + directive + "\" in ";
+        errorMessage += fileName + ":" + line + DEFAULT;
+    }
     throw std::runtime_error(errorMessage);
 }

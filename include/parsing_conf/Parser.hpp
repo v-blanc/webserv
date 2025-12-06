@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/05 17:26:57 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/06 12:34:16 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/06 17:48:00 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,6 @@
 
 #include "Lexer.hpp"
 #include "utils.hpp"
-#include <sstream>
 
 class Parser
 {

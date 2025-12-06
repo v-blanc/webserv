@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/05 10:44:22 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/06 12:30:40 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/06 17:48:04 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,9 +16,6 @@
 #include "colors.h"
 #include "define.h"
 #include "configStructs.h"
-#include <cstring>
-#include <iostream>
-#include <fstream>
 
 class Lexer
 {

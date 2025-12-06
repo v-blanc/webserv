@@ -6,15 +6,14 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/06 12:29:03 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/06 12:30:50 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/06 17:48:10 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef CONFIGSTRUCTS_H
 #define CONFIGSTRUCTS_H
 
-#include <string>
-#include <vector>
+#include "define.h"
 
 struct Token
 {

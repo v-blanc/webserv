@@ -54,3 +54,9 @@ Dont log any error (?)
 
 - For "location ... {}" in global scope:
 2025/12/06 13:49:18 [emerg] 1#1: "location" directive is not allowed here in /etc/nginx/sites-enabled/default:4
+
+- For "listen 444; listen 444":
+2025/12/06 15:11:08 [emerg] 1#1: a duplicate listen 0.0.0.0:444 in /etc/nginx/sites-enabled/default:7
+
+- For "location / {} location / {}":
+2025/12/06 15:54:04 [emerg] 1#1: duplicate location "/" in /etc/nginx/sites-enabled/default:11

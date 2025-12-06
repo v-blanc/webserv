@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 14:30:16 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/06 15:58:48 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/06 17:48:05 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -60,10 +60,8 @@ private:
     void handleServerDirective(Node &node, std::string &directive);
     void fillGlobalConfig();
 
-    // Debug
+    // TODO: Debug
     void printGlobalConfig();
 };
-
-#include "directiveHandler.tpp"
 
 #endif

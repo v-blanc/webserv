@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 14:31:40 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/06 15:57:13 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/06 18:04:33 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -67,7 +67,7 @@ void GlobalConfig::handleServerDirective(Node &node, std::string &directive)
         throwInvalidNumberOfArguments(directive, this->_fileName, node.line);
     else
         this->_serverConfig.push_back(ServerConfig(
-            this->_autoindex, this->_clientMaxBodySize, this->_root, this->_index, this->_errorPage));
+            node, this->_fileName, this->_autoindex, this->_clientMaxBodySize, this->_root, this->_errorPage));
 }
 
 void GlobalConfig::fillGlobalConfig()
@@ -79,16 +79,16 @@ void GlobalConfig::fillGlobalConfig()
 
         if (directive == "server")
             handleServerDirective(currNode, directive);
+        else if (directive == "autoindex")
+            handleAutoindex(*this, currNode, directive);
+        else if (directive == "client_max_body_size")
+            handleClientMaxBodySize(*this, currNode, directive);
         else if (directive == "root")
             handleRootDirective(*this, currNode, directive);
         else if (directive == "index")
             handleIndexDirective(*this, currNode);
         else if (directive == "error_page")
             handleErrorPageDirective(*this, currNode, directive);
-        else if (directive == "autoindex")
-            handleAutoindex(*this, currNode, directive);
-        else if (directive == "client_max_body_size")
-            handleClientMaxBodySize(*this, currNode, directive);
         else
             throwUnknownDirective(directive, this->_fileName, currNode.line);
     }
@@ -109,22 +109,54 @@ void GlobalConfig::fillGlobalConfig()
 
 void GlobalConfig::printGlobalConfig()
 {
-    std::string pad(4, ' ');
+    int indent = 4;
+    std::string pad(0, ' ');
     std::cout << "Global Config:" << std::endl;
 
+    std::cout << pad << "autoindex: " << (this->_autoindex == true ? "on" : "off") << std::endl;
+    std::cout << pad << "client_max_body_size: " << this->_clientMaxBodySize << std::endl;
     std::cout << pad << "root: " << this->_root << std::endl;
-
     std::cout << pad << "index: ";
     for (std::size_t i = 0; i < this->_index.size(); i++)
         std::cout << this->_index[i] << ", ";
     std::cout << std::endl;
-
     std::cout << pad << "error_page: ";
     for (std::size_t i = 0; i < this->_errorPage.size(); i++)
         std::cout << this->_errorPage[i] << ", ";
     std::cout << std::endl;
+    std::cout << std::endl;
 
-    std::cout << pad << "autoindex: " << (this->_autoindex == true ? "on" : "off") << std::endl;
+    for (std::size_t j = 0; j < this->_serverConfig.size(); j++)
+    {
+        std::string pad(indent, ' ');
+        std::cout << "Server Config:" << std::endl;
 
-    std::cout << pad << "client_max_body_size: " << this->_clientMaxBodySize << std::endl;
+        std::cout << pad << "autoindex: " << (this->_serverConfig.at(j).getAutoindex() == true ? "on" : "off") << std::endl;
+        std::cout << pad << "client_max_body_size: " << this->_serverConfig.at(j).getClientMaxBodySize() << std::endl;
+        std::cout << pad << "root: " << this->_serverConfig.at(j).getRoot() << std::endl;
+        std::cout << pad << "index: ";
+        for (std::size_t i = 0; i < this->_serverConfig.at(j).getIndex().size(); i++)
+            std::cout << this->_serverConfig.at(j).getIndex().at(i) << ", ";
+        std::cout << std::endl;
+        std::cout << pad << "error_page: ";
+        for (std::size_t i = 0; i < this->_serverConfig.at(j).getErrorPage().size(); i++)
+            std::cout << this->_serverConfig.at(j).getErrorPage().at(i) << ", ";
+        std::cout << std::endl;
+        std::cout << pad << "listen: ";
+        for (std::size_t i = 0; i < this->_serverConfig.at(j).getListen().size(); i++)
+            std::cout << this->_serverConfig.at(j).getListen().at(i) << ", ";
+        std::cout << std::endl;
+        std::cout << pad << "server_name: ";
+        for (std::size_t i = 0; i < this->_serverConfig.at(j).getServerName().size(); i++)
+            std::cout << this->_serverConfig.at(j).getServerName().at(i) << ", ";
+        std::cout << std::endl;
+        std::cout << pad << "cgi_handler: ";
+        for (std::size_t i = 0; i < this->_serverConfig.at(j).getCgiHandler().size(); i++)
+        {
+            std::cout << "[" << this->_serverConfig.at(j).getCgiHandler().at(i).first << ", ";
+            std::cout << this->_serverConfig.at(j).getCgiHandler().at(i).second << "], ";
+        }
+        std::cout << std::endl;
+        std::cout << std::endl;
+    }
 }
