@@ -1,39 +1,42 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   Parser.hpp                                         :+:      :+:    :+:   */
+/*   configStructs.h                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/12/05 17:26:57 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/06 12:34:16 by vblanc           ###   ########.fr       */
+/*   Created: 2025/12/06 12:29:03 by vblanc            #+#    #+#             */
+/*   Updated: 2025/12/06 12:30:50 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef PARSER_HPP
-#define PARSER_HPP
+#ifndef CONFIGSTRUCTS_H
+#define CONFIGSTRUCTS_H
 
-#include "Lexer.hpp"
-#include "utils.hpp"
-#include <sstream>
+#include <string>
+#include <vector>
 
-class Parser
+struct Token
 {
-public:
-    Parser(std::ifstream &file, std::string &fileName);
-    ~Parser();
-    Node parse();
+    enum Type
+    {
+        WORD,
+        LBRACE,
+        RBRACE,
+        SEMICOLON,
+        END
+    } type;
 
-private:
-    std::string _fileName;
-    Lexer _lexer;
-    Token _currToken;
-
-    Node parseStatement();
-    void nextToken();
+    std::string content;
+    int line;
 };
 
-// TODO: Debug
-void printNode(const Node &n, int indent = 0);
+struct Node
+{
+    std::string directive;
+    std::vector<std::string> args;
+    std::vector<Node> children;
+    std::string line;
+};
 
 #endif

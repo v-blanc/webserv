@@ -1,0 +1,78 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   parseConfErrorMessage.cpp                          :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/12/06 12:15:31 by vblanc            #+#    #+#             */
+/*   Updated: 2025/12/06 12:53:47 by vblanc           ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include "utils.hpp"
+
+static const std::string tokenType(Token::Type type)
+{
+    switch (type)
+    {
+    case Token::LBRACE:
+        return "{";
+    case Token::RBRACE:
+        return "}";
+    case Token::SEMICOLON:
+        return ";";
+    default:
+        return "unknown";
+    }
+}
+
+static std::string getTimeOfDay()
+{
+    time_t now = time(NULL);
+    struct tm *t = localtime(&now);
+
+    char buffer[64];
+    strftime(buffer, sizeof(buffer), "%Y/%m/%d %H:%M:%S [emerg] : ", t);
+
+    return (buffer);
+}
+
+void throwUnexpectedType(Token::Type type, int line, std::string &fileName)
+{
+    std::stringstream ss;
+    ss << line;
+
+    std::string errorMessage = RED + getTimeOfDay() + "unexpected \"" + tokenType(type) + "\" in " + fileName + ":" + ss.str() + DEFAULT;
+
+    throw std::runtime_error(errorMessage);
+}
+
+void throwUnexpectedEOF(int line, std::string &fileName)
+{
+    std::stringstream ss;
+    ss << line;
+
+    std::string errorMessage = RED + getTimeOfDay() + "unexpected end of file, expecting \"}\" in " + fileName + ":" + ss.str() + DEFAULT;
+
+    throw std::runtime_error(errorMessage);
+}
+
+void throwSafeOpenFileError(std::ifstream &file, std::string &fileName)
+{
+    std::string errorMessage = RED "Error with ‘" ITALIC + fileName + DEFAULT RED "’ configuration file: \"" ITALIC;
+
+    if (file.fail())
+        errorMessage += strerror(errno);
+    errorMessage += "\"" DEFAULT;
+
+    throw std::runtime_error(errorMessage);
+}
+
+void throwInvalidNumberOfArguments(std::string directive, std::string fileName, std::string line)
+{
+    std::string errorMessage = RED + getTimeOfDay() + "invalid number of arguments in \"" + directive + "\" in ";
+    errorMessage += fileName + ":" + line + DEFAULT;
+
+    throw std::runtime_error(errorMessage);
+}

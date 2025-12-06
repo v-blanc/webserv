@@ -6,13 +6,13 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/05 17:26:32 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/05 19:51:08 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/06 12:44:17 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Parser.hpp"
 
-Parser::Parser(std::ifstream &_file) : _lexer(_file)
+Parser::Parser(std::ifstream &file, std::string &fileName) : _fileName(fileName), _lexer(file)
 {
     this->_currToken = this->_lexer.nextToken();
 }
@@ -24,8 +24,8 @@ Parser::~Parser()
 Node Parser::parse()
 {
     Node root;
-    root.name = "";
-    root.line = 1;
+    root.directive = "";
+    root.line = "1";
 
     while (this->_currToken.type != Token::END)
         root.children.push_back(this->parseStatement());
@@ -36,11 +36,13 @@ Node Parser::parse()
 Node Parser::parseStatement()
 {
     if (this->_currToken.type != Token::WORD)
-        throw std::runtime_error("unexpected \"*type*\" in ...");
+        throwUnexpectedType(this->_currToken.type, this->_currToken.line, this->_fileName);
 
     Node node;
-    node.name = this->_currToken.content;
-    node.line = this->_currToken.line;
+    node.directive = this->_currToken.content;
+    std::stringstream ss;
+    ss << this->_currToken.line;
+    ss >> node.line;
 
     this->nextToken();
 
@@ -62,11 +64,11 @@ Node Parser::parseStatement()
             node.children.push_back(parseStatement());
 
         if (this->_currToken.type != Token::RBRACE)
-            throw std::runtime_error("unexpected end of file, expecting \"}\" in ...");
+            throwUnexpectedEOF(this->_currToken.line, this->_fileName);
         this->nextToken();
         break;
     default:
-        throw std::runtime_error("unexpected \"*type*\" in ...");
+        throwUnexpectedType(this->_currToken.type, this->_currToken.line, this->_fileName);
         break;
     }
 
@@ -82,9 +84,9 @@ void printNode(const Node &n, int indent)
 {
     std::string pad(indent * 4, ' ');
 
-    if (!n.name.empty())
+    if (!n.directive.empty())
     {
-        std::cout << pad << "(dir):" << n.name;
+        std::cout << pad << "(dir):" << n.directive;
         std::cout << " (args):";
         for (size_t i = 0; i < n.args.size(); ++i)
             std::cout << " \"" << n.args[i] << "\"";
