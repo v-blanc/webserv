@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 14:30:16 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/06 19:11:45 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/06 19:59:35 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,7 +21,7 @@ class GlobalConfig
 {
 public:
     GlobalConfig(const char *fileName);
-    ~GlobalConfig();
+    ~GlobalConfig() {};
 
     // Getter
     std::string getFileName() const { return this->_fileName; };

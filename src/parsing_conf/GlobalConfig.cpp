@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 14:31:40 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/06 19:34:54 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/06 20:00:09 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,7 +20,7 @@ GlobalConfig::GlobalConfig(const char *fileName) : _fileName(fileName), _file(fi
         this->_rootNode = Parser(this->_file, this->_fileName).parse();
         printNode(this->_rootNode);
         std::cout << std::endl;
-        
+
         this->fillGlobalConfig();
     }
     catch (const std::runtime_error &e)
@@ -33,10 +33,7 @@ GlobalConfig::GlobalConfig(const char *fileName) : _fileName(fileName), _file(fi
         std::cerr << "Unexpected Error: " << e.what() << std::endl;
         return;
     }
-}
 
-GlobalConfig::~GlobalConfig()
-{
     this->safeCloseFile();
 }
 
