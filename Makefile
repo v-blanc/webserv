@@ -11,8 +11,11 @@ OBJDIR := build
 
 FILES := parsing_conf/Lexer.cpp parsing_conf/Pasrer.cpp \
 		parsing_conf/GlobalConfig.cpp parsing_conf/ServerConfig.cpp parsing_conf/LocationConfig.cpp \
+		\
+		server/Server.cpp \
+		\
 		utils/parseConfErrorMessage.cpp \
-		Server.cpp \
+		\
 		main.cpp
 
 INCLUDES := $(addprefix -I,$(shell find $(INCDIR) -type d))
