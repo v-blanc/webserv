@@ -45,3 +45,12 @@ Dont log any error (?)
 
 - For "server ;":
 2025/12/05 17:43:09 [emerg] 1#1: directive "server" has no opening "{" in /etc/nginx/sites-enabled/default:1
+
+- For "error_page toto titi;":
+2025/12/06 12:08:10 [emerg] 1#1: invalid value "toto" in /etc/nginx/sites-enabled/default:1
+
+- For "client_max_body_size -100;"
+2025/12/06 12:32:35 [emerg] 1#1: "client_max_body_size" directive invalid value in /etc/nginx/sites-enabled/default:3
+
+- For "location ... {}" in global scope:
+2025/12/06 13:49:18 [emerg] 1#1: "location" directive is not allowed here in /etc/nginx/sites-enabled/default:4

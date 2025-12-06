@@ -6,13 +6,13 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/06 12:15:31 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/06 12:53:47 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/06 15:43:45 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "utils.hpp"
 
-static const std::string tokenType(Token::Type type)
+static const std::string tokenType(Token::Type &type)
 {
     switch (type)
     {
@@ -38,27 +38,7 @@ static std::string getTimeOfDay()
     return (buffer);
 }
 
-void throwUnexpectedType(Token::Type type, int line, std::string &fileName)
-{
-    std::stringstream ss;
-    ss << line;
-
-    std::string errorMessage = RED + getTimeOfDay() + "unexpected \"" + tokenType(type) + "\" in " + fileName + ":" + ss.str() + DEFAULT;
-
-    throw std::runtime_error(errorMessage);
-}
-
-void throwUnexpectedEOF(int line, std::string &fileName)
-{
-    std::stringstream ss;
-    ss << line;
-
-    std::string errorMessage = RED + getTimeOfDay() + "unexpected end of file, expecting \"}\" in " + fileName + ":" + ss.str() + DEFAULT;
-
-    throw std::runtime_error(errorMessage);
-}
-
-void throwSafeOpenFileError(std::ifstream &file, std::string &fileName)
+void throwSafeOpenFileError(std::ifstream &file, std::string fileName)
 {
     std::string errorMessage = RED "Error with ‘" ITALIC + fileName + DEFAULT RED "’ configuration file: \"" ITALIC;
 
@@ -69,9 +49,61 @@ void throwSafeOpenFileError(std::ifstream &file, std::string &fileName)
     throw std::runtime_error(errorMessage);
 }
 
+void throwUnexpectedType(Token::Type type, int line, std::string fileName)
+{
+    std::stringstream ss;
+    ss << line;
+
+    std::string errorMessage = RED + getTimeOfDay() + "unexpected \"" + tokenType(type) + "\" in " + fileName + ":" + ss.str() + DEFAULT;
+
+    throw std::runtime_error(errorMessage);
+}
+
+void throwUnexpectedEOF(int line, std::string fileName)
+{
+    std::stringstream ss;
+    ss << line;
+
+    std::string errorMessage = RED + getTimeOfDay() + "unexpected end of file, expecting \"}\" in " + fileName + ":" + ss.str() + DEFAULT;
+
+    throw std::runtime_error(errorMessage);
+}
+
 void throwInvalidNumberOfArguments(std::string directive, std::string fileName, std::string line)
 {
     std::string errorMessage = RED + getTimeOfDay() + "invalid number of arguments in \"" + directive + "\" in ";
+    errorMessage += fileName + ":" + line + DEFAULT;
+
+    throw std::runtime_error(errorMessage);
+}
+
+void throwDirectiveIsDuplicate(std::string directive, std::string fileName, std::string line)
+{
+    std::string errorMessage = RED + getTimeOfDay() + "\"" + directive + "\" directive is duplicate in ";
+    errorMessage += fileName + ":" + line + DEFAULT;
+
+    throw std::runtime_error(errorMessage);
+}
+
+void throwInvalidAutoindexValue(std::string value, std::string fileName, std::string line)
+{
+    std::string errorMessage = RED + getTimeOfDay() + "invalid value \"" + value + "\" in \"autoindex\" directive, it must be \"on\" or \"off\" in ";
+    errorMessage += fileName + ":" + line + DEFAULT;
+
+    throw std::runtime_error(errorMessage);
+}
+
+void throwInvalidClientMaxValue(std::string directive, std::string fileName, std::string line)
+{
+    std::string errorMessage = RED + getTimeOfDay() + "\"" + directive + "\" directive invalid value in ";
+    errorMessage += fileName + ":" + line + DEFAULT;
+
+    throw std::runtime_error(errorMessage);
+}
+
+void throwUnknownDirective(std::string directive, std::string fileName, std::string line)
+{
+    std::string errorMessage = RED + getTimeOfDay() + "unknown directive \"" + directive + "\" in ";
     errorMessage += fileName + ":" + line + DEFAULT;
 
     throw std::runtime_error(errorMessage);
