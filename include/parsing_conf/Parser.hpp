@@ -1,30 +1,38 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   Config.hpp                                         :+:      :+:    :+:   */
+/*   Parser.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/25 14:30:16 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/05 12:14:33 by vblanc           ###   ########.fr       */
+/*   Created: 2025/12/05 17:26:57 by vblanc            #+#    #+#             */
+/*   Updated: 2025/12/06 17:48:00 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef CONFIG_H
-#define CONFIG_H
+#ifndef PARSER_HPP
+#define PARSER_HPP
 
 #include "Lexer.hpp"
+#include "utils.hpp"
 
-// Attributes and methods can be renamed or removed, and params can be changed
-
-class Config
+class Parser
 {
 public:
-    Config(const char *fileName);
-    ~Config();
+    Parser(std::ifstream &file, std::string &fileName);
+    ~Parser();
+    Node parse();
 
 private:
+    std::string _fileName;
     Lexer _lexer;
+    Token _currToken;
+
+    Node parseStatement();
+    void nextToken();
 };
+
+// TODO: Debug
+void printNode(const Node &n, int indent = 0);
 
 #endif

@@ -39,3 +39,24 @@ Dont log any error (?)
 
 - For "location ... { server {...} }":
 2025/12/04 16:47:45 [emerg] 1#1: "server" directive is not allowed here in /etc/nginx/sites-enabled/default:15
+
+- For "{...}":
+2025/12/05 16:45:35 [emerg] 1#1: unexpected "{" in /etc/nginx/sites-enabled/default:1
+
+- For "server ;":
+2025/12/05 17:43:09 [emerg] 1#1: directive "server" has no opening "{" in /etc/nginx/sites-enabled/default:1
+
+- For "error_page toto titi;":
+2025/12/06 12:08:10 [emerg] 1#1: invalid value "toto" in /etc/nginx/sites-enabled/default:1
+
+- For "client_max_body_size -100;"
+2025/12/06 12:32:35 [emerg] 1#1: "client_max_body_size" directive invalid value in /etc/nginx/sites-enabled/default:3
+
+- For "location ... {}" in global scope:
+2025/12/06 13:49:18 [emerg] 1#1: "location" directive is not allowed here in /etc/nginx/sites-enabled/default:4
+
+- For "listen 444; listen 444":
+2025/12/06 15:11:08 [emerg] 1#1: a duplicate listen 0.0.0.0:444 in /etc/nginx/sites-enabled/default:7
+
+- For "location / {} location / {}":
+2025/12/06 15:54:04 [emerg] 1#1: duplicate location "/" in /etc/nginx/sites-enabled/default:11

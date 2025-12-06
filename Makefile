@@ -4,12 +4,21 @@ CXXFLAGS := -Wall -Werror -Wextra -std=c++98 -MMD -MP -g
 NAME := webserv
 RM := rm -rf
 
+
 INCDIR := include
 SRCDIR := src
 OBJDIR := build
 
-FILES := parsing/Lexer.cpp parsing/Config.cpp Server.cpp main.cpp
+FILES := parsing_conf/Lexer.cpp parsing_conf/Pasrer.cpp \
+		parsing_conf/GlobalConfig.cpp parsing_conf/ServerConfig.cpp parsing_conf/LocationConfig.cpp \
+		\
+		server/Server.cpp \
+		\
+		utils/parseConfErrorMessage.cpp \
+		\
+		main.cpp
 
+INCLUDES := $(addprefix -I,$(shell find $(INCDIR) -type d))
 SRCS := $(addprefix $(SRCDIR)/, $(FILES))
 OBJS := $(addprefix $(OBJDIR)/, $(FILES:.cpp=.o))
 DEPS := $(OBJS:.o=.d)
@@ -23,7 +32,7 @@ $(NAME): $(OBJS)
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 	@mkdir -p $(dir $@)
-	$(CXX) -I$(INCDIR) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(INCLUDES) $(CXXFLAGS) -c $< -o $@
 
 clean:
 	$(RM) $(OBJDIR)

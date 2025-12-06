@@ -1,21 +1,41 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   Config.cpp                                         :+:      :+:    :+:   */
+/*   configStructs.h                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/25 14:31:40 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/05 12:19:53 by vblanc           ###   ########.fr       */
+/*   Created: 2025/12/06 12:29:03 by vblanc            #+#    #+#             */
+/*   Updated: 2025/12/06 17:48:10 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "Config.hpp"
+#ifndef CONFIGSTRUCTS_H
+#define CONFIGSTRUCTS_H
 
-Config::Config(const char *fileName) : _lexer(fileName)
-{
-}
+#include "define.h"
 
-Config::~Config()
+struct Token
 {
-}
+    enum Type
+    {
+        WORD,
+        LBRACE,
+        RBRACE,
+        SEMICOLON,
+        END
+    } type;
+
+    std::string content;
+    int line;
+};
+
+struct Node
+{
+    std::string directive;
+    std::vector<std::string> args;
+    std::vector<Node> children;
+    std::string line;
+};
+
+#endif
