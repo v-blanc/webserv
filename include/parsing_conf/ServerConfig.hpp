@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/05 19:35:55 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/06 18:24:05 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/07 14:42:05 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
 #define SERVERCONFIG_HPP
 
 #include "LocationConfig.hpp"
-#include "configStructs.h"
+#include "structConfig.h"
 
 class ServerConfig
 {

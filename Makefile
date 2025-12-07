@@ -9,12 +9,12 @@ INCDIR := include
 SRCDIR := src
 OBJDIR := build
 
-FILES := parsing_conf/Lexer.cpp parsing_conf/Pasrer.cpp \
+FILES := parsing_conf/LexerConfig.cpp parsing_conf/PasrerConfig.cpp \
 		parsing_conf/GlobalConfig.cpp parsing_conf/ServerConfig.cpp parsing_conf/LocationConfig.cpp \
 		\
 		server/Server.cpp \
 		\
-		utils/parseConfErrorMessage.cpp \
+		utils/errorMessageConfig.cpp \
 		\
 		main.cpp
 

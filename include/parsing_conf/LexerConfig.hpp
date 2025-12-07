@@ -1,27 +1,27 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   Lexer.hpp                                          :+:      :+:    :+:   */
+/*   LexerConfig.hpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/05 10:44:22 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/06 17:48:04 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/07 14:46:17 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef LEXER_HPP
-#define LEXER_HPP
+#ifndef LEXERCONFIG_HPP
+#define LEXERCONFIG_HPP
 
 #include "colors.h"
 #include "define.h"
-#include "configStructs.h"
+#include "structConfig.h"
 
-class Lexer
+class LexerConfig
 {
 public:
-    Lexer(std::ifstream &_file);
-    ~Lexer();
+    LexerConfig(std::ifstream &_file);
+    ~LexerConfig();
 
     Token nextToken();
     Token currToken();
@@ -39,6 +39,6 @@ private:
 };
 
 // TODO: Debug
-void printLexer(Lexer lexer);
+void printLexerConfig(LexerConfig lexer);
 
 #endif

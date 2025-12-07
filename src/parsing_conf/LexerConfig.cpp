@@ -1,23 +1,23 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   Lexer.cpp                                          :+:      :+:    :+:   */
+/*   LexerConfig.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/05 12:00:57 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/05 19:51:14 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/07 14:46:00 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "Lexer.hpp"
+#include "LexerConfig.hpp"
 
-Lexer::Lexer(std::ifstream &file) : _file(file), _line(1), _pushed(false)
+LexerConfig::LexerConfig(std::ifstream &file) : _file(file), _line(1), _pushed(false)
 {
     this->nextChar();
 }
 
-Lexer::~Lexer()
+LexerConfig::~LexerConfig()
 {
 }
 
@@ -26,7 +26,7 @@ static int isSpecialChar(char c)
     return (c == '#' || c == '{' || c == '}' || c == ';' || c == EOF);
 }
 
-Token Lexer::nextToken()
+Token LexerConfig::nextToken()
 {
     if (this->_pushed)
     {
@@ -77,14 +77,14 @@ Token Lexer::nextToken()
     return t;
 }
 
-Token Lexer::currToken()
+Token LexerConfig::currToken()
 {
     Token t = this->nextToken();
     this->_pushed = true;
     return t;
 }
 
-void Lexer::nextChar()
+void LexerConfig::nextChar()
 {
     this->_c = this->_file.get();
     if (this->_c == '\n')
@@ -93,7 +93,7 @@ void Lexer::nextChar()
         this->_c = EOF;
 }
 
-void Lexer::skipWhiteSpaceAndComments()
+void LexerConfig::skipWhiteSpaceAndComments()
 {
     while (true)
     {
@@ -128,7 +128,7 @@ static const char *tokenName(Token::Type t)
     }
 }
 
-void printLexer(Lexer lexer)
+void printLexerConfig(LexerConfig lexer)
 {
     for (;;)
     {

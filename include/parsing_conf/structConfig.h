@@ -1,17 +1,17 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   configStructs.h                                    :+:      :+:    :+:   */
+/*   structConfig.h                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/06 12:29:03 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/06 17:48:10 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/07 14:43:20 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef CONFIGSTRUCTS_H
-#define CONFIGSTRUCTS_H
+#ifndef STRUCTCONFIG_H
+#define STRUCTCONFIG_H
 
 #include "define.h"
 

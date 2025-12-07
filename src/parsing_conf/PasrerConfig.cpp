@@ -1,27 +1,27 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   Pasrer.cpp                                         :+:      :+:    :+:   */
+/*   PasrerConfig.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/05 17:26:32 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/06 12:44:17 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/07 14:48:10 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "Parser.hpp"
+#include "ParserConfig.hpp"
 
-Parser::Parser(std::ifstream &file, std::string &fileName) : _fileName(fileName), _lexer(file)
+ParserConfig::ParserConfig(std::ifstream &file, std::string &fileName) : _fileName(fileName), _lexer(file)
 {
     this->_currToken = this->_lexer.nextToken();
 }
 
-Parser::~Parser()
+ParserConfig::~ParserConfig()
 {
 }
 
-Node Parser::parse()
+Node ParserConfig::parse()
 {
     Node root;
     root.directive = "";
@@ -33,7 +33,7 @@ Node Parser::parse()
     return root;
 }
 
-Node Parser::parseStatement()
+Node ParserConfig::parseStatement()
 {
     if (this->_currToken.type != Token::WORD)
         throwUnexpectedType(this->_currToken.type, this->_currToken.line, this->_fileName);
@@ -75,7 +75,7 @@ Node Parser::parseStatement()
     return node;
 }
 
-void Parser::nextToken()
+void ParserConfig::nextToken()
 {
     this->_currToken = this->_lexer.nextToken();
 }

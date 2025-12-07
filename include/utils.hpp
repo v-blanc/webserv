@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/06 12:10:43 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/06 17:48:12 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/07 14:44:42 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
 #define UTILS_HPP
 
 #include "colors.h"
-#include "configStructs.h"
+#include "structConfig.h"
 
 // to_string.cpp
 template <typename T>

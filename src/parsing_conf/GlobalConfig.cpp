@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 14:31:40 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/06 20:00:09 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/07 14:48:47 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,7 @@ GlobalConfig::GlobalConfig(const char *fileName) : _fileName(fileName), _file(fi
     try
     {
         this->safeOpenFile();
-        this->_rootNode = Parser(this->_file, this->_fileName).parse();
+        this->_rootNode = ParserConfig(this->_file, this->_fileName).parse();
         printNode(this->_rootNode);
         std::cout << std::endl;
 

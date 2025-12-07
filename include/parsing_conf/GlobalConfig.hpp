@@ -6,14 +6,14 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 14:30:16 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/06 19:59:35 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/07 14:41:23 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef GLOBALCONFIG_H
 #define GLOBALCONFIG_H
 
-#include "Parser.hpp"
+#include "ParserConfig.hpp"
 #include "ServerConfig.hpp"
 #include "utils.hpp"
 
