@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 14:31:40 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/07 14:48:47 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/07 17:04:11 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,8 +18,8 @@ GlobalConfig::GlobalConfig(const char *fileName) : _fileName(fileName), _file(fi
     {
         this->safeOpenFile();
         this->_rootNode = ParserConfig(this->_file, this->_fileName).parse();
-        printNode(this->_rootNode);
-        std::cout << std::endl;
+        // printNode(this->_rootNode);
+        // std::cout << std::endl;
 
         this->fillGlobalConfig();
     }
@@ -114,7 +114,7 @@ void printGlobalConfig(GlobalConfig &globalConfig)
 {
     int indent = 4;
     std::string pad(0, ' ');
-    std::cout << "Global Config:" << std::endl;
+    std::cout << "******** Global Config: ********" << std::endl;
 
     std::cout << pad << "autoindex: " << (globalConfig.getAutoindex() == true ? "on" : "off") << std::endl;
     std::cout << pad << "client_max_body_size: " << globalConfig.getClientMaxBodySize() << std::endl;
