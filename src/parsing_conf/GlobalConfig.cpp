@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 14:31:40 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/08 11:44:12 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/08 14:27:37 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,7 +41,8 @@ void GlobalConfig::safeOpenFile()
 {
     if (!this->_file.is_open())
         throwSafeOpenFileError(this->_file, this->_fileName);
-    std::cout << GREEN "Configuration file ‘" ITALIC << this->_fileName << DEFAULT GREEN "’ was opened sucessfully!" DEFAULT << std::endl;
+    std::cout << GREEN + getTimeOfDay() + " [ok] : Configuration file ‘" ITALIC << this->_fileName << DEFAULT;
+    std::cout << GREEN "’ was opened sucessfully!" DEFAULT << std::endl;
 }
 
 void GlobalConfig::safeCloseFile()
@@ -51,11 +52,12 @@ void GlobalConfig::safeCloseFile()
     this->_file.close();
     if (this->_file.fail() && !this->_file.eof())
     {
-        std::cerr << RED "Error with ‘" ITALIC << this->_fileName << DEFAULT RED "’ configuration file: \"" ITALIC;
+        std::cerr << RED + getTimeOfDay() + " [warning] : Error with ‘" ITALIC << this->_fileName << DEFAULT RED "’ configuration file: \"" ITALIC;
         std::cerr << "The file couldn't be closed properly\"" DEFAULT << std::endl;
         return;
     }
-    std::cout << GREEN "Configuration file ‘" ITALIC << this->_fileName << DEFAULT GREEN "’ was closed sucessfully!" DEFAULT << std::endl;
+    std::cout << GREEN + getTimeOfDay() + " [ok] : Configuration file ‘" ITALIC << this->_fileName << DEFAULT;
+    std::cout << GREEN "’ was closed sucessfully!" DEFAULT << std::endl;
 }
 
 void GlobalConfig::handleServerDirective(Node &node, std::string &directive)
@@ -146,10 +148,12 @@ void printGlobalConfig(GlobalConfig &globalConfig)
         for (std::size_t i = 0; i < serverConfig.at(j).getErrorPage().size(); i++)
             std::cout << serverConfig.at(j).getErrorPage().at(i) << ", ";
         std::cout << std::endl;
-        std::cout << pad << "listen: ";
+        std::cout << pad << "listen: " << std::endl;
         for (std::size_t i = 0; i < serverConfig.at(j).getListen().size(); i++)
-            std::cout << serverConfig.at(j).getListen().at(i) << ", ";
-        std::cout << std::endl;
+        {
+            std::cout << pad << pad << "[" << i << "] host: \'" << serverConfig.at(j).getListen().at(i).first;
+            std::cout << "\' port: \'" << serverConfig.at(j).getListen().at(i).second << "\'" << std::endl;
+        }
         std::cout << pad << "server_name: ";
         for (std::size_t i = 0; i < serverConfig.at(j).getServerName().size(); i++)
             std::cout << serverConfig.at(j).getServerName().at(i) << ", ";

@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/05 19:39:00 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/06 19:31:16 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/08 14:01:59 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -85,7 +85,7 @@ void ServerConfig::fillServerConfig()
     if (this->_index.size() == 0)
         this->_index.push_back("index.html");
     if (this->_listen.size() == 0)
-        this->_listen.push_back("DEFAULT VALUE TO SET"); // TODO
+        this->_listen.push_back(std::make_pair(INADDR_ANY, 8080)); // TODO : default value to set
     if (this->_serverName.size() == 0)
         this->_serverName.push_back("");
 }

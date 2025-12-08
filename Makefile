@@ -16,7 +16,7 @@ FILES := parsing_conf/LexerConfig.cpp parsing_conf/PasrerConfig.cpp \
 		\
 		server/Server.cpp \
 		\
-		utils/errorMessageConfig.cpp \
+		utils/getTimeOfDay.cpp utils/errorMessageConfig.cpp \
 		\
 		main.cpp
 
