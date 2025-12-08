@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/04 11:15:17 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/05 11:45:23 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/08 17:34:06 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,7 @@
 
 // FONT TYPE
 #define BOLD "\033[1m"
+#define DARKEN "\033[2m"
 #define ITALIC "\033[3m"
 #define UNDERLINE "\033[4m"
 

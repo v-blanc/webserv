@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/06 12:15:31 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/08 14:24:36 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/08 17:53:23 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -127,7 +127,7 @@ void throwUnknownDirective(std::string directive, std::string fileName, std::str
 
 void handleListenFormatError(std::string listen, std::string fileName, std::string line)
 {
-    std::string errorMessage = RED + getTimeOfDay() + " [emerg] : host not found in \"" + listen;
+    std::string errorMessage = YELLOW + getTimeOfDay() + " [warning] : host not found in \"" + listen;
     errorMessage += +"\" of the \"listen\" directive in " + fileName + ":" + line + DEFAULT;
 
     std::cerr << errorMessage << std::endl;

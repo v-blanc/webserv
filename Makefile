@@ -14,9 +14,9 @@ FILES := parsing_conf/LexerConfig.cpp parsing_conf/PasrerConfig.cpp \
 		\
 		http_request/HTTPRequest.cpp \
 		\
-		server/Server.cpp \
+		server/GlobalServer.cpp server/Server.cpp \
 		\
-		utils/getTimeOfDay.cpp utils/errorMessageConfig.cpp \
+		utils/getTimeOfDay.cpp utils/errorMessageConfig.cpp utils/errorMessageServer.cpp \
 		\
 		main.cpp
 

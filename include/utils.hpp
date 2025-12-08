@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/06 12:10:43 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/08 14:22:14 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/08 17:54:01 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,10 +25,10 @@ std::string to_string(T value)
     return oss.str();
 }
 
-
-// parseConfErrorMessage.cpp
+// getTimeOfDay.cpp
 std::string getTimeOfDay();
 
+// errorMessageConfig.cpp
 void throwSafeOpenFileError(std::ifstream &file, std::string fileName);
 void throwUnexpectedType(Token::Type type, int line, std::string fileName);
 void throwUnexpectedEOF(int line, std::string fileName);
@@ -39,5 +39,9 @@ void throwInvalidClientMaxValue(std::string directive, std::string fileName, std
 void throwDuplicateValues(std::string directive, std::string value, std::string fileName, std::string line);
 void throwUnknownDirective(std::string directive, std::string fileName, std::string line);
 void handleListenFormatError(std::string listen, std::string fileName, std::string line);
+
+// errorMessageServer.cpp
+void handleBindError(std::string listen, std::string fileName);
+void throwMajorIssueCreatingServer(std::string serverName);
 
 #endif

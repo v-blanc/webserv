@@ -1,38 +1,29 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   Server.hpp                                         :+:      :+:    :+:   */
+/*   GlobalServer.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/25 15:08:33 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/08 16:38:49 by vblanc           ###   ########.fr       */
+/*   Created: 2025/12/08 15:12:25 by vblanc            #+#    #+#             */
+/*   Updated: 2025/12/08 15:18:42 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef SERVER_H
-#define SERVER_H
+#ifndef GLOBALSERVER_HPP
+#define GLOBALSERVER_HPP
 
-#include "GlobalConfig.hpp"
+#include "Server.hpp"
 
-class Server
+class GlobalServer
 {
 public:
-    Server(ServerConfig &serverConfig);
-    ~Server();
-
-    void closeListenSockets();
-
-    // Getter
-    std::vector<int> getListenSockets() const { return this->_listenSockets; };
+    GlobalServer(GlobalConfig &globalConfig);
+    ~GlobalServer();
 
 private:
-    ServerConfig &_serverConfig;
-
-    // Server info
-    std::vector<int> _listenSockets;
-
-    void setupServer();
+    GlobalConfig &_globalConfig;
+    std::vector<Server> _servers;
 };
 
 #endif
