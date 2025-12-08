@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/04 12:35:58 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/06 17:48:16 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/08 11:43:57 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 
 // LIBS
 
+#include <cstdlib>
 #include <cstring>
 #include <ctime>
 #include <fstream>

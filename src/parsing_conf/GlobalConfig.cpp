@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 14:31:40 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/07 17:04:11 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/08 11:44:12 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,12 +26,12 @@ GlobalConfig::GlobalConfig(const char *fileName) : _fileName(fileName), _file(fi
     catch (const std::runtime_error &e)
     {
         std::cerr << e.what() << std::endl;
-        return;
+        std::exit(ERROR);
     }
     catch (const std::exception &e)
     {
         std::cerr << "Unexpected Error: " << e.what() << std::endl;
-        return;
+        std::exit(ERROR);
     }
 
     this->safeCloseFile();
