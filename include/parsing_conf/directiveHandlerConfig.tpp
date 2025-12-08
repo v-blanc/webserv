@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/06 14:21:38 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/08 14:29:14 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/08 16:02:22 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -131,19 +131,18 @@ void handleListenDirective(Config &config, Node &node, std::string &directive)
 
         if (getaddrinfo(hostNameStr.c_str(), portStr.c_str(), &hints, &res) != 0)
         {
-            // resolution failed: keep the host string and mark unresolved.
             handleListenFormatError(node.args.at(0), config.getFileName(), node.line);
             return;
         }
 
-        // take the first IPv4 result
+        // Take the first IPv4 result
         struct addrinfo *rp = NULL;
         for (rp = res; rp != NULL; rp = rp->ai_next)
         {
             if (rp->ai_family != AF_INET)
                 continue;
             struct sockaddr_in *sin = (struct sockaddr_in *)rp->ai_addr;
-            hostName = sin->sin_addr.s_addr; // network byte order
+            hostName = sin->sin_addr.s_addr;
             break;
         }
 
