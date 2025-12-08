@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/04 12:35:58 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/08 13:15:25 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/08 18:31:20 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,9 +38,11 @@
 #include <sstream>
 #include <vector>
 
-// RETURN VALUES
+// DEFINE
 #define SUCCESS 0
 #define ERROR 1
+
+#define DEFAULT_CONFIG_PATH "config/good/webserv.conf"
 
 // TYPEDEF
 typedef std::pair<std::string, std::string> stringPair;
