@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/05 19:35:55 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/08 13:16:42 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/08 17:30:06 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,6 +30,7 @@ public:
     std::string getRoot() const { return this->_root; };
     std::vector<std::string> getIndex() const { return this->_index; };
     std::vector<std::string> getErrorPage() const { return this->_errorPage; };
+    std::vector<std::string> getListenStr() const { return this->_listenStr; };
     std::vector<listenPair> getListen() const { return this->_listen; };
     std::vector<std::string> getServerName() const { return this->_serverName; };
     std::vector<stringPair> getCgiHandler() const { return this->_cgiHandler; };
@@ -41,6 +42,7 @@ public:
     void setRoot(const std::string root) { this->_root = root; };
     void pushBackIndex(const std::string index) { this->_index.push_back(index); };
     void pushBackErrorPage(const std::string errorPage) { this->_errorPage.push_back(errorPage); };
+    void pushBackListenStr(const std::string listenStr) { this->_listenStr.push_back(listenStr); };
     void pushBackListen(const listenPair listen) { this->_listen.push_back(listen); };
     void pushBackServerName(const std::string serverName) { this->_serverName.push_back(serverName); };
     void pushBackCgiHandler(const stringPair cgiHandler) { this->_cgiHandler.push_back(cgiHandler); };
@@ -54,6 +56,7 @@ private:
     std::string _root;
     std::vector<std::string> _index;
     std::vector<std::string> _errorPage;
+    std::vector<std::string> _listenStr;
     std::vector<listenPair> _listen;      // No limit (but given 1 by 1)
     std::vector<std::string> _serverName; // No limit
     std::vector<stringPair> _cgiHandler;  // 2 (ext and interpreter)

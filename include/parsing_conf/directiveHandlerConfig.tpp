@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/06 14:21:38 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/08 16:02:22 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/08 17:29:37 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -77,6 +77,8 @@ void handleListenDirective(Config &config, Node &node, std::string &directive)
 {
     if (node.args.size() != 1)
         throwInvalidNumberOfArguments(directive, config.getFileName(), node.line);
+
+    config.pushBackListenStr(node.args.at(0));
 
     std::string hostNameStr, portStr;
     uint32_t hostName = 0;
