@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/06 14:21:38 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/08 17:58:53 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/09 21:23:36 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -118,7 +118,7 @@ void handleListenDirective(Config &config, Node &node, std::string &directive)
     // Handle host name
     if (hostNameStr.empty() || hostNameStr == "*" || hostNameStr == "0.0.0.0")
         hostName = INADDR_ANY;
-    else if (hostNameStr == "localhost")
+    else if (hostNameStr == "localhost" || hostNameStr == "127.0.0.1")
         hostName = 0x7F000001; // 127.0.0.1
     else
     {
