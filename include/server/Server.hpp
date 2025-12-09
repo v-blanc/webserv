@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 15:08:33 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/08 16:38:49 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/09 20:36:47 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,7 @@
 class Server
 {
 public:
-    Server(ServerConfig &serverConfig);
+    Server(ServerConfig &serverConfig, int &epfd);
     ~Server();
 
     void closeListenSockets();
@@ -29,7 +29,7 @@ public:
 private:
     ServerConfig &_serverConfig;
 
-    // Server info
+    int &_epfd;
     std::vector<int> _listenSockets;
 
     void setupServer();

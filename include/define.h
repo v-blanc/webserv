@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/04 12:35:58 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/08 18:31:20 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/09 21:02:44 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,20 +14,20 @@
 #define DEFINE_H
 
 // LIBS
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/epoll.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <signal.h>
 #include <errno.h>
-#include <string.h>
+#include <fcntl.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+#include <sys/epoll.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 #include <time.h>
-#include <netdb.h>
+#include <unistd.h>
 
 #include <cstdlib>
 #include <cstring>
@@ -43,6 +43,7 @@
 #define ERROR 1
 
 #define DEFAULT_CONFIG_PATH "config/good/webserv.conf"
+#define MAX_EPOLL_WAIT_EVENTS 128
 
 // TYPEDEF
 typedef std::pair<std::string, std::string> stringPair;

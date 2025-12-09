@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:25 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/08 15:18:42 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/09 20:59:16 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,6 +24,11 @@ public:
 private:
     GlobalConfig &_globalConfig;
     std::vector<Server> _servers;
+
+    int _epfd;
+
+    void setupGlobalServer();
+    void loopServer();
 };
 
 #endif

@@ -6,13 +6,13 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 15:10:24 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/08 18:04:01 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/09 21:28:28 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Server.hpp"
 
-Server::Server(ServerConfig &serverConfig) : _serverConfig(serverConfig)
+Server::Server(ServerConfig &serverConfig, int &epfd) : _serverConfig(serverConfig), _epfd(epfd)
 {
     try
     {
@@ -43,15 +43,17 @@ void Server::closeListenSockets()
         std::cout << pad << pad << MAGENTA "Closing listen [" << i << "]: " << this->_listenSockets.at(i) << DEFAULT << std::endl;
         close(this->_listenSockets.at(i));
     }
+    std::cout << std::endl;
 }
 
 void Server::setupServer()
 {
     std::vector<listenPair> listenSockets = this->_serverConfig.getListen();
+
     for (std::size_t i = 0; i < listenSockets.size(); i++)
     {
-        // Create a new socket (AF_INET == IPv4, SOCK_STREM == TCP)
-        int fd = socket(AF_INET, SOCK_STREAM, 0);
+        // Create a new socket (AF_INET == IPv4, SOCK_STREM == TCP, SOCK_NONBLOCK == Non Blocking Socket, SOCK_CLOEXEC == Close inside execve() if sucess)
+        int fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
         if (fd < 0)
             throw std::runtime_error(RED "socket() error" DEFAULT);
 
@@ -62,7 +64,7 @@ void Server::setupServer()
         if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) < 0)
             throw std::runtime_error(RED "setsockopt() error" DEFAULT);
 
-        // Bind socket to listen host:port         
+        // Bind socket to listen host:port
         struct sockaddr_in addr;
         memset(&(addr), 0, sizeof(addr));
         addr.sin_family = AF_INET;
@@ -75,9 +77,17 @@ void Server::setupServer()
             continue;
         }
 
-        // Enable the socket to receive connexions (passive mode) 
+        // Enable the socket to receive connexions (passive mode)
         if (listen(fd, SOMAXCONN) < 0)
             throw std::runtime_error(RED "listen() error" DEFAULT);
+
+        // Add the fd to epoll (EPOLL_CTL_ADD) as EPOLLIN (server side socket)
+        struct epoll_event ev;
+        ev.events = EPOLLIN;
+        ev.data.fd = fd;
+
+        if (epoll_ctl(this->_epfd, EPOLL_CTL_ADD, fd, &ev))
+            throw std::runtime_error(RED "epoll_ctl() error" DEFAULT);
 
         std::cout << GREEN + getTimeOfDay() + " [ok] : Opened socket \"" << this->_serverConfig.getListenStr().at(i);
         std::cout << "\" (as fd " << fd << ") sucessfully!" << DEFAULT << std::endl;
