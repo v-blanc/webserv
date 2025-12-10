@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/04 12:35:58 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/09 21:02:44 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/10 14:45:15 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,6 +34,7 @@
 #include <ctime>
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <string>
 #include <sstream>
 #include <vector>

@@ -6,16 +6,16 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:25 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/10 12:05:22 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/10 14:45:06 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef GLOBALSERVER_HPP
 #define GLOBALSERVER_HPP
 
-#include "Server.hpp"
 #include "structsServer.h"
-#include <map>
+#include "HTTPRequest.hpp"
+#include "Server.hpp"
 
 class GlobalServer
 {
@@ -33,7 +33,10 @@ private:
     void setupGlobalServer();
     void loopServer();
 
-    bool handleNewClientConnexion(int serverFd);
+    void handleNewClientConnexion(int serverFd);
+    void handleCloseConnexion(int clientFd); // Client fd ??
+    void handleClientClosedConnexion(int clientFd);
+    void handleReading(int clientFd);
     void closeOldClientConnexions();
 };
 

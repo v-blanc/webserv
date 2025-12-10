@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 15:10:24 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/09 21:28:28 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/10 13:25:24 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,7 +22,7 @@ Server::Server(ServerConfig &serverConfig, int &epfd) : _serverConfig(serverConf
     {
         std::cerr << e.what() << std::endl;
 
-        this->closeListenSockets();
+        this->closeServerSockets();
         throwMajorIssueCreatingServer(this->_serverConfig.getServerName().at(0));
     }
     catch (const std::exception &e)
@@ -35,29 +35,29 @@ Server::~Server()
 {
 }
 
-void Server::closeListenSockets()
+void Server::closeServerSockets()
 {
     std::string pad(" ", 4);
-    for (std::size_t i = 0; i < this->_listenSockets.size(); i++)
+    for (std::size_t i = 0; i < this->_serverSockets.size(); i++)
     {
-        std::cout << pad << pad << MAGENTA "Closing listen [" << i << "]: " << this->_listenSockets.at(i) << DEFAULT << std::endl;
-        close(this->_listenSockets.at(i));
+        std::cout << pad << pad << MAGENTA "Closing server socket [" << i << "]: " << this->_serverSockets.at(i) << DEFAULT << std::endl;
+        close(this->_serverSockets.at(i));
     }
     std::cout << std::endl;
 }
 
 void Server::setupServer()
 {
-    std::vector<listenPair> listenSockets = this->_serverConfig.getListen();
+    std::vector<listenPair> serverSockets = this->_serverConfig.getListen();
 
-    for (std::size_t i = 0; i < listenSockets.size(); i++)
+    for (std::size_t i = 0; i < serverSockets.size(); i++)
     {
         // Create a new socket (AF_INET == IPv4, SOCK_STREM == TCP, SOCK_NONBLOCK == Non Blocking Socket, SOCK_CLOEXEC == Close inside execve() if sucess)
         int fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
         if (fd < 0)
             throw std::runtime_error(RED "socket() error" DEFAULT);
 
-        this->_listenSockets.push_back(fd);
+        this->_serverSockets.push_back(fd);
 
         // Allow socket addr to be reused (if not, have to wait 1-4min before restarting server)
         int on = 1;
@@ -68,8 +68,8 @@ void Server::setupServer()
         struct sockaddr_in addr;
         memset(&(addr), 0, sizeof(addr));
         addr.sin_family = AF_INET;
-        addr.sin_addr.s_addr = htonl(listenSockets.at(i).first);
-        addr.sin_port = htons(listenSockets.at(i).second);
+        addr.sin_addr.s_addr = htonl(serverSockets.at(i).first);
+        addr.sin_port = htons(serverSockets.at(i).second);
 
         if (bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
         {

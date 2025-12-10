@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:14 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/10 12:15:13 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/10 14:50:30 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -54,7 +54,7 @@ GlobalServer::~GlobalServer() // Close every server fd's here
     for (std::size_t i = 0; i < this->_servers.size(); i++)
     {
         std::cout << pad << MAGENTA "For server \'" << this->_globalConfig.getServerConfig().at(i).getServerName().at(0) << "\' [" << i << "]:" DEFAULT << std::endl;
-        this->_servers.at(i).closeListenSockets();
+        this->_servers.at(i).closeServerSockets();
     }
     std::cout << DEFAULT;
 
@@ -75,11 +75,16 @@ void GlobalServer::setupGlobalServer()
     {
         std::cout << BLUE + getTimeOfDay() + " [info] : Trying to create server ‘" ITALIC + serverConfig.at(i).getServerName().at(0) + DEFAULT BLUE "’..." DEFAULT << std::endl;
         _servers.push_back(Server(serverConfig.at(i), this->_epfd));
+        std::cout << GREEN + getTimeOfDay() + " [ok] : Created server ‘" ITALIC + serverConfig.at(i).getServerName().at(0) + DEFAULT GREEN "’ sucessfully!" DEFAULT << std::endl;
     }
+
+    std::cout << GREEN + getTimeOfDay() + " [ok] : Created server(s) sucessfully!" DEFAULT << std::endl;
 }
 
 void GlobalServer::loopServer()
 {
+    std::cout << BLUE + getTimeOfDay() + " [info] : Waiting events..." DEFAULT << std::endl;
+
     while (keepRuningServer)
     {
         struct epoll_event events[MAX_EPOLL_WAIT_EVENTS];
@@ -94,47 +99,30 @@ void GlobalServer::loopServer()
         {
             for (std::size_t j = 0; j < this->_servers.size(); j++) // Loop over servers
             {
-                std::vector<int> listenSockets = this->_servers.at(j).getListenSockets();
+                std::vector<int> serverSockets = this->_servers.at(j).getServerSockets();
 
-                for (std::size_t k = 0; k < listenSockets.size(); k++) // Loop over listen sockets
+                for (std::size_t k = 0; k < serverSockets.size(); k++) // Loop over listen sockets
                 {
-                    // Server fds
-                    if (events[i].data.fd == listenSockets.at(k) && events[i].events & EPOLLIN) // Connection to socket => accept()
+                    if (events[i].data.fd == serverSockets.at(k) && events[i].events & EPOLLIN)
+                        this->handleNewClientConnexion(events[i].data.fd);
+                    else if (events[i].events & (EPOLLERR | EPOLLHUP))
+                        this->handleCloseConnexion(events[i].data.fd);
+                    else if (events[i].events & EPOLLRDHUP)
+                        this->handleClientClosedConnexion(events[i].data.fd);
+                    else // EPOLLIN and/or EPOLLOUT
                     {
-                        if (this->handleNewClientConnexion(events[i].data.fd))
-                            continue;
-                    }
-                    // Client fds
-                    else if (events[i].events & (EPOLLERR | EPOLLHUP)) // Close connexion
-                    {
-                        std::cout << "Closing socket " << events[i].data.fd << std::endl;
-
-                        if (epoll_ctl(this->_epfd, EPOLL_CTL_DEL, listenSockets.at(k), NULL))
-                            throw std::runtime_error(RED "epoll_ctl() error" DEFAULT);
-
-                        close(listenSockets.at(k));
-                    }
-                    else if (events[i].events & EPOLLRDHUP) // Client closed connexion
-                    {
-                        // std::cout << "Client closed socket " << events[i].data.fd << std::endl;
-                    }
-                    else if (events[i].events & EPOLLIN) // Read until EAGAIN
-                    {
-                        // std::cout << "Read socket " << events[i].data.fd << std::endl;
-                    }
-                    else if (events[i].events & EPOLLOUT) // Write
-                    {
-                        // std::cout << "Write socket " << events[i].data.fd << std::endl;
+                        if (events[i].events & EPOLLIN) // Read until EAGAIN
+                            this->handleReading(events[i].data.fd);
+                        if (events[i].events & EPOLLOUT) // Write
+                            std::cout << "Write socket " << events[i].data.fd << std::endl;
                     }
                 }
             }
         }
-
-        // break;
     }
 }
 
-bool GlobalServer::handleNewClientConnexion(int serverFd)
+void GlobalServer::handleNewClientConnexion(int serverFd)
 {
     std::cout << YELLOW DARKEN + getTimeOfDay() + " [debug] : Trying a new connection to server fd " << serverFd << DEFAULT << std::endl;
 
@@ -146,9 +134,8 @@ bool GlobalServer::handleNewClientConnexion(int serverFd)
     {
         if (fcntl(clientSocket, F_SETFL, O_NONBLOCK) == -1)
         {
-            std::cout << ">> HERE\n";
             close(clientSocket);
-            return true;
+            return;
         }
 
         ConnexionState connexionState;
@@ -159,31 +146,72 @@ bool GlobalServer::handleNewClientConnexion(int serverFd)
         this->_clientConnexions[clientSocket] = connexionState;
 
         struct epoll_event ev;
-        ev.events = EPOLLIN | EPOLLRDHUP /* | EPOLLET */;
+        ev.events = EPOLLIN | EPOLLRDHUP | EPOLLET /* | EPOLLET */;
         ev.data.fd = clientSocket;
 
         if (epoll_ctl(this->_epfd, EPOLL_CTL_ADD, clientSocket, &ev))
         {
+            if (errno == EAGAIN || errno == EWOULDBLOCK)
+            {
+                std::cout << "errno == EAGAIN || EWOULDBLOCK" << std::endl;
+                break;
+            }
+
             this->_clientConnexions.erase(clientSocket);
             close(clientSocket);
             std::cerr << RED "epoll_ctl() error" DEFAULT << std::endl;
-            return true;
+            return;
         }
 
         std::cout << GREEN + getTimeOfDay() + " [ok] : Accepted new connexion from port ‘" << ntohs(clientAddr.sin_port) << "’ (as fd " << clientSocket << ")" DEFAULT << std::endl;
     }
+}
 
-    if (errno == (EAGAIN | EWOULDBLOCK))
-        return (true);
+void GlobalServer::handleCloseConnexion(int clientFd)
+{
+    std::cout << MAGENTA + getTimeOfDay() + " [debug] : Close connexion fd " << clientFd << DEFAULT << std::endl;
 
-    return (false);
+    if (epoll_ctl(this->_epfd, EPOLL_CTL_DEL, clientFd, NULL))
+        throw std::runtime_error(RED "epoll_ctl() error" DEFAULT);
+
+    close(clientFd);
+    this->_clientConnexions.erase(clientFd);
+}
+
+void GlobalServer::handleClientClosedConnexion(int clientFd)
+{
+    std::cout << MAGENTA + getTimeOfDay() + " [debug] : Client fd " << clientFd << " closed connexion" << DEFAULT << std::endl;
+
+    if (epoll_ctl(this->_epfd, EPOLL_CTL_DEL, clientFd, NULL))
+        throw std::runtime_error(RED "epoll_ctl() error" DEFAULT);
+
+    close(clientFd);
+    this->_clientConnexions.erase(clientFd);
+}
+
+void GlobalServer::handleReading(int clientFd)
+{
+    std::cout << YELLOW DARKEN + getTimeOfDay() + " [debug] : Trying to read from fd " << clientFd << DEFAULT << std::endl;
+
+    ssize_t r;
+    std::string request;
+    char buf[10];
+
+    while ((r = recv(clientFd, buf, 10, 0)) > 0)
+    {
+        for (int i = 0; i < r; i++)
+            request.push_back(buf[i]);
+    }
+
+    HTTPRequest httpRequest(request);
+    printHTTPRequest(httpRequest);
 }
 
 void GlobalServer::closeOldClientConnexions()
 {
     // Close client fds after 4 seconds
-    std::vector<int> clientConnexionsToClose;
     time_t secondsBeforeClosing = 4;
+    std::vector<int> clientConnexionsToClose;
 
     for (std::map<int, ConnexionState>::iterator it = this->_clientConnexions.begin(); it != this->_clientConnexions.end(); it++)
     {
@@ -193,7 +221,11 @@ void GlobalServer::closeOldClientConnexions()
 
     for (std::size_t i = 0; i < clientConnexionsToClose.size(); i++)
     {
-        std::cout << YELLOW DARKEN + getTimeOfDay() + " [debug] : Closing client fd " << clientConnexionsToClose.at(i) << DEFAULT << std::endl;
+        std::cout << MAGENTA + getTimeOfDay() + " [debug] : Closing old client fd " << clientConnexionsToClose.at(i) << DEFAULT << std::endl;
+
+        if (epoll_ctl(this->_epfd, EPOLL_CTL_DEL, clientConnexionsToClose.at(i), NULL))
+            throw std::runtime_error(RED "epoll_ctl() error" DEFAULT);
+
         close(clientConnexionsToClose.at(i));
         this->_clientConnexions.erase(clientConnexionsToClose.at(i));
     }
