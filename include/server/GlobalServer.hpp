@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:25 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/10 14:45:06 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/10 16:31:02 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,9 +34,10 @@ private:
     void loopServer();
 
     void handleNewClientConnexion(int serverFd);
-    void handleCloseConnexion(int clientFd); // Client fd ??
+    void handleCloseConnexion(int clientFd);
     void handleClientClosedConnexion(int clientFd);
     void handleReading(int clientFd);
+    void handleWriting(int clientFd); // TODO: Client fd ??
     void closeOldClientConnexions();
 };
 

@@ -6,18 +6,18 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:14 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/10 14:50:30 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/10 18:05:24 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "GlobalServer.hpp"
 
-bool keepRuningServer = true;
+bool keepRunningServer = true;
 
 static void sigHandler(int signal)
 {
     if (signal == SIGINT)
-        keepRuningServer = false;
+        keepRunningServer = false;
 }
 
 GlobalServer::GlobalServer(GlobalConfig &globalConfig) : _globalConfig(globalConfig)
@@ -39,7 +39,7 @@ GlobalServer::GlobalServer(GlobalConfig &globalConfig) : _globalConfig(globalCon
     }
 }
 
-GlobalServer::~GlobalServer() // Close every server fd's here
+GlobalServer::~GlobalServer() // Close every fd's here
 {
     std::string pad(" ", 4);
     std::cout << MAGENTA BOLD "~GlobalServer():" DEFAULT << std::endl;
@@ -66,8 +66,8 @@ GlobalServer::~GlobalServer() // Close every server fd's here
 
 void GlobalServer::setupGlobalServer()
 {
-    this->_epfd = epoll_create(1); // TODO: handle the parameter
-    if (this->_epfd == -1)
+    this->_epfd = epoll_create(1);
+    if (this->_epfd < 0)
         throw std::runtime_error(RED "epoll_create() error" DEFAULT);
 
     std::vector<ServerConfig> serverConfig = this->_globalConfig.getServerConfig();
@@ -85,7 +85,7 @@ void GlobalServer::loopServer()
 {
     std::cout << BLUE + getTimeOfDay() + " [info] : Waiting events..." DEFAULT << std::endl;
 
-    while (keepRuningServer)
+    while (keepRunningServer)
     {
         struct epoll_event events[MAX_EPOLL_WAIT_EVENTS];
         int n = epoll_wait(this->_epfd, events, MAX_EPOLL_WAIT_EVENTS, 0);
@@ -102,20 +102,19 @@ void GlobalServer::loopServer()
                 std::vector<int> serverSockets = this->_servers.at(j).getServerSockets();
 
                 for (std::size_t k = 0; k < serverSockets.size(); k++) // Loop over listen sockets
-                {
                     if (events[i].data.fd == serverSockets.at(k) && events[i].events & EPOLLIN)
                         this->handleNewClientConnexion(events[i].data.fd);
-                    else if (events[i].events & (EPOLLERR | EPOLLHUP))
-                        this->handleCloseConnexion(events[i].data.fd);
-                    else if (events[i].events & EPOLLRDHUP)
-                        this->handleClientClosedConnexion(events[i].data.fd);
-                    else // EPOLLIN and/or EPOLLOUT
-                    {
-                        if (events[i].events & EPOLLIN) // Read until EAGAIN
-                            this->handleReading(events[i].data.fd);
-                        if (events[i].events & EPOLLOUT) // Write
-                            std::cout << "Write socket " << events[i].data.fd << std::endl;
-                    }
+
+                if (events[i].events & (EPOLLERR | EPOLLHUP))
+                    this->handleCloseConnexion(events[i].data.fd);
+                else if (events[i].events & EPOLLRDHUP)
+                    this->handleClientClosedConnexion(events[i].data.fd);
+                else // EPOLLIN and/or EPOLLOUT
+                {
+                    if (events[i].events & EPOLLIN) // Read until EAGAIN
+                        this->handleReading(events[i].data.fd);
+                    if (events[i].events & EPOLLOUT) // Write
+                        this->handleWriting(events[i].data.fd);
                 }
             }
         }
@@ -146,7 +145,7 @@ void GlobalServer::handleNewClientConnexion(int serverFd)
         this->_clientConnexions[clientSocket] = connexionState;
 
         struct epoll_event ev;
-        ev.events = EPOLLIN | EPOLLRDHUP | EPOLLET /* | EPOLLET */;
+        ev.events = EPOLLIN | EPOLLRDHUP | EPOLLET;
         ev.data.fd = clientSocket;
 
         if (epoll_ctl(this->_epfd, EPOLL_CTL_ADD, clientSocket, &ev))
@@ -169,10 +168,16 @@ void GlobalServer::handleNewClientConnexion(int serverFd)
 
 void GlobalServer::handleCloseConnexion(int clientFd)
 {
+    if (this->_clientConnexions.count(clientFd) == 0)
+    {
+        std::cout << MAGENTA + getTimeOfDay() + " [debug] : Trying to close client fd " << clientFd << " but is already closed" DEFAULT << std::endl;
+        return;
+    }
+
     std::cout << MAGENTA + getTimeOfDay() + " [debug] : Close connexion fd " << clientFd << DEFAULT << std::endl;
 
     if (epoll_ctl(this->_epfd, EPOLL_CTL_DEL, clientFd, NULL))
-        throw std::runtime_error(RED "epoll_ctl() error" DEFAULT);
+        throw std::runtime_error(RED "epoll_ctl() HERE error" DEFAULT);
 
     close(clientFd);
     this->_clientConnexions.erase(clientFd);
@@ -180,10 +185,16 @@ void GlobalServer::handleCloseConnexion(int clientFd)
 
 void GlobalServer::handleClientClosedConnexion(int clientFd)
 {
+    if (this->_clientConnexions.count(clientFd) == 0)
+    {
+        std::cout << MAGENTA + getTimeOfDay() + " [debug] : Trying to close client fd " << clientFd << " but is already closed" DEFAULT << std::endl;
+        return;
+    }
+
     std::cout << MAGENTA + getTimeOfDay() + " [debug] : Client fd " << clientFd << " closed connexion" << DEFAULT << std::endl;
 
     if (epoll_ctl(this->_epfd, EPOLL_CTL_DEL, clientFd, NULL))
-        throw std::runtime_error(RED "epoll_ctl() error" DEFAULT);
+        throw std::runtime_error(RED "epoll_ctl() TEST error" DEFAULT);
 
     close(clientFd);
     this->_clientConnexions.erase(clientFd);
@@ -203,8 +214,30 @@ void GlobalServer::handleReading(int clientFd)
             request.push_back(buf[i]);
     }
 
-    HTTPRequest httpRequest(request);
-    printHTTPRequest(httpRequest);
+    if (request.empty())
+    {
+        std::cout << YELLOW DARKEN + getTimeOfDay() + " [debug] : Empty request from fd " << clientFd << DEFAULT << std::endl;
+        return;
+    }
+
+    try
+    {
+        HTTPRequest httpRequest(request);
+        printHTTPRequest(httpRequest);
+    }
+    catch (std::exception &e)
+    {
+        std::cerr << e.what() << std::endl;
+    }
+
+    // TODO: send a custom message, for now just debug
+    char sendBuf[115] = "HTTP/1.1 200 OK\r\nLocation: http://localhost:8080/\r\nContent-Length: 42\r\n\r\n<HTML><BODY><H1>TEST</H1></BODY></HTML>\r\n";
+    send(clientFd, sendBuf, 115, MSG_NOSIGNAL);
+}
+
+void GlobalServer::handleWriting(int clientFd) // TODO: Client fd ?
+{
+    std::cout << "Write socket " << clientFd << std::endl;
 }
 
 void GlobalServer::closeOldClientConnexions()

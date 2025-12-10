@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/07 14:57:52 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/07 16:53:46 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/10 15:54:10 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -132,10 +132,10 @@ void HTTPRequest::parseRequest(std::string &request)
     std::vector<std::string> lines = getHTTPLines(request);
 
     // TODO: Debug
-    std::cout << "******** Parse HTTP Request: ********" << std::endl;
-    for (std::size_t j = 0; j < lines.size(); j++)
-        std::cout << "[" + lines[j] << "]" << std::endl;
-    std::cout << std::endl;
+    // std::cout << "******** Parse HTTP Request: ********" << std::endl;
+    // for (std::size_t j = 0; j < lines.size(); j++)
+    //     std::cout << "[" + lines[j] << "]" << std::endl;
+    // std::cout << std::endl;
 
     // First Line
     if (lines.size() > 1)
