@@ -9,7 +9,7 @@ INCDIR := include
 SRCDIR := src
 OBJDIR := build
 
-FILES := parsing_conf/LexerConfig.cpp parsing_conf/PasrerConfig.cpp \
+FILES := parsing_conf/LexerConfig.cpp parsing_conf/ParserConfig.cpp \
 		parsing_conf/GlobalConfig.cpp parsing_conf/ServerConfig.cpp parsing_conf/LocationConfig.cpp \
 		\
 		http_request/HTTPRequest.cpp \
