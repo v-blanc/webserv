@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 14:31:40 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/08 18:30:09 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/11 12:51:20 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -111,6 +111,21 @@ void GlobalConfig::fillGlobalConfig()
 
         if (directive == "server")
             handleServerDirective(currNode, directive);
+    }
+
+    // Check duplicates listen among servers
+    std::set<listenPair> seen;
+
+    for (std::size_t i = 0; i < this->_serverConfig.size(); i++)
+    {
+        std::vector<listenPair> listen = this->_serverConfig.at(i).getListen();
+
+        for (size_t j = 0; j < listen.size(); j++)
+        {
+            if (seen.count(listen.at(j)))
+                throwDuplicateValues("listen", this->_serverConfig.at(i).getListenStr().at(j), this->_fileName, "");
+            seen.insert(listen.at(j));
+        }
     }
 }
 

@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/06 14:21:38 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/09 21:23:36 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/11 12:30:33 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -116,10 +116,8 @@ void handleListenDirective(Config &config, Node &node, std::string &directive)
     }
 
     // Handle host name
-    if (hostNameStr.empty() || hostNameStr == "*" || hostNameStr == "0.0.0.0")
+    if (hostNameStr.empty() || hostNameStr == "*")
         hostName = INADDR_ANY;
-    else if (hostNameStr == "localhost" || hostNameStr == "127.0.0.1")
-        hostName = 0x7F000001; // 127.0.0.1
     else
     {
         struct addrinfo hints;
@@ -132,6 +130,7 @@ void handleListenDirective(Config &config, Node &node, std::string &directive)
         if (getaddrinfo(hostNameStr.c_str(), portStr.c_str(), &hints, &res) != 0)
         {
             handleListenFormatError(node.args.at(0), config.getFileName(), node.line);
+            freeaddrinfo(res);
             return;
         }
 
@@ -150,7 +149,7 @@ void handleListenDirective(Config &config, Node &node, std::string &directive)
     }
 
     config.pushBackListenStr(node.args.at(0));
-    config.pushBackListen(std::make_pair(hostName, port));
+    config.pushBackListen(std::make_pair(hostName, htons(port)));
 
     std::vector<listenPair> listen = config.getListen();
     std::set<listenPair> seen;

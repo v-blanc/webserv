@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 15:10:24 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/10 13:25:24 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/11 12:30:59 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -68,8 +68,8 @@ void Server::setupServer()
         struct sockaddr_in addr;
         memset(&(addr), 0, sizeof(addr));
         addr.sin_family = AF_INET;
-        addr.sin_addr.s_addr = htonl(serverSockets.at(i).first);
-        addr.sin_port = htons(serverSockets.at(i).second);
+        addr.sin_addr.s_addr = serverSockets.at(i).first;
+        addr.sin_port = serverSockets.at(i).second;
 
         if (bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
         {
