@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/07 14:57:52 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/11 16:39:50 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/11 19:03:11 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -157,7 +157,7 @@ void HTTPRequest::parseRequest(std::string &request)
 
 void printHTTPRequest(HTTPRequest &request)
 {
-    std::string pad(" ", 4);
+    std::string pad(4, ' ');
 
     std::cout << "First line:" << std::endl;
     std::cout << pad << "Method: \'" << request.getMethod() << "\'" << std::endl;

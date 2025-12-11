@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 15:10:24 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/11 15:57:44 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/11 19:02:59 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,7 +37,7 @@ Server::~Server()
 
 void Server::closeServerSockets()
 {
-    std::string pad(" ", 4);
+    std::string pad(4, ' ');
     for (std::size_t i = 0; i < this->_serverSockets.size(); i++)
     {
         std::cout << pad << pad << MAGENTA "Closing server socket [" << i << "]: " << this->_serverSockets.at(i) << DEFAULT << std::endl;

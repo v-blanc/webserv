@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/06 12:10:43 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/11 14:37:24 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/11 18:06:25 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,6 +34,9 @@ std::string getLocalFileContent(const std::string &fileName);
 
 // isInvalidPath.cpp
 bool isInvalidPath(const std::string &path);
+
+// generateAutoindexHTML.cpp
+std::string generateAutoindexHTML(const std::string &path);
 
 // errorMessageConfig.cpp
 void throwSafeOpenFileError(std::ifstream &file, std::string fileName);

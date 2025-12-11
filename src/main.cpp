@@ -6,12 +6,10 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 12:57:33 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/08 18:30:57 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/11 18:59:30 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "GlobalConfig.hpp"
-#include "HTTPRequest.hpp"
 #include "GlobalServer.hpp"
 
 int main(int argc, char **argv)
@@ -30,9 +28,6 @@ int main(int argc, char **argv)
     // printGlobalConfig(globalConfig);
 
     GlobalServer gloablServer(globalConfig);
-
-    // HTTPRequest httpRequest(request);
-    // printHTTPRequest(httpRequest);
 
     return (SUCCESS);
 }

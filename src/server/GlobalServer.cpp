@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:14 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/11 16:51:50 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/11 19:02:38 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,7 +41,7 @@ GlobalServer::GlobalServer(GlobalConfig &globalConfig) : _globalConfig(globalCon
 
 GlobalServer::~GlobalServer() // Close every fd's here
 {
-    std::string pad(" ", 4);
+    std::string pad(4, ' ');
     std::cout << MAGENTA BOLD "~GlobalServer():" DEFAULT << std::endl;
 
     for (std::map<int, ConnexionState>::iterator it = this->_clientConnexions.begin(); it != this->_clientConnexions.end(); it++)
@@ -237,7 +237,7 @@ void GlobalServer::handleReading(int &clientFd)
         // TODO: send a custom message, for now just debug
         std::string sendBuf = "HTTP/1.1 200 OK\r\nLocation: http://localhost:8080/\r\nContent-Length: ";
 
-        std::string fileName = "./docs/webserv_page" + httpRequest.getPath();
+        std::string fileName = "www" + httpRequest.getPath();
 
         if (httpRequest.getPath() == "/")
             fileName.append("index.html");
