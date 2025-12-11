@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:14 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/11 16:41:24 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/11 16:51:50 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -215,15 +215,10 @@ void GlobalServer::handleReading(int &clientFd)
             for (int i = 0; i < r; i++)
                 request.push_back(buf[i]);
         }
-        else if (r == 0)
+        else if (r == 0 || errno == EAGAIN)
             break;
         else
-        {
-            if (errno == EAGAIN)
-                break;
-            else
-                return;
-        }
+            return;
     }
 
     if (request.empty())
