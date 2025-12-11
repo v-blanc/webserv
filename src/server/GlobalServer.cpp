@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:14 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/10 18:05:24 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/11 14:37:13 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -121,7 +121,7 @@ void GlobalServer::loopServer()
     }
 }
 
-void GlobalServer::handleNewClientConnexion(int serverFd)
+void GlobalServer::handleNewClientConnexion(int &serverFd)
 {
     std::cout << YELLOW DARKEN + getTimeOfDay() + " [debug] : Trying a new connection to server fd " << serverFd << DEFAULT << std::endl;
 
@@ -166,11 +166,11 @@ void GlobalServer::handleNewClientConnexion(int serverFd)
     }
 }
 
-void GlobalServer::handleCloseConnexion(int clientFd)
+void GlobalServer::handleCloseConnexion(int &clientFd)
 {
     if (this->_clientConnexions.count(clientFd) == 0)
     {
-        std::cout << MAGENTA + getTimeOfDay() + " [debug] : Trying to close client fd " << clientFd << " but is already closed" DEFAULT << std::endl;
+        std::cout << MAGENTA + getTimeOfDay() + " [debug] : handleCloseConnexion(): Trying to close client fd " << clientFd << " but is already closed" DEFAULT << std::endl;
         return;
     }
 
@@ -183,11 +183,11 @@ void GlobalServer::handleCloseConnexion(int clientFd)
     this->_clientConnexions.erase(clientFd);
 }
 
-void GlobalServer::handleClientClosedConnexion(int clientFd)
+void GlobalServer::handleClientClosedConnexion(int &clientFd)
 {
     if (this->_clientConnexions.count(clientFd) == 0)
     {
-        std::cout << MAGENTA + getTimeOfDay() + " [debug] : Trying to close client fd " << clientFd << " but is already closed" DEFAULT << std::endl;
+        std::cout << MAGENTA + getTimeOfDay() + " [debug] : handleClientClosedConnexion(): Trying to close client fd " << clientFd << " but is already closed" DEFAULT << std::endl;
         return;
     }
 
@@ -200,10 +200,8 @@ void GlobalServer::handleClientClosedConnexion(int clientFd)
     this->_clientConnexions.erase(clientFd);
 }
 
-void GlobalServer::handleReading(int clientFd)
+void GlobalServer::handleReading(int &clientFd)
 {
-    std::cout << YELLOW DARKEN + getTimeOfDay() + " [debug] : Trying to read from fd " << clientFd << DEFAULT << std::endl;
-
     ssize_t r;
     std::string request;
     char buf[10];
@@ -215,27 +213,50 @@ void GlobalServer::handleReading(int clientFd)
     }
 
     if (request.empty())
-    {
-        std::cout << YELLOW DARKEN + getTimeOfDay() + " [debug] : Empty request from fd " << clientFd << DEFAULT << std::endl;
         return;
-    }
+
+    std::cout << YELLOW DARKEN + getTimeOfDay() + " [debug] : Read from fd " << clientFd << DEFAULT << std::endl;
 
     try
     {
         HTTPRequest httpRequest(request);
-        printHTTPRequest(httpRequest);
+        // printHTTPRequest(httpRequest);
+
+        // TODO: send a custom message, for now just debug
+        std::string sendBuf = "HTTP/1.1 200 OK\r\nLocation: http://localhost:8080/\r\nContent-Length: ";
+
+        std::string fileName = "./docs/webserv_page" + httpRequest.getPath();
+
+        if (httpRequest.getPath() == "/")
+            fileName.append("index.html");
+
+        // Avoid Chrome duplicates
+        // if (fileName.find("favicon.ico") != std::string::npos)
+        //     return;
+
+        if (isInvalidPath(fileName))
+        {
+            std::cerr << "Invalid path" << std::endl;
+            return;
+        }
+
+        std::string content = getLocalFileContent(fileName);
+
+        sendBuf.append(to_string(content.size()));
+        sendBuf.append("\r\n\r\n");
+        sendBuf.append(content);
+
+        send(clientFd, sendBuf.c_str(), sendBuf.size(), MSG_NOSIGNAL);
+
+        std::cout << YELLOW DARKEN + getTimeOfDay() + " [debug] : Response to request sent to fd " << clientFd << DEFAULT << std::endl;
     }
     catch (std::exception &e)
     {
         std::cerr << e.what() << std::endl;
     }
-
-    // TODO: send a custom message, for now just debug
-    char sendBuf[115] = "HTTP/1.1 200 OK\r\nLocation: http://localhost:8080/\r\nContent-Length: 42\r\n\r\n<HTML><BODY><H1>TEST</H1></BODY></HTML>\r\n";
-    send(clientFd, sendBuf, 115, MSG_NOSIGNAL);
 }
 
-void GlobalServer::handleWriting(int clientFd) // TODO: Client fd ?
+void GlobalServer::handleWriting(int &clientFd) // TODO: Client fd ?
 {
     std::cout << "Write socket " << clientFd << std::endl;
 }
