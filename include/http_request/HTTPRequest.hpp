@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/07 14:57:04 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/07 17:02:40 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/11 15:51:43 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,6 +22,7 @@ public:
     ~HTTPRequest();
 
     // Getter
+    bool getIsValidRequest() const { return this->_isValidRequest; };
     std::string getMethod() const { return this->_method; };
     std::string getPath() const { return this->_path; };
     std::string getHost() const { return this->_host; };
@@ -33,6 +34,7 @@ public:
     // virtual void generateResponse() = 0;
 
 private:
+    bool _isValidRequest;
     // Start Line
     std::string _method;
     std::string _path;

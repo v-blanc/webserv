@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   directiveHandler.tpp                               :+:      :+:    :+:   */
+/*   directiveHandlerConfig.tpp                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/06 14:21:38 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/06 18:45:59 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/11 12:30:33 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,15 +19,13 @@ void handleAutoindex(Config &config, Node &node, std::string &directive)
         throwDirectiveIsDuplicate(directive, config.getFileName(), node.line);
     else if (node.args.size() != 1)
         throwInvalidNumberOfArguments(directive, config.getFileName(), node.line);
+
+    if (node.args.at(0) == "on")
+        config.setAutoindex(true);
+    else if (node.args.at(0) == "off")
+        config.setAutoindex(false);
     else
-    {
-        if (node.args.at(0) == "on")
-            config.setAutoindex(true);
-        else if (node.args.at(0) == "off")
-            config.setAutoindex(false);
-        else
-            throwInvalidAutoindexValue(node.args.at(0), config.getFileName(), node.line);
-    }
+        throwInvalidAutoindexValue(node.args.at(0), config.getFileName(), node.line);
 }
 
 template <typename Config>
@@ -37,15 +35,13 @@ void handleClientMaxBodySize(Config &config, Node &node, std::string &directive)
         throwDirectiveIsDuplicate(directive, config.getFileName(), node.line);
     else if (node.args.size() != 1)
         throwInvalidNumberOfArguments(directive, config.getFileName(), node.line);
-    else
-    {
-        std::stringstream ss(node.args.at(0));
-        long long result;
-        ss >> result;
-        if (ss.fail() || result < 0 || node.args.at(0).size() != to_string(result).size())
-            throwInvalidClientMaxValue(directive, config.getFileName(), node.line);
-        config.setClientMaxBodySize(result);
-    }
+
+    std::stringstream ss(node.args.at(0));
+    long long result;
+    ss >> result;
+    if (ss.fail() || result < 0 || node.args.at(0).size() != to_string(result).size())
+        throwInvalidClientMaxValue(directive, config.getFileName(), node.line);
+    config.setClientMaxBodySize(result);
 }
 
 template <typename Config>
@@ -55,8 +51,8 @@ void handleRootDirective(Config &config, Node &node, std::string &directive)
         throwDirectiveIsDuplicate(directive, config.getFileName(), node.line);
     else if (node.args.size() != 1)
         throwInvalidNumberOfArguments(directive, config.getFileName(), node.line);
-    else
-        config.setRoot(node.args.at(0));
+
+    config.setRoot(node.args.at(0));
 }
 
 template <typename Config>
@@ -71,9 +67,9 @@ void handleErrorPageDirective(Config &config, Node &node, std::string &directive
 {
     if (node.args.size() < 2)
         throwInvalidNumberOfArguments(directive, config.getFileName(), node.line);
-    else
-        for (std::size_t i = 0; i < node.args.size(); i++)
-            config.pushBackErrorPage(node.args.at(i));
+
+    for (std::size_t i = 0; i < node.args.size(); i++)
+        config.pushBackErrorPage(node.args.at(i));
 }
 
 template <typename Config>
@@ -81,19 +77,88 @@ void handleListenDirective(Config &config, Node &node, std::string &directive)
 {
     if (node.args.size() != 1)
         throwInvalidNumberOfArguments(directive, config.getFileName(), node.line);
+
+    std::string hostNameStr, portStr;
+    uint32_t hostName = 0;
+    uint16_t port = 0;
+
+    std::size_t pos = node.args.at(0).find(':');
+
+    if (pos == 0)
+    {
+        handleListenFormatError(node.args.at(0), config.getFileName(), node.line);
+        return;
+    }
+    else if (pos == std::string::npos) // Only port is given
+    {
+        hostNameStr.clear();
+        portStr = node.args.at(0);
+    }
+    else // IPv4:port is given
+    {
+        hostNameStr = node.args.at(0).substr(0, pos);
+        portStr = node.args.at(0).substr(pos + 1);
+    }
+
+    // Handle port
+    if (portStr.empty())
+    {
+        handleListenFormatError(node.args.at(0), config.getFileName(), node.line);
+        return;
+    }
+
+    std::stringstream ss(portStr);
+    ss >> port;
+    if (ss.fail())
+    {
+        handleListenFormatError(node.args.at(0), config.getFileName(), node.line);
+        return;
+    }
+
+    // Handle host name
+    if (hostNameStr.empty() || hostNameStr == "*")
+        hostName = INADDR_ANY;
     else
     {
-        config.pushBackListen(node.args.at(0));
+        struct addrinfo hints;
+        struct addrinfo *res = NULL;
 
-        std::vector<std::string> listen = config.getListen();
-        std::set<std::string> seen;
+        memset(&hints, 0, sizeof(hints));
+        hints.ai_family = AF_INET;
+        hints.ai_socktype = SOCK_STREAM;
 
-        for (size_t i = 0; i < listen.size(); ++i)
+        if (getaddrinfo(hostNameStr.c_str(), portStr.c_str(), &hints, &res) != 0)
         {
-            if (seen.count(listen.at(i)))
-                throwDuplicateValues(directive, node.args.at(0), config.getFileName(), node.line);
-            seen.insert(listen.at(i));
+            handleListenFormatError(node.args.at(0), config.getFileName(), node.line);
+            freeaddrinfo(res);
+            return;
         }
+
+        // Take the first IPv4 result
+        struct addrinfo *rp = NULL;
+        for (rp = res; rp != NULL; rp = rp->ai_next)
+        {
+            if (rp->ai_family != AF_INET)
+                continue;
+            struct sockaddr_in *sin = (struct sockaddr_in *)rp->ai_addr;
+            hostName = sin->sin_addr.s_addr;
+            break;
+        }
+
+        freeaddrinfo(res);
+    }
+
+    config.pushBackListenStr(node.args.at(0));
+    config.pushBackListen(std::make_pair(hostName, htons(port)));
+
+    std::vector<listenPair> listen = config.getListen();
+    std::set<listenPair> seen;
+
+    for (size_t i = 0; i < listen.size(); ++i)
+    {
+        if (seen.count(listen.at(i)))
+            throwDuplicateValues(directive, node.args.at(0), config.getFileName(), node.line);
+        seen.insert(listen.at(i));
     }
 }
 
@@ -119,19 +184,17 @@ void handleCgiHandlerDirective(Config &config, Node &node, std::string &directiv
 {
     if (node.args.size() != 2)
         throwInvalidNumberOfArguments(directive, config.getFileName(), node.line);
-    else
+
+    config.pushBackCgiHandler(std::make_pair(node.args.at(0), node.args.at(1)));
+
+    std::vector<stringPair> cgiHandler = config.getCgiHandler();
+    std::set<stringPair> seen;
+
+    for (size_t i = 0; i < cgiHandler.size(); ++i)
     {
-        config.pushBackCgiHandler(std::make_pair(node.args.at(0), node.args.at(1)));
-
-        std::vector<stringPair> cgiHandler = config.getCgiHandler();
-        std::set<stringPair> seen;
-
-        for (size_t i = 0; i < cgiHandler.size(); ++i)
-        {
-            if (seen.count(cgiHandler.at(i)))
-                throwDuplicateValues(directive, node.args.at(0), config.getFileName(), node.line);
-            seen.insert(cgiHandler.at(i));
-        }
+        if (seen.count(cgiHandler.at(i)))
+            throwDuplicateValues(directive, node.args.at(0), config.getFileName(), node.line);
+        seen.insert(cgiHandler.at(i));
     }
 }
 
@@ -142,8 +205,8 @@ void handleUpdloadStoreDirective(Config &config, Node &node, std::string &direct
         throwDirectiveIsDuplicate(directive, config.getFileName(), node.line);
     else if (node.args.size() != 1)
         throwInvalidNumberOfArguments(directive, config.getFileName(), node.line);
-    else
-        config.setUploadStore(node.args.at(0));
+
+    config.setUploadStore(node.args.at(0));
 }
 
 template <typename Config>
@@ -153,7 +216,8 @@ void handleReturnDirective(Config &config, Node &node, std::string &directive)
         throwDirectiveIsDuplicate(directive, config.getFileName(), node.line);
     else if (node.args.size() != 1 && node.args.size() != 2)
         throwInvalidNumberOfArguments(directive, config.getFileName(), node.line);
-    else if (node.args.size() == 1)
+
+    if (node.args.size() == 1)
         config.setReturn(make_pair(node.args.at(0), ""));
     else
         config.setReturn(make_pair(node.args.at(0), node.args.at(0)));
@@ -164,19 +228,17 @@ void handleLimitExceptDirective(Config &config, Node &node, std::string &directi
 {
     if (!config.getRoot().empty())
         throwDirectiveIsDuplicate(directive, config.getFileName(), node.line);
-    else
+
+    for (std::size_t i = 0; i < node.args.size(); i++)
+        config.pushBackLimitExcept(node.args.at(i));
+
+    std::vector<std::string> limitExcept = config.getLimitExcept();
+    std::set<std::string> seen;
+
+    for (size_t i = 0; i < limitExcept.size(); ++i)
     {
-        for (std::size_t i = 0; i < node.args.size(); i++)
-            config.pushBackLimitExcept(node.args.at(i));
-
-        std::vector<std::string> limitExcept = config.getLimitExcept();
-        std::set<std::string> seen;
-
-        for (size_t i = 0; i < limitExcept.size(); ++i)
-        {
-            if (seen.count(limitExcept.at(i)))
-                throwDuplicateValues(directive, node.args.at(0), config.getFileName(), node.line);
-            seen.insert(limitExcept.at(i));
-        }
+        if (seen.count(limitExcept.at(i)))
+            throwDuplicateValues(directive, node.args.at(0), config.getFileName(), node.line);
+        seen.insert(limitExcept.at(i));
     }
 }

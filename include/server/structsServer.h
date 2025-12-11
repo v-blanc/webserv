@@ -1,38 +1,28 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   Server.hpp                                         :+:      :+:    :+:   */
+/*   structsServer.h                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/25 15:08:33 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/10 13:24:03 by vblanc           ###   ########.fr       */
+/*   Created: 2025/12/10 10:24:29 by vblanc            #+#    #+#             */
+/*   Updated: 2025/12/10 14:50:52 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef SERVER_H
-#define SERVER_H
+#ifndef STRUCTSERVER_H
+#define STRUCTSERVER_H
 
-#include "GlobalConfig.hpp"
+#include "define.h"
 
-class Server
+struct ConnexionState
 {
-public:
-    Server(ServerConfig &serverConfig, int &epfd);
-    ~Server();
-
-    void closeServerSockets();
-
-    // Getter
-    std::vector<int> getServerSockets() const { return this->_serverSockets; };
-
-private:
-    ServerConfig &_serverConfig;
-
-    int &_epfd;
-    std::vector<int> _serverSockets;
-
-    void setupServer();
+    int fd;
+    // receiveBuffer;
+    // sendBuffer;
+    // parseState;
+    time_t lastActive;
+    bool keepAlive;
 };
 
 #endif

@@ -1,38 +1,24 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   Server.hpp                                         :+:      :+:    :+:   */
+/*   getTimeOfDay.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/25 15:08:33 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/10 13:24:03 by vblanc           ###   ########.fr       */
+/*   Created: 2025/12/08 14:24:20 by vblanc            #+#    #+#             */
+/*   Updated: 2025/12/08 14:24:40 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef SERVER_H
-#define SERVER_H
+#include "define.h"
 
-#include "GlobalConfig.hpp"
-
-class Server
+std::string getTimeOfDay()
 {
-public:
-    Server(ServerConfig &serverConfig, int &epfd);
-    ~Server();
+    time_t now = time(NULL);
+    struct tm *t = localtime(&now);
 
-    void closeServerSockets();
+    char buffer[64];
+    strftime(buffer, sizeof(buffer), "%Y/%m/%d %H:%M:%S", t);
 
-    // Getter
-    std::vector<int> getServerSockets() const { return this->_serverSockets; };
-
-private:
-    ServerConfig &_serverConfig;
-
-    int &_epfd;
-    std::vector<int> _serverSockets;
-
-    void setupServer();
-};
-
-#endif
+    return (buffer);
+}

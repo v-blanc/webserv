@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 14:31:40 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/07 17:04:11 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/11 12:51:20 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,12 +26,14 @@ GlobalConfig::GlobalConfig(const char *fileName) : _fileName(fileName), _file(fi
     catch (const std::runtime_error &e)
     {
         std::cerr << e.what() << std::endl;
-        return;
+        this->safeCloseFile();
+        std::exit(ERROR);
     }
     catch (const std::exception &e)
     {
         std::cerr << "Unexpected Error: " << e.what() << std::endl;
-        return;
+        this->safeCloseFile();
+        std::exit(ERROR);
     }
 
     this->safeCloseFile();
@@ -41,7 +43,8 @@ void GlobalConfig::safeOpenFile()
 {
     if (!this->_file.is_open())
         throwSafeOpenFileError(this->_file, this->_fileName);
-    std::cout << GREEN "Configuration file ‘" ITALIC << this->_fileName << DEFAULT GREEN "’ was opened sucessfully!" DEFAULT << std::endl;
+    std::cout << GREEN + getTimeOfDay() + " [ok] : Configuration file ‘" ITALIC << this->_fileName << DEFAULT;
+    std::cout << GREEN "’ was opened sucessfully!" DEFAULT << std::endl;
 }
 
 void GlobalConfig::safeCloseFile()
@@ -51,11 +54,12 @@ void GlobalConfig::safeCloseFile()
     this->_file.close();
     if (this->_file.fail() && !this->_file.eof())
     {
-        std::cerr << RED "Error with ‘" ITALIC << this->_fileName << DEFAULT RED "’ configuration file: \"" ITALIC;
+        std::cerr << RED + getTimeOfDay() + " [warning] : Error with ‘" ITALIC << this->_fileName << DEFAULT RED "’ configuration file: \"" ITALIC;
         std::cerr << "The file couldn't be closed properly\"" DEFAULT << std::endl;
         return;
     }
-    std::cout << GREEN "Configuration file ‘" ITALIC << this->_fileName << DEFAULT GREEN "’ was closed sucessfully!" DEFAULT << std::endl;
+    std::cout << GREEN + getTimeOfDay() + " [ok] : Configuration file ‘" ITALIC << this->_fileName << DEFAULT;
+    std::cout << GREEN "’ was closed sucessfully!" DEFAULT << std::endl;
 }
 
 void GlobalConfig::handleServerDirective(Node &node, std::string &directive)
@@ -108,6 +112,21 @@ void GlobalConfig::fillGlobalConfig()
         if (directive == "server")
             handleServerDirective(currNode, directive);
     }
+
+    // Check duplicates listen among servers
+    std::set<listenPair> seen;
+
+    for (std::size_t i = 0; i < this->_serverConfig.size(); i++)
+    {
+        std::vector<listenPair> listen = this->_serverConfig.at(i).getListen();
+
+        for (size_t j = 0; j < listen.size(); j++)
+        {
+            if (seen.count(listen.at(j)))
+                throwDuplicateValues("listen", this->_serverConfig.at(i).getListenStr().at(j), this->_fileName, "");
+            seen.insert(listen.at(j));
+        }
+    }
 }
 
 void printGlobalConfig(GlobalConfig &globalConfig)
@@ -146,10 +165,12 @@ void printGlobalConfig(GlobalConfig &globalConfig)
         for (std::size_t i = 0; i < serverConfig.at(j).getErrorPage().size(); i++)
             std::cout << serverConfig.at(j).getErrorPage().at(i) << ", ";
         std::cout << std::endl;
-        std::cout << pad << "listen: ";
+        std::cout << pad << "listen: " << std::endl;
         for (std::size_t i = 0; i < serverConfig.at(j).getListen().size(); i++)
-            std::cout << serverConfig.at(j).getListen().at(i) << ", ";
-        std::cout << std::endl;
+        {
+            std::cout << pad << pad << "[" << i << "] host: \'" << serverConfig.at(j).getListen().at(i).first;
+            std::cout << "\' port: \'" << serverConfig.at(j).getListen().at(i).second << "\'" << std::endl;
+        }
         std::cout << pad << "server_name: ";
         for (std::size_t i = 0; i < serverConfig.at(j).getServerName().size(); i++)
             std::cout << serverConfig.at(j).getServerName().at(i) << ", ";
