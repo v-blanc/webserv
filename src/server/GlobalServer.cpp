@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:14 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/11 14:37:13 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/11 16:41:24 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -206,10 +206,24 @@ void GlobalServer::handleReading(int &clientFd)
     std::string request;
     char buf[10];
 
-    while ((r = recv(clientFd, buf, 10, 0)) > 0)
+    while (true)
     {
-        for (int i = 0; i < r; i++)
-            request.push_back(buf[i]);
+        r = recv(clientFd, buf, 10, 0);
+
+        if (r > 0)
+        {
+            for (int i = 0; i < r; i++)
+                request.push_back(buf[i]);
+        }
+        else if (r == 0)
+            break;
+        else
+        {
+            if (errno == EAGAIN)
+                break;
+            else
+                return;
+        }
     }
 
     if (request.empty())
@@ -222,6 +236,9 @@ void GlobalServer::handleReading(int &clientFd)
         HTTPRequest httpRequest(request);
         // printHTTPRequest(httpRequest);
 
+        if (!httpRequest.getIsValidRequest())
+            return;
+
         // TODO: send a custom message, for now just debug
         std::string sendBuf = "HTTP/1.1 200 OK\r\nLocation: http://localhost:8080/\r\nContent-Length: ";
 
@@ -231,12 +248,14 @@ void GlobalServer::handleReading(int &clientFd)
             fileName.append("index.html");
 
         // Avoid Chrome duplicates
-        // if (fileName.find("favicon.ico") != std::string::npos)
-        //     return;
+        if (fileName.find("favicon.ico") != std::string::npos)
+            return;
+
+        std::cout << "request: \n\"" << request << "\"" << std::endl;
 
         if (isInvalidPath(fileName))
         {
-            std::cerr << "Invalid path" << std::endl;
+            std::cerr << "Invalid path: contain invalid " << std::endl;
             return;
         }
 

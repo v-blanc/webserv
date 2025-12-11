@@ -6,17 +6,18 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/07 14:57:52 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/10 15:54:10 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/11 16:39:50 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "HTTPRequest.hpp"
 
-HTTPRequest::HTTPRequest(std::string &request) : _contentLength(0), _connection(true)
+HTTPRequest::HTTPRequest(std::string &request) : _isValidRequest(false), _contentLength(0), _connection(true)
 {
     try
     {
         this->parseRequest(request);
+        this->_isValidRequest = true;
     }
     catch (const std::runtime_error &e)
     {
@@ -65,7 +66,7 @@ void HTTPRequest::parseFirstLine(std::string &firstLine)
 {
     std::size_t prevPos = 0, pos = firstLine.find(' ');
 
-    if (pos != std::string::npos)
+    if (pos == 0 || pos != std::string::npos)
     {
         std::string method = firstLine.substr(prevPos, pos - prevPos);
         if (method == "GET" || method == "POST" || method == "DELETE")

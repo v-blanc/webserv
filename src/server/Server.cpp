@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 15:10:24 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/11 12:30:59 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/11 15:57:44 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -83,7 +83,7 @@ void Server::setupServer()
 
         // Add the fd to epoll (EPOLL_CTL_ADD) as EPOLLIN (server side socket)
         struct epoll_event ev;
-        ev.events = EPOLLIN;
+        ev.events = EPOLLIN | EPOLLRDHUP | EPOLLET;
         ev.data.fd = fd;
 
         if (epoll_ctl(this->_epfd, EPOLL_CTL_ADD, fd, &ev))
