@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 12:57:33 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/11 19:17:14 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/17 15:36:11 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,7 @@ int main(int argc, char **argv)
 {
     if (argc > 2)
     {
-        std::cerr << RED "Usage: ./webser [configuration]" DEFAULT << std::endl;
+        std::cerr << RED "Usage: ./webserv [configuration]" DEFAULT << std::endl;
         return (ERROR);
     }
 
@@ -28,9 +28,9 @@ int main(int argc, char **argv)
     // std::cout << generateAutoindexHTML(path) << std::endl;
 
     GlobalConfig globalConfig(configFile.c_str());
-    // printGlobalConfig(globalConfig);
+    printGlobalConfig(globalConfig);
 
-    GlobalServer gloablServer(globalConfig);
+    GlobalServer globalServer(globalConfig);
 
     return (SUCCESS);
 }
