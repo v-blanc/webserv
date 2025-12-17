@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/06 14:21:38 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/11 12:30:33 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/17 18:56:10 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,7 +39,7 @@ void handleClientMaxBodySize(Config &config, Node &node, std::string &directive)
     std::stringstream ss(node.args.at(0));
     long long result;
     ss >> result;
-    if (ss.fail() || result < 0 || node.args.at(0).size() != to_string(result).size())
+    if (!ss.eof() || ss.fail())
         throwInvalidClientMaxValue(directive, config.getFileName(), node.line);
     config.setClientMaxBodySize(result);
 }
@@ -68,8 +68,18 @@ void handleErrorPageDirective(Config &config, Node &node, std::string &directive
     if (node.args.size() < 2)
         throwInvalidNumberOfArguments(directive, config.getFileName(), node.line);
 
-    for (std::size_t i = 0; i < node.args.size(); i++)
-        config.pushBackErrorPage(node.args.at(i));
+    std::string file = node.args.back();
+
+    for (std::size_t i = 0; i < (node.args.size() - 1); i++)
+    {
+        std::stringstream ss(node.args.at(i));
+        int errorCode;
+        ss >> errorCode;
+
+        if (!ss.eof() || ss.fail())
+            throwErrorPageInvalidValue(node.args.at(i), config.getFileName(), node.line);
+        config.pushBackErrorPage(errorCode, file);
+    }
 }
 
 template <typename Config>
@@ -93,6 +103,15 @@ void handleListenDirective(Config &config, Node &node, std::string &directive)
     {
         hostNameStr.clear();
         portStr = node.args.at(0);
+
+        std::string::const_iterator it = portStr.begin();
+        while (it != portStr.end() && std::isdigit(*it))
+            it++;
+        if (it != portStr.end())
+        {
+            handleListenFormatError(node.args.at(0), config.getFileName(), node.line);
+            return;
+        }
     }
     else // IPv4:port is given
     {

@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/07 14:57:52 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/11 19:03:11 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/17 18:56:33 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -114,7 +114,7 @@ void HTTPRequest::parseHeader(std::string &line)
         std::stringstream ss(line.substr(pos + 1));
         ss >> this->_contentLength;
 
-        if (ss.fail())
+        if (!ss.eof() || ss.fail())
             throw std::runtime_error("HTTP Request error during stringstream");
     }
     else if (headerName == "Connection")

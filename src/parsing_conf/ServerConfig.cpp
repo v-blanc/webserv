@@ -6,14 +6,14 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/05 19:39:00 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/11 11:48:19 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/17 19:16:40 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ServerConfig.hpp"
 
 ServerConfig::ServerConfig(Node &node, std::string &fileName, int autoindex, long long clientMaxBodySize,
-                           std::string root, std::vector<std::string> errorPage)
+                           std::string root, std::map<std::size_t, std::string> errorPage)
     : _node(node), _fileName(fileName), _autoindex(-1), _clientMaxBodySize(-1)
 {
     this->fillServerConfig();

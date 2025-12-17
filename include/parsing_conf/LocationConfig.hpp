@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/05 19:37:24 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/07 14:43:11 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/17 19:17:07 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,7 +20,7 @@ class LocationConfig
 {
 public:
     LocationConfig(Node &node, std::string &path, std::string &fileName, int autoindex, long long clientMaxBodySize,
-                   std::string root, std::vector<std::string> index, std::vector<std::string> errorPage,
+                   std::string root, std::vector<std::string> index, std::map<std::size_t, std::string> errorPage,
                    std::vector<stringPair> cgiHandler);
     ~LocationConfig();
 
@@ -33,7 +33,7 @@ public:
     std::string getUploadStore() const { return this->_uploadStore; };
     stringPair getReturn() const { return this->_return; };
     std::vector<std::string> getIndex() const { return this->_index; };
-    std::vector<std::string> getErrorPage() const { return this->_errorPage; };
+    std::map<std::size_t, std::string> getErrorPage() const { return this->_errorPage; };
     std::vector<std::string> getLimitExcept() const { return this->_limitExcept; };
     std::vector<stringPair> getCgiHandler() const { return this->_cgiHandler; };
 
@@ -44,7 +44,7 @@ public:
     void setUploadStore(const std::string uploadStore) { this->_uploadStore = uploadStore; };
     void setReturn(const stringPair returnPair) { this->_return = returnPair; };
     void pushBackIndex(const std::string index) { this->_index.push_back(index); };
-    void pushBackErrorPage(const std::string errorPage) { this->_errorPage.push_back(errorPage); };
+    void pushBackErrorPage(const std::size_t errorCode, const std::string file) { this->_errorPage[errorCode] = file; };
     void pushBackLimitExcept(const std::string limitExcept) { this->_limitExcept.push_back(limitExcept); };
     void pushBackCgiHandler(const stringPair cgiHandler) { this->_cgiHandler.push_back(cgiHandler); };
 
@@ -57,11 +57,11 @@ private:
     long long _clientMaxBodySize;
     std::string _root;
     std::string _uploadStore;
-    stringPair _return;                    // 1 or 2 (code URL)
-    std::vector<std::string> _index;       // No limit
-    std::vector<std::string> _errorPage;   // No limit (at least 2, last URI)
-    std::vector<std::string> _limitExcept; // No limit
-    std::vector<stringPair> _cgiHandler;   // 2 (ext and interpreter)
+    stringPair _return;                            // 1 or 2 (code URL)
+    std::vector<std::string> _index;               // No limit
+    std::map<std::size_t, std::string> _errorPage; // No limit (at least 2, last URI)
+    std::vector<std::string> _limitExcept;         // No limit
+    std::vector<stringPair> _cgiHandler;           // 2 (ext and interpreter)
 
     void fillLocationConfig();
 };
