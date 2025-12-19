@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/06 12:10:43 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/11 18:06:25 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/19 13:48:15 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,9 +17,9 @@
 #include "colors.h"
 #include "structConfig.h"
 
-// to_string.cpp
+// toString.cpp
 template <typename T>
-std::string to_string(T value)
+std::string toString(T value)
 {
     std::ostringstream oss;
     oss << value;

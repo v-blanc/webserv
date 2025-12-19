@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   structsServer.h                                    :+:      :+:    :+:   */
+/*   structServer.h                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/10 10:24:29 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/10 14:50:52 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/19 13:41:25 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,9 +15,18 @@
 
 #include "define.h"
 
-struct ConnexionState
+struct EpollContext
 {
     int fd;
+    virtual ~EpollContext() {}
+};
+
+struct ServerContext : EpollContext
+{
+};
+
+struct ClientContext : EpollContext
+{
     // receiveBuffer;
     // sendBuffer;
     // parseState;
