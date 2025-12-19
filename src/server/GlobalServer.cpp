@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:14 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/19 15:41:19 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/19 16:49:18 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -89,7 +89,7 @@ void GlobalServer::loopServer()
     while (keepRunningServer)
     {
         struct epoll_event events[MAX_EPOLL_WAIT_EVENTS];
-        int n = epoll_wait(this->_epfd, events, MAX_EPOLL_WAIT_EVENTS, 0);
+        int n = epoll_wait(this->_epfd, events, MAX_EPOLL_WAIT_EVENTS, 100);
 
         this->closeOldClientConnexions();
 
@@ -203,15 +203,17 @@ void GlobalServer::handleCloseConnexion(ClientContext *clientContext)
     delete clientContext;
 }
 
-static std::string readRequest(int &clientFd)
+void GlobalServer::handleReading(ClientContext *clientContext)
 {
+    std::cout << YELLOW DARKEN + getTimeOfDay() + " [debug] : Read from fd " << clientContext->fd << DEFAULT << std::endl;
+
     ssize_t r;
     std::string request;
     char buf[RECV_BUFFER_SIZE];
 
     while (true)
     {
-        r = recv(clientFd, buf, RECV_BUFFER_SIZE, 0);
+        r = recv(clientContext->fd, buf, RECV_BUFFER_SIZE, 0);
 
         if (r > 0)
         {
@@ -232,19 +234,10 @@ static std::string readRequest(int &clientFd)
             else
             {
                 std::cout << "error ? r=" << r << " errno = " << errno << std::endl;
-                return ("");
+                return;
             }
         }
     }
-
-    return (request);
-}
-
-void GlobalServer::handleReading(ClientContext *clientContext)
-{
-    std::cout << YELLOW DARKEN + getTimeOfDay() + " [debug] : Read from fd " << clientContext->fd << DEFAULT << std::endl;
-    
-    std::string request = readRequest(clientContext->fd);
 
     if (request.empty())
     {
@@ -257,38 +250,7 @@ void GlobalServer::handleReading(ClientContext *clientContext)
         HTTPRequest httpRequest(request);
         // printHTTPRequest(httpRequest);
 
-        if (!httpRequest.getIsValidRequest())
-            return;
-
-        // TODO: send a custom message, for now just debug
-        std::string sendBuf = "HTTP/1.1 200 OK\r\nLocation: http://localhost:8080/\r\nContent-Length: ";
-
-        std::string fileName = "www" + httpRequest.getPath();
-
-        if (httpRequest.getPath() == "/")
-            fileName.append("index.html");
-
-        // Avoid Chrome duplicates
-        if (fileName.find("favicon.ico") != std::string::npos)
-            return;
-
-        // std::cout << "request: \n\"" << request << "\"" << std::endl;
-
-        if (isInvalidPath(fileName))
-        {
-            std::cerr << "Invalid path: contain invalid " << std::endl;
-            return;
-        }
-
-        std::string content = getLocalFileContent(fileName);
-
-        sendBuf.append(toString(content.size()));
-        sendBuf.append("\r\n\r\n");
-        sendBuf.append(content);
-
-        send(clientContext->fd, sendBuf.c_str(), sendBuf.size(), MSG_NOSIGNAL);
-
-        std::cout << YELLOW DARKEN + getTimeOfDay() + " [debug] : Response to request sent to fd " << clientContext->fd << DEFAULT << std::endl;
+        httpRequest.debugStandardReponse(clientContext->fd);
     }
     catch (const std::exception &e)
     {
