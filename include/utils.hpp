@@ -35,6 +35,9 @@ std::string getLocalFileContent(const std::string &fileName);
 // isInvalidPath.cpp
 bool isInvalidPath(const std::string &path);
 
+// generateAutoindexHTML.cpp
+std::string generateAutoindexHTML(const std::string &path);
+
 // errorMessageConfig.cpp
 void throwSafeOpenFileError(std::ifstream &file, std::string fileName);
 void throwUnexpectedType(Token::Type type, int line, std::string fileName);

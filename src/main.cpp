@@ -6,19 +6,17 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 12:57:33 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/08 18:30:57 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/17 15:36:11 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "GlobalConfig.hpp"
-#include "HTTPRequest.hpp"
 #include "GlobalServer.hpp"
 
 int main(int argc, char **argv)
 {
     if (argc > 2)
     {
-        std::cerr << RED "Usage: ./webser [configuration]" DEFAULT << std::endl;
+        std::cerr << RED "Usage: ./webserv [configuration]" DEFAULT << std::endl;
         return (ERROR);
     }
 
@@ -26,13 +24,13 @@ int main(int argc, char **argv)
     if (argc == 2)
         configFile = argv[1];
 
+    // std::string path = "www/";
+    // std::cout << generateAutoindexHTML(path) << std::endl;
+
     GlobalConfig globalConfig(configFile.c_str());
-    // printGlobalConfig(globalConfig);
+    printGlobalConfig(globalConfig);
 
-    GlobalServer gloablServer(globalConfig);
-
-    // HTTPRequest httpRequest(request);
-    // printHTTPRequest(httpRequest);
+    GlobalServer globalServer(globalConfig);
 
     return (SUCCESS);
 }

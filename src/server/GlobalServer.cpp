@@ -41,7 +41,7 @@ GlobalServer::GlobalServer(GlobalConfig &globalConfig) : _globalConfig(globalCon
 
 GlobalServer::~GlobalServer() // Close every fd's here
 {
-    std::string pad(" ", 4);
+    std::string pad(4, ' ');
     std::cout << MAGENTA BOLD "~GlobalServer():" DEFAULT << std::endl;
 
     for (std::map<int, ClientContext *>::iterator it = this->_clientContexts.begin(); it != this->_clientContexts.end(); it++)
@@ -263,7 +263,7 @@ void GlobalServer::handleReading(ClientContext *clientContext)
         // TODO: send a custom message, for now just debug
         std::string sendBuf = "HTTP/1.1 200 OK\r\nLocation: http://localhost:8080/\r\nContent-Length: ";
 
-        std::string fileName = "./docs/webserv_page" + httpRequest.getPath();
+        std::string fileName = "www" + httpRequest.getPath();
 
         if (httpRequest.getPath() == "/")
             fileName.append("index.html");
