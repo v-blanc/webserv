@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:14 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/11 16:51:50 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/19 13:49:16 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,10 +44,11 @@ GlobalServer::~GlobalServer() // Close every fd's here
     std::string pad(" ", 4);
     std::cout << MAGENTA BOLD "~GlobalServer():" DEFAULT << std::endl;
 
-    for (std::map<int, ConnexionState>::iterator it = this->_clientConnexions.begin(); it != this->_clientConnexions.end(); it++)
+    for (std::map<int, ClientContext *>::iterator it = this->_clientContexts.begin(); it != this->_clientContexts.end(); it++)
     {
         std::cout << pad << MAGENTA "Closing client fd " << it->first << DEFAULT << std::endl;
         close(it->first);
+        delete it->second;
     }
     std::cout << std::endl;
 
@@ -95,30 +96,55 @@ void GlobalServer::loopServer()
         if (n == -1)
             continue;
 
-        for (int i = 0; i < n; i++) // Loop over events
+        for (int i = 0; i < n; i++)
         {
-            for (std::size_t j = 0; j < this->_servers.size(); j++) // Loop over servers
+            for (std::size_t j = 0; j < this->_servers.size(); j++)
             {
-                std::vector<int> serverSockets = this->_servers.at(j).getServerSockets();
+                EpollContext *context = static_cast<EpollContext *>(events[i].data.ptr);
 
-                for (std::size_t k = 0; k < serverSockets.size(); k++) // Loop over listen sockets
-                    if (events[i].data.fd == serverSockets.at(k) && events[i].events & EPOLLIN)
-                        this->handleNewClientConnexion(events[i].data.fd);
-
-                if (events[i].events & (EPOLLERR | EPOLLHUP))
-                    this->handleCloseConnexion(events[i].data.fd);
-                else if (events[i].events & EPOLLRDHUP)
-                    this->handleClientClosedConnexion(events[i].data.fd);
-                else // EPOLLIN and/or EPOLLOUT
+                if (ServerContext *serverContext = dynamic_cast<ServerContext *>(context))
                 {
+                    if (events[i].events & EPOLLIN)
+                        this->handleNewClientConnexion(serverContext->fd);
+
+                    // TODO: Needed ??
+                    // if (events[i].events & EPOLLOUT) // Write
+                    //     this->handleWriting(serverContext->fd);
+                }
+                if (ClientContext *clientContext = dynamic_cast<ClientContext *>(context))
+                {
+                    if (events[i].events & (EPOLLERR | EPOLLHUP))
+                        this->handleCloseConnexion(clientContext);
+                    if (events[i].events & EPOLLRDHUP)
+                        this->handleClientClosedConnexion(clientContext);
                     if (events[i].events & EPOLLIN) // Read until EAGAIN
-                        this->handleReading(events[i].data.fd);
+                        this->handleReading(clientContext->fd);
                     if (events[i].events & EPOLLOUT) // Write
-                        this->handleWriting(events[i].data.fd);
+                        this->handleWriting(clientContext->fd);
                 }
             }
         }
     }
+}
+
+static ClientContext *newClientContext(int clientSocket)
+{
+    ClientContext *clientContext;
+
+    try
+    {
+        clientContext = new ClientContext;
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << RED + getTimeOfDay() + " [emerg] : Unexpected error during `new`: \"" << e.what() << "\"" << DEFAULT << std::endl;
+        return (NULL);
+    }
+
+    clientContext->fd = clientSocket;
+    clientContext->lastActive = time(NULL);
+    clientContext->keepAlive = false;
+    return (clientContext);
 }
 
 void GlobalServer::handleNewClientConnexion(int &serverFd)
@@ -137,16 +163,19 @@ void GlobalServer::handleNewClientConnexion(int &serverFd)
             return;
         }
 
-        ConnexionState connexionState;
-        connexionState.fd = clientSocket;
-        connexionState.lastActive = time(NULL);
-        connexionState.keepAlive = false;
+        ClientContext *clientContext = newClientContext(clientSocket);
+        if (clientContext == NULL)
+        {
+            close(clientSocket);
+            continue;
+        }
 
-        this->_clientConnexions[clientSocket] = connexionState;
+        this->_clientContexts[clientSocket] = clientContext;
 
         struct epoll_event ev;
         ev.events = EPOLLIN | EPOLLRDHUP | EPOLLET;
         ev.data.fd = clientSocket;
+        ev.data.ptr = clientContext;
 
         if (epoll_ctl(this->_epfd, EPOLL_CTL_ADD, clientSocket, &ev))
         {
@@ -156,7 +185,7 @@ void GlobalServer::handleNewClientConnexion(int &serverFd)
                 break;
             }
 
-            this->_clientConnexions.erase(clientSocket);
+            this->_clientContexts.erase(clientSocket);
             close(clientSocket);
             std::cerr << RED "epoll_ctl() error" DEFAULT << std::endl;
             return;
@@ -166,59 +195,77 @@ void GlobalServer::handleNewClientConnexion(int &serverFd)
     }
 }
 
-void GlobalServer::handleCloseConnexion(int &clientFd)
+void GlobalServer::handleCloseConnexion(ClientContext *clientContext)
 {
-    if (this->_clientConnexions.count(clientFd) == 0)
+    if (this->_clientContexts.count(clientContext->fd) == 0)
     {
-        std::cout << MAGENTA + getTimeOfDay() + " [debug] : handleCloseConnexion(): Trying to close client fd " << clientFd << " but is already closed" DEFAULT << std::endl;
+        std::cout << MAGENTA + getTimeOfDay() + " [debug] : handleCloseConnexion(): Trying to close client fd " << clientContext->fd << " but is already closed" DEFAULT << std::endl;
         return;
     }
 
-    std::cout << MAGENTA + getTimeOfDay() + " [debug] : Close connexion fd " << clientFd << DEFAULT << std::endl;
+    std::cout << MAGENTA + getTimeOfDay() + " [debug] : Close connexion fd " << clientContext->fd << DEFAULT << std::endl;
 
-    if (epoll_ctl(this->_epfd, EPOLL_CTL_DEL, clientFd, NULL))
+    if (epoll_ctl(this->_epfd, EPOLL_CTL_DEL, clientContext->fd, NULL))
         throw std::runtime_error(RED "epoll_ctl() HERE error" DEFAULT);
 
-    close(clientFd);
-    this->_clientConnexions.erase(clientFd);
+    close(clientContext->fd);
+    this->_clientContexts.erase(clientContext->fd);
+    delete clientContext;
 }
 
-void GlobalServer::handleClientClosedConnexion(int &clientFd)
+void GlobalServer::handleClientClosedConnexion(ClientContext *clientContext)
 {
-    if (this->_clientConnexions.count(clientFd) == 0)
+    if (this->_clientContexts.count(clientContext->fd) == 0)
     {
-        std::cout << MAGENTA + getTimeOfDay() + " [debug] : handleClientClosedConnexion(): Trying to close client fd " << clientFd << " but is already closed" DEFAULT << std::endl;
+        std::cout << MAGENTA + getTimeOfDay() + " [debug] : handleClientClosedConnexion(): Trying to close client fd " << clientContext->fd << " but is already closed" DEFAULT << std::endl;
         return;
     }
 
-    std::cout << MAGENTA + getTimeOfDay() + " [debug] : Client fd " << clientFd << " closed connexion" << DEFAULT << std::endl;
+    std::cout << MAGENTA + getTimeOfDay() + " [debug] : Client fd " << clientContext->fd << " closed connexion" << DEFAULT << std::endl;
 
-    if (epoll_ctl(this->_epfd, EPOLL_CTL_DEL, clientFd, NULL))
+    if (epoll_ctl(this->_epfd, EPOLL_CTL_DEL, clientContext->fd, NULL))
         throw std::runtime_error(RED "epoll_ctl() TEST error" DEFAULT);
 
-    close(clientFd);
-    this->_clientConnexions.erase(clientFd);
+    close(clientContext->fd);
+    this->_clientContexts.erase(clientContext->fd);
+    delete clientContext;
 }
 
 void GlobalServer::handleReading(int &clientFd)
 {
     ssize_t r;
     std::string request;
-    char buf[10];
+    char buf[RECV_BUFFER_SIZE];
 
     while (true)
     {
-        r = recv(clientFd, buf, 10, 0);
+        r = recv(clientFd, buf, RECV_BUFFER_SIZE, 0);
 
         if (r > 0)
         {
             for (int i = 0; i < r; i++)
                 request.push_back(buf[i]);
         }
-        else if (r == 0 || errno == EAGAIN)
+        else if (r == 0)
             break;
         else
-            return;
+        {
+            if (errno == EAGAIN)
+            {
+                std::cout << "errno == EAGAIN" << std::endl;
+                break;
+            }
+            if (errno == EINTR)
+            {
+                std::cout << "errno == EINTR" << std::endl;
+                continue;
+            }
+            else
+            {
+                std::cout << "error ? r=" << r << " errno = " << errno << std::endl;
+                return;
+            }
+        }
     }
 
     if (request.empty())
@@ -256,7 +303,7 @@ void GlobalServer::handleReading(int &clientFd)
 
         std::string content = getLocalFileContent(fileName);
 
-        sendBuf.append(to_string(content.size()));
+        sendBuf.append(toString(content.size()));
         sendBuf.append("\r\n\r\n");
         sendBuf.append(content);
 
@@ -264,7 +311,7 @@ void GlobalServer::handleReading(int &clientFd)
 
         std::cout << YELLOW DARKEN + getTimeOfDay() + " [debug] : Response to request sent to fd " << clientFd << DEFAULT << std::endl;
     }
-    catch (std::exception &e)
+    catch (const std::exception &e)
     {
         std::cerr << e.what() << std::endl;
     }
@@ -277,24 +324,23 @@ void GlobalServer::handleWriting(int &clientFd) // TODO: Client fd ?
 
 void GlobalServer::closeOldClientConnexions()
 {
-    // Close client fds after 4 seconds
-    time_t secondsBeforeClosing = 4;
-    std::vector<int> clientConnexionsToClose;
+    std::vector<int> clientContextsToClose;
 
-    for (std::map<int, ConnexionState>::iterator it = this->_clientConnexions.begin(); it != this->_clientConnexions.end(); it++)
+    for (std::map<int, ClientContext *>::iterator it = this->_clientContexts.begin(); it != this->_clientContexts.end(); it++)
     {
-        if ((time(NULL) - it->second.lastActive) > secondsBeforeClosing)
-            clientConnexionsToClose.push_back(it->first);
+        if ((time(NULL) - it->second->lastActive) > TIMEOUT_OLD_CONNEXIONS)
+            clientContextsToClose.push_back(it->first);
     }
 
-    for (std::size_t i = 0; i < clientConnexionsToClose.size(); i++)
+    for (std::size_t i = 0; i < clientContextsToClose.size(); i++)
     {
-        std::cout << MAGENTA + getTimeOfDay() + " [debug] : Closing old client fd " << clientConnexionsToClose.at(i) << DEFAULT << std::endl;
+        std::cout << MAGENTA + getTimeOfDay() + " [debug] : Closing old client fd " << clientContextsToClose.at(i) << DEFAULT << std::endl;
 
-        if (epoll_ctl(this->_epfd, EPOLL_CTL_DEL, clientConnexionsToClose.at(i), NULL))
+        if (epoll_ctl(this->_epfd, EPOLL_CTL_DEL, clientContextsToClose.at(i), NULL))
             throw std::runtime_error(RED "epoll_ctl() error" DEFAULT);
 
-        close(clientConnexionsToClose.at(i));
-        this->_clientConnexions.erase(clientConnexionsToClose.at(i));
+        close(clientContextsToClose.at(i));
+        delete this->_clientContexts.at(clientContextsToClose.at(i));
+        this->_clientContexts.erase(clientContextsToClose.at(i));
     }
 }
