@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:25 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/19 13:40:47 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/19 15:22:43 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,9 +35,8 @@ private:
 
     void handleNewClientConnexion(int &serverFd);
     void handleCloseConnexion(ClientContext *clientContext);
-    void handleClientClosedConnexion(ClientContext *clientContext);
-    void handleReading(int &clientFd);
-    void handleWriting(int &clientFd); // TODO: Client fd ??
+    void handleReading(ClientContext *clientContext);
+    void handleWriting(ClientContext *clientContext); // TODO: Client fd ??
     void closeOldClientConnexions();
 };
 

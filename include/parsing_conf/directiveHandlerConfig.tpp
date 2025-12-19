@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/06 14:21:38 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/11 12:30:33 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/19 14:15:01 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,7 +39,7 @@ void handleClientMaxBodySize(Config &config, Node &node, std::string &directive)
     std::stringstream ss(node.args.at(0));
     long long result;
     ss >> result;
-    if (ss.fail() || result < 0 || node.args.at(0).size() != to_string(result).size())
+    if (ss.fail() || result < 0 || node.args.at(0).size() != toString(result).size())
         throwInvalidClientMaxValue(directive, config.getFileName(), node.line);
     config.setClientMaxBodySize(result);
 }

@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:14 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/19 13:49:16 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/19 15:41:19 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -98,29 +98,26 @@ void GlobalServer::loopServer()
 
         for (int i = 0; i < n; i++)
         {
-            for (std::size_t j = 0; j < this->_servers.size(); j++)
+            EpollContext *context = static_cast<EpollContext *>(events[i].data.ptr);
+
+            if (ServerContext *serverContext = dynamic_cast<ServerContext *>(context))
             {
-                EpollContext *context = static_cast<EpollContext *>(events[i].data.ptr);
-
-                if (ServerContext *serverContext = dynamic_cast<ServerContext *>(context))
+                if (events[i].events & EPOLLIN)
+                    this->handleNewClientConnexion(serverContext->fd);
+                // TODO: Needed ??
+                // if (events[i].events & EPOLLOUT) // Write
+                //     this->handleWriting(serverContext);
+            }
+            else if (ClientContext *clientContext = dynamic_cast<ClientContext *>(context))
+            {
+                if (events[i].events & (EPOLLERR | EPOLLHUP | EPOLLRDHUP))
+                    this->handleCloseConnexion(clientContext);
+                else
                 {
-                    if (events[i].events & EPOLLIN)
-                        this->handleNewClientConnexion(serverContext->fd);
-
-                    // TODO: Needed ??
-                    // if (events[i].events & EPOLLOUT) // Write
-                    //     this->handleWriting(serverContext->fd);
-                }
-                if (ClientContext *clientContext = dynamic_cast<ClientContext *>(context))
-                {
-                    if (events[i].events & (EPOLLERR | EPOLLHUP))
-                        this->handleCloseConnexion(clientContext);
-                    if (events[i].events & EPOLLRDHUP)
-                        this->handleClientClosedConnexion(clientContext);
                     if (events[i].events & EPOLLIN) // Read until EAGAIN
-                        this->handleReading(clientContext->fd);
+                        this->handleReading(clientContext);
                     if (events[i].events & EPOLLOUT) // Write
-                        this->handleWriting(clientContext->fd);
+                        this->handleWriting(clientContext);
                 }
             }
         }
@@ -174,17 +171,10 @@ void GlobalServer::handleNewClientConnexion(int &serverFd)
 
         struct epoll_event ev;
         ev.events = EPOLLIN | EPOLLRDHUP | EPOLLET;
-        ev.data.fd = clientSocket;
         ev.data.ptr = clientContext;
 
         if (epoll_ctl(this->_epfd, EPOLL_CTL_ADD, clientSocket, &ev))
         {
-            if (errno == EAGAIN || errno == EWOULDBLOCK)
-            {
-                std::cout << "errno == EAGAIN || EWOULDBLOCK" << std::endl;
-                break;
-            }
-
             this->_clientContexts.erase(clientSocket);
             close(clientSocket);
             std::cerr << RED "epoll_ctl() error" DEFAULT << std::endl;
@@ -199,7 +189,7 @@ void GlobalServer::handleCloseConnexion(ClientContext *clientContext)
 {
     if (this->_clientContexts.count(clientContext->fd) == 0)
     {
-        std::cout << MAGENTA + getTimeOfDay() + " [debug] : handleCloseConnexion(): Trying to close client fd " << clientContext->fd << " but is already closed" DEFAULT << std::endl;
+        std::cout << MAGENTA + getTimeOfDay() + " [debug] : Trying to close client fd " << clientContext->fd << " but is already closed" DEFAULT << std::endl;
         return;
     }
 
@@ -213,25 +203,7 @@ void GlobalServer::handleCloseConnexion(ClientContext *clientContext)
     delete clientContext;
 }
 
-void GlobalServer::handleClientClosedConnexion(ClientContext *clientContext)
-{
-    if (this->_clientContexts.count(clientContext->fd) == 0)
-    {
-        std::cout << MAGENTA + getTimeOfDay() + " [debug] : handleClientClosedConnexion(): Trying to close client fd " << clientContext->fd << " but is already closed" DEFAULT << std::endl;
-        return;
-    }
-
-    std::cout << MAGENTA + getTimeOfDay() + " [debug] : Client fd " << clientContext->fd << " closed connexion" << DEFAULT << std::endl;
-
-    if (epoll_ctl(this->_epfd, EPOLL_CTL_DEL, clientContext->fd, NULL))
-        throw std::runtime_error(RED "epoll_ctl() TEST error" DEFAULT);
-
-    close(clientContext->fd);
-    this->_clientContexts.erase(clientContext->fd);
-    delete clientContext;
-}
-
-void GlobalServer::handleReading(int &clientFd)
+static std::string readRequest(int &clientFd)
 {
     ssize_t r;
     std::string request;
@@ -251,10 +223,7 @@ void GlobalServer::handleReading(int &clientFd)
         else
         {
             if (errno == EAGAIN)
-            {
-                std::cout << "errno == EAGAIN" << std::endl;
                 break;
-            }
             if (errno == EINTR)
             {
                 std::cout << "errno == EINTR" << std::endl;
@@ -263,15 +232,25 @@ void GlobalServer::handleReading(int &clientFd)
             else
             {
                 std::cout << "error ? r=" << r << " errno = " << errno << std::endl;
-                return;
+                return ("");
             }
         }
     }
 
-    if (request.empty())
-        return;
+    return (request);
+}
 
-    std::cout << YELLOW DARKEN + getTimeOfDay() + " [debug] : Read from fd " << clientFd << DEFAULT << std::endl;
+void GlobalServer::handleReading(ClientContext *clientContext)
+{
+    std::cout << YELLOW DARKEN + getTimeOfDay() + " [debug] : Read from fd " << clientContext->fd << DEFAULT << std::endl;
+    
+    std::string request = readRequest(clientContext->fd);
+
+    if (request.empty())
+    {
+        std::cout << "Empty request" << std::endl;
+        return;
+    }
 
     try
     {
@@ -293,7 +272,7 @@ void GlobalServer::handleReading(int &clientFd)
         if (fileName.find("favicon.ico") != std::string::npos)
             return;
 
-        std::cout << "request: \n\"" << request << "\"" << std::endl;
+        // std::cout << "request: \n\"" << request << "\"" << std::endl;
 
         if (isInvalidPath(fileName))
         {
@@ -307,9 +286,9 @@ void GlobalServer::handleReading(int &clientFd)
         sendBuf.append("\r\n\r\n");
         sendBuf.append(content);
 
-        send(clientFd, sendBuf.c_str(), sendBuf.size(), MSG_NOSIGNAL);
+        send(clientContext->fd, sendBuf.c_str(), sendBuf.size(), MSG_NOSIGNAL);
 
-        std::cout << YELLOW DARKEN + getTimeOfDay() + " [debug] : Response to request sent to fd " << clientFd << DEFAULT << std::endl;
+        std::cout << YELLOW DARKEN + getTimeOfDay() + " [debug] : Response to request sent to fd " << clientContext->fd << DEFAULT << std::endl;
     }
     catch (const std::exception &e)
     {
@@ -317,9 +296,9 @@ void GlobalServer::handleReading(int &clientFd)
     }
 }
 
-void GlobalServer::handleWriting(int &clientFd) // TODO: Client fd ?
+void GlobalServer::handleWriting(ClientContext *clientContext) // TODO: Client fd ?
 {
-    std::cout << "Write socket " << clientFd << std::endl;
+    std::cout << "Write socket " << clientContext->fd << std::endl;
 }
 
 void GlobalServer::closeOldClientConnexions()
