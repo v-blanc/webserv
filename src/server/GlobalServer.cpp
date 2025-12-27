@@ -250,7 +250,11 @@ void GlobalServer::handleReading(ClientContext *clientContext)
         HTTPRequest httpRequest(request);
         // printHTTPRequest(httpRequest);
 
-        httpRequest.debugStandardReponse(clientContext->fd);
+        std::vector<ServerConfig> servers = this->_globalConfig.getServerConfig();
+        if (!servers.empty())
+            httpRequest.debugResponseWithCgiHandlers(clientContext->fd, servers.at(0).getCgiHandler());
+        else
+            httpRequest.debugStandardReponse(clientContext->fd);
     }
     catch (const std::exception &e)
     {
