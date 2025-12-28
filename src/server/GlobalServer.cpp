@@ -12,6 +12,40 @@
 
 #include "GlobalServer.hpp"
 
+static bool pathStartsWithLocation(std::string const &path, std::string const &location)
+{
+    if (location.empty())
+        return (false);
+    if (location == "/")
+        return (true);
+    if (path.size() < location.size())
+        return (false);
+    if (path.compare(0, location.size(), location) != 0)
+        return (false);
+    if (path.size() == location.size())
+        return (true);
+    return (path[location.size()] == '/');
+}
+
+static LocationConfig const *findBestLocation(std::vector<LocationConfig> const &locations, std::string const &path)
+{
+    LocationConfig const    *best;
+    std::size_t             bestLen;
+
+    best = NULL;
+    bestLen = 0;
+    for (std::size_t i = 0; i < locations.size(); ++i)
+    {
+        std::string const &locPath = locations[i].getPath();
+        if (pathStartsWithLocation(path, locPath) && locPath.size() >= bestLen)
+        {
+            best = &locations[i];
+            bestLen = locPath.size();
+        }
+    }
+    return (best);
+}
+
 bool keepRunningServer = true;
 
 static void sigHandler(int signal)
@@ -251,10 +285,20 @@ void GlobalServer::handleReading(ClientContext *clientContext)
         // printHTTPRequest(httpRequest);
 
         std::vector<ServerConfig> servers = this->_globalConfig.getServerConfig();
-        if (!servers.empty())
-            httpRequest.debugResponseWithCgiHandlers(clientContext->fd, servers.at(0).getCgiHandler());
-        else
+        if (servers.empty())
+        {
             httpRequest.debugStandardReponse(clientContext->fd);
+            return ;
+        }
+
+        ServerConfig const &server = servers.at(0);
+        std::vector<LocationConfig> const locations = server.getLocationConfig();
+        LocationConfig const *bestLoc = findBestLocation(locations, httpRequest.getPath());
+
+        if (bestLoc != NULL)
+            httpRequest.debugResponseWithCgiHandlers(clientContext->fd, bestLoc->getCgiHandler());
+        else
+            httpRequest.debugResponseWithCgiHandlers(clientContext->fd, server.getCgiHandler());
     }
     catch (const std::exception &e)
     {
