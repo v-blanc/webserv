@@ -35,10 +35,18 @@ HTTPRequest::~HTTPRequest()
 {
 }
 
+std::string HTTPRequest::getPathWithoutQuery() const
+{
+    std::size_t q = this->_path.find('?');
+    if (q == std::string::npos)
+        return (this->_path);
+    return (this->_path.substr(0, q));
+}
+
 bool HTTPRequest::isCgiExtension() const
 
 {
-    std::string lowerPath(this->_path);
+	std::string lowerPath(this->getPathWithoutQuery());
 
     for (size_t i = 0; i < lowerPath.size(); ++i)
         lowerPath[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(lowerPath[i])));
@@ -69,7 +77,7 @@ void HTTPRequest::sendCgiStubResponse(int &clientFd) const
 std::string HTTPRequest::getNormalizedExtensionFromPath() const
 
 {
-    std::string lowerPath(this->_path);
+	std::string lowerPath(this->getPathWithoutQuery());
 
     for (size_t i = 0; i < lowerPath.size(); ++i)
         lowerPath[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(lowerPath[i])));

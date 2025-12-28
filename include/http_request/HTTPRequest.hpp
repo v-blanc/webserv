@@ -25,6 +25,8 @@ public:
     bool getIsValidRequest() const { return this->_isValidRequest; };
     std::string getMethod() const { return this->_method; };
     const std::string& getPath() const { return this->_path; };
+    const std::string& getQueryString() const { return this->_queryString; };
+    std::string getPathWithoutQuery() const;
     std::string getHost() const { return this->_host; };
     long long getContentLength() const { return this->_contentLength; };
     bool getConnection() const { return this->_connection; }; // ?
@@ -43,6 +45,7 @@ private:
     // Start Line
     std::string _method;
     std::string _path;
+    std::string _queryString;
 
     // Header
     std::string _host;

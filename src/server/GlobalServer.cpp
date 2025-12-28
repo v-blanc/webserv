@@ -316,7 +316,7 @@ void GlobalServer::handleReading(ClientContext *clientContext)
 
         ServerConfig const &server = pickServerConfig(servers, this->_servers, clientContext->serverFd);
         std::vector<LocationConfig> const locations = server.getLocationConfig();
-        LocationConfig const *bestLoc = findBestLocation(locations, httpRequest.getPath());
+        LocationConfig const *bestLoc = findBestLocation(locations, httpRequest.getPathWithoutQuery());
 
         if (bestLoc != NULL)
             httpRequest.debugResponseWithCgiHandlers(clientContext->fd, bestLoc->getCgiHandler());

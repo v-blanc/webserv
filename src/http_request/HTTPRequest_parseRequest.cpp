@@ -59,9 +59,16 @@ void HTTPRequest::parseFirstLine(std::string &firstLine)
 
     if (pos != std::string::npos)
     {
-        std::string path = firstLine.substr(prevPos, pos - prevPos);
+        std::string const path = firstLine.substr(prevPos, pos - prevPos);
         if (pos != prevPos)
+        {
             this->_path = path;
+            std::size_t const q = path.find('?');
+            if (q != std::string::npos)
+                this->_queryString = path.substr(q + 1);
+            else
+                this->_queryString.clear();
+        }
         else
             throw std::runtime_error("HTTP Request path wrong format");
     }
