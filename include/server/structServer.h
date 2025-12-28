@@ -30,8 +30,9 @@ struct ClientContext : EpollContext
     // receiveBuffer;
     // sendBuffer;
     // parseState;
-    time_t lastActive;
-    bool keepAlive;
+    time_t  lastActive;
+    bool    keepAlive;
+    int     serverFd;
 };
 
 #endif

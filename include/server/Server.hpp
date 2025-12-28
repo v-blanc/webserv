@@ -23,6 +23,7 @@ public:
     ~Server();
 
     void closeServerSockets();
+    bool hasListenFd(int fd) const { return (this->_serverContexts.count(fd) ^ 0); };
 
     // Getter
     std::map<int, ServerContext *> getServerSockets() const { return this->_serverContexts; };

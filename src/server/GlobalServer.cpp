@@ -46,6 +46,16 @@ static LocationConfig const *findBestLocation(std::vector<LocationConfig> const 
     return (best);
 }
 
+static ServerConfig const &pickServerConfig(std::vector<ServerConfig> const &servers, std::vector<Server> const &runtimeServers, int serverFd)
+{
+    for (std::size_t i = 0; i < runtimeServers.size() && i < servers.size(); ++i)
+    {
+        if (runtimeServers[i].hasListenFd(serverFd))
+            return (servers[i]);
+    }
+    return (servers.at(0));
+}
+
 bool keepRunningServer = true;
 
 static void sigHandler(int signal)
@@ -158,7 +168,7 @@ void GlobalServer::loopServer()
     }
 }
 
-static ClientContext *newClientContext(int clientSocket)
+static ClientContext *newClientContext(int clientSocket, int serverFd)
 {
     ClientContext *clientContext;
 
@@ -175,6 +185,7 @@ static ClientContext *newClientContext(int clientSocket)
     clientContext->fd = clientSocket;
     clientContext->lastActive = time(NULL);
     clientContext->keepAlive = false;
+    clientContext->serverFd = serverFd;
     return (clientContext);
 }
 
@@ -194,7 +205,7 @@ void GlobalServer::handleNewClientConnexion(int &serverFd)
             return;
         }
 
-        ClientContext *clientContext = newClientContext(clientSocket);
+        ClientContext *clientContext = newClientContext(clientSocket, serverFd);
         if (clientContext == NULL)
         {
             close(clientSocket);
@@ -239,8 +250,6 @@ void GlobalServer::handleCloseConnexion(ClientContext *clientContext)
 
 void GlobalServer::handleReading(ClientContext *clientContext)
 {
-    std::cout << YELLOW DARKEN + getTimeOfDay() + " [debug] : Read from fd " << clientContext->fd << DEFAULT << std::endl;
-
     ssize_t r;
     std::string request;
     char buf[RECV_BUFFER_SIZE];
@@ -285,13 +294,27 @@ void GlobalServer::handleReading(ClientContext *clientContext)
         // printHTTPRequest(httpRequest);
 
         std::vector<ServerConfig> servers = this->_globalConfig.getServerConfig();
+        if (!servers.empty())
+        {
+            ServerConfig const &server = pickServerConfig(servers, this->_servers, clientContext->serverFd);
+            std::string serverName = "<unknown>";
+            if (!server.getServerName().empty())
+                serverName = server.getServerName().at(0);
+            std::string listenStr = "<unknown>";
+            if (!server.getListenStr().empty())
+                listenStr = server.getListenStr().at(0);
+            std::cout << YELLOW DARKEN + getTimeOfDay() + " [debug] : Read from fd " << clientContext->fd
+                    << " (server='" << serverName << "' listen='" << listenStr << "')" << DEFAULT << std::endl;
+        }
+        else
+            std::cout << YELLOW DARKEN + getTimeOfDay() + " [debug] : Read from fd " << clientContext->fd << DEFAULT << std::endl;
         if (servers.empty())
         {
             httpRequest.debugStandardReponse(clientContext->fd);
             return ;
         }
 
-        ServerConfig const &server = servers.at(0);
+        ServerConfig const &server = pickServerConfig(servers, this->_servers, clientContext->serverFd);
         std::vector<LocationConfig> const locations = server.getLocationConfig();
         LocationConfig const *bestLoc = findBestLocation(locations, httpRequest.getPath());
 
