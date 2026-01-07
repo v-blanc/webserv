@@ -38,6 +38,7 @@ public:
     // TODO: Debug
     void debugStandardReponse(int &clientFd);
     void debugResponseWithCgiHandlers(int &clientFd, const std::vector<stringPair>& cgiHandlers);
+    bool resolveCgiInterpreter(const std::vector<stringPair>& cgiHandlers, std::string& interpreter) const;
 
 private:
     bool _isValidRequest;
@@ -63,7 +64,7 @@ private:
     bool        isCgiExtension(void) const;
     void        sendCgiStubResponse(int &clientFd) const;
     std::string getNormalizedExtensionFromPath(void) const;
-    bool        resolveCgiInterpreter(const std::vector<stringPair>& cgiHandlers, std::string& interpreter) const;
+    // (moved to public)
 };
 
 // TODO: Debug

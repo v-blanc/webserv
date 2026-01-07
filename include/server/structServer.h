@@ -14,6 +14,7 @@
 #define STRUCTSERVER_H
 
 #include "define.h"
+#include <string>
 
 struct EpollContext
 {
@@ -33,6 +34,15 @@ struct ClientContext : EpollContext
     time_t  lastActive;
     bool    keepAlive;
     int     serverFd;
+    std::string cgiOut;
+};
+
+struct CgiContext : EpollContext
+{
+    ClientContext	*client;
+    int			    pid;
+    time_t			startTime;
+    std::string		script;
 };
 
 #endif

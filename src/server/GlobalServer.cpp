@@ -11,6 +11,60 @@
 /* ************************************************************************** */
 
 #include "GlobalServer.hpp"
+#include <fcntl.h>
+#include <sys/wait.h>
+
+#define CGI_TIMEOUT_SECONDS 5
+
+static bool setNonBlocking(int fd)
+
+{
+	int const flags = fcntl(fd, F_GETFL, 0);
+
+	if (flags < 0)
+		return (false);
+	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
+		return (false);
+	return (true);
+}
+
+static std::vector<std::string> buildCgiEnv(HTTPRequest const& req, std::string const& scriptFilename)
+
+{
+    std::vector<std::string> env;
+
+    env.push_back("GATEWAY_INTERFACE=CGI/1.1");
+    env.push_back("SERVER_PROTOCOL=HTTP/1.1");
+    env.push_back("REQUEST_METHOD=" + req.getMethod());
+    env.push_back("QUERY_STRING=" + req.getQueryString());
+    env.push_back("SCRIPT_FILENAME=" + scriptFilename);
+    env.push_back("SCRIPT_NAME=" + req.getPathWithoutQuery());
+    env.push_back("CONTENT_LENGTH=" + toString(req.getContentLength()));
+    return (env);
+}
+
+static char** vectorToEnvp(std::vector<std::string> const& env)
+
+{
+    char** envp = new char *[env.size() + 1];
+
+    for (std::size_t i = 0; i < env.size(); ++i)
+    {
+        envp[i] = new char[env[i].size() + 1];
+        std::strcpy(envp[i], env[i].c_str());
+    }
+    envp[env.size()] = NULL;
+    return (envp);
+}
+
+static void freeEnvp(char** envp)
+{
+    if (!envp)
+        return ;
+    for (std::size_t i = 0; envp[i] != NULL; ++i)
+        delete[] envp[i];
+    delete[] envp;
+}
 
 static bool pathStartsWithLocation(std::string const &path, std::string const &location)
 {
@@ -152,6 +206,66 @@ void GlobalServer::loopServer()
                 // if (events[i].events & EPOLLOUT) // Write
                 //     this->handleWriting(serverContext);
             }
+            else if (CgiContext *cgiContext = dynamic_cast<CgiContext *>(context))
+            {
+            if ((time(NULL) - cgiContext->startTime) > CGI_TIMEOUT_SECONDS)
+            {
+                kill(cgiContext->pid, SIGKILL);
+                waitpid(cgiContext->pid, NULL, WNOHANG);
+
+                std::string resp = "HTTP/1.1 504 Gateway Timeout\r\n";
+                resp += "Content-Type: text/plain\r\n";
+                resp += "Connection: close\r\n\r\n";
+                resp += "CGI timeout\n";
+                send(cgiContext->client->fd, resp.c_str(), resp.size(), MSG_NOSIGNAL);
+
+                epoll_ctl(this->_epfd, EPOLL_CTL_DEL, cgiContext->fd, NULL);
+                close(cgiContext->fd);
+                ClientContext *client = cgiContext->client;
+                delete cgiContext;
+                this->handleCloseConnexion(client);
+                continue;
+            }
+                if (events[i].events & EPOLLIN)
+                {
+                    char buf[4096];
+                    ssize_t r;
+
+
+                    while ((r = read(cgiContext->fd, buf, sizeof(buf))) > 0)
+                        cgiContext->client->cgiOut.append(buf, r);
+                    if (r == 0)
+                    {
+                        int status;
+                        waitpid(cgiContext->pid, &status, WNOHANG);
+
+                        std::string body = cgiContext->client->cgiOut;
+                        std::string resp = "HTTP/1.1 200 OK\r\n";
+                        resp += "Content-Type: text/plain\r\n";
+                        resp += "Content-Length: " + toString(body.size()) + "\r\n";
+                        resp += "Connection: close\r\n\r\n";
+                        resp += body;
+                        send(cgiContext->client->fd, resp.c_str(), resp.size(), MSG_NOSIGNAL);
+
+                        epoll_ctl(this->_epfd, EPOLL_CTL_DEL, cgiContext->fd, NULL);
+                        close(cgiContext->fd);
+                        ClientContext *client = cgiContext->client;
+                        delete cgiContext;
+                        this->handleCloseConnexion(client);
+                    }
+                else if (r < 0)
+                {
+                    if (errno != EAGAIN && errno != EWOULDBLOCK)
+                    {
+                        epoll_ctl(this->_epfd, EPOLL_CTL_DEL, cgiContext->fd, NULL);
+                        close(cgiContext->fd);
+                        ClientContext *client = cgiContext->client;
+                        delete cgiContext;
+                        this->handleCloseConnexion(client);
+                    }
+                }
+                }
+            }
             else if (ClientContext *clientContext = dynamic_cast<ClientContext *>(context))
             {
                 if (events[i].events & (EPOLLERR | EPOLLHUP | EPOLLRDHUP))
@@ -186,6 +300,7 @@ static ClientContext *newClientContext(int clientSocket, int serverFd)
     clientContext->lastActive = time(NULL);
     clientContext->keepAlive = false;
     clientContext->serverFd = serverFd;
+    clientContext->cgiOut.clear();
     return (clientContext);
 }
 
@@ -235,13 +350,13 @@ void GlobalServer::handleCloseConnexion(ClientContext *clientContext)
     if (this->_clientContexts.count(clientContext->fd) == 0)
     {
         std::cout << MAGENTA + getTimeOfDay() + " [debug] : Trying to close client fd " << clientContext->fd << " but is already closed" DEFAULT << std::endl;
-        return;
+        return ;
     }
 
     std::cout << MAGENTA + getTimeOfDay() + " [debug] : Close connexion fd " << clientContext->fd << DEFAULT << std::endl;
 
     if (epoll_ctl(this->_epfd, EPOLL_CTL_DEL, clientContext->fd, NULL))
-        throw std::runtime_error(RED "epoll_ctl() HERE error" DEFAULT);
+        throw (std::runtime_error(RED "epoll_ctl() HERE error" DEFAULT));
 
     close(clientContext->fd);
     this->_clientContexts.erase(clientContext->fd);
@@ -250,20 +365,19 @@ void GlobalServer::handleCloseConnexion(ClientContext *clientContext)
 
 void GlobalServer::handleReading(ClientContext *clientContext)
 {
-    ssize_t r;
+    ssize_t     r;
     std::string request;
-    char buf[RECV_BUFFER_SIZE];
+    char        buf[RECV_BUFFER_SIZE];
 
     while (true)
     {
         r = recv(clientContext->fd, buf, RECV_BUFFER_SIZE, 0);
-
         if (r > 0)
         {
             for (int i = 0; i < r; i++)
                 request.push_back(buf[i]);
         }
-        else if (r == 0)
+        else if (!r)
             break;
         else
         {
@@ -318,10 +432,75 @@ void GlobalServer::handleReading(ClientContext *clientContext)
         std::vector<LocationConfig> const locations = server.getLocationConfig();
         LocationConfig const *bestLoc = findBestLocation(locations, httpRequest.getPathWithoutQuery());
 
+        std::vector<stringPair> cgiHandlers;
         if (bestLoc != NULL)
-            httpRequest.debugResponseWithCgiHandlers(clientContext->fd, bestLoc->getCgiHandler());
+            cgiHandlers = bestLoc->getCgiHandler();
         else
-            httpRequest.debugResponseWithCgiHandlers(clientContext->fd, server.getCgiHandler());
+            cgiHandlers = server.getCgiHandler();
+
+        std::string interpreter;
+        if (httpRequest.resolveCgiInterpreter(cgiHandlers, interpreter))
+        {
+            int inPipe[2];
+            int outPipe[2];
+
+            if (pipe(inPipe) < 0 || pipe(outPipe) < 0)
+            {
+                httpRequest.debugStandardReponse(clientContext->fd);
+                return ;
+            }
+
+            setNonBlocking(outPipe[0]);
+            std::string                 scriptFilename = httpRequest.getPathWithoutQuery();
+            if (!scriptFilename.empty() && scriptFilename[0] == '/')
+                scriptFilename.erase(0, 1);
+            std::string                 scriptDir = "www";
+            std::string                 scriptBase = scriptFilename;
+            std::size_t                 slashPos = scriptFilename.rfind('/');
+            if (slashPos != std::string::npos)
+            {
+                scriptDir += "/" + scriptFilename.substr(0, slashPos);
+                scriptBase = scriptFilename.substr(slashPos + 1);
+            }
+            std::vector<std::string>    envVec = buildCgiEnv(httpRequest, scriptFilename);
+            char                        **envp = vectorToEnvp(envVec);
+
+            pid_t pid = fork();
+            if (!pid)
+            {
+                dup2(inPipe[0], STDIN_FILENO);
+                dup2(outPipe[1], STDOUT_FILENO);
+                dup2(outPipe[1], STDERR_FILENO);
+                close(inPipe[1]);
+                close(outPipe[0]);
+                chdir(scriptDir.c_str());
+
+                char *argv[3];
+                argv[0] = const_cast<char *>(interpreter.c_str());
+                argv[1] = const_cast<char *>(scriptBase.c_str());
+                argv[2] = NULL;
+                execve(argv[0], argv, envp);
+                _exit(1);
+            }
+            freeEnvp(envp);
+            close(inPipe[0]);
+            close(inPipe[1]);
+            close(outPipe[1]);
+
+            CgiContext *cgiCtx = new CgiContext;
+            cgiCtx->fd = outPipe[0];
+            cgiCtx->client = clientContext;
+            cgiCtx->pid = pid;
+            cgiCtx->startTime = time(NULL);
+            cgiCtx->script = scriptFilename;
+
+            struct epoll_event ev;
+            ev.events = EPOLLIN | EPOLLRDHUP | EPOLLET;
+            ev.data.ptr = cgiCtx;
+            epoll_ctl(this->_epfd, EPOLL_CTL_ADD, cgiCtx->fd, &ev);
+            return ;
+        }
+        httpRequest.debugResponseWithCgiHandlers(clientContext->fd, cgiHandlers);
     }
     catch (const std::exception &e)
     {
@@ -352,7 +531,7 @@ void GlobalServer::closeOldClientConnexions()
             throw std::runtime_error(RED "epoll_ctl() error" DEFAULT);
 
         close(clientContextsToClose.at(i));
-        delete this->_clientContexts.at(clientContextsToClose.at(i));
+        delete (this->_clientContexts.at(clientContextsToClose.at(i)));
         this->_clientContexts.erase(clientContextsToClose.at(i));
     }
 }
