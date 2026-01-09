@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/07 14:57:04 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/11 15:51:43 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/19 16:28:17 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,15 +33,21 @@ public:
     // Execute
     // virtual void generateResponse() = 0;
 
+    // TODO: Debug
+    void debugStandardReponse(int &clientFd);
+
 private:
     bool _isValidRequest;
+
     // Start Line
     std::string _method;
     std::string _path;
+
     // Header
     std::string _host;
     long long _contentLength;
     bool _connection; // ? (keep-alive or close)
+
     // Body
     std::string _body;
 

@@ -17,9 +17,9 @@
 #include "colors.h"
 #include "structConfig.h"
 
-// to_string.cpp
+// toString.cpp
 template <typename T>
-std::string to_string(T value)
+std::string toString(T value)
 {
     std::ostringstream oss;
     oss << value;

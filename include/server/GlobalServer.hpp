@@ -6,14 +6,14 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:25 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/11 13:05:43 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/19 15:22:43 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef GLOBALSERVER_HPP
 #define GLOBALSERVER_HPP
 
-#include "structsServer.h"
+#include "structServer.h"
 #include "HTTPRequest.hpp"
 #include "Server.hpp"
 
@@ -28,16 +28,15 @@ private:
     std::vector<Server> _servers;
 
     int _epfd;
-    std::map<int, ConnexionState> _clientConnexions;
+    std::map<int, ClientContext *> _clientContexts;
 
     void setupGlobalServer();
     void loopServer();
 
     void handleNewClientConnexion(int &serverFd);
-    void handleCloseConnexion(int &clientFd);
-    void handleClientClosedConnexion(int &clientFd);
-    void handleReading(int &clientFd);
-    void handleWriting(int &clientFd); // TODO: Client fd ??
+    void handleCloseConnexion(ClientContext *clientContext);
+    void handleReading(ClientContext *clientContext);
+    void handleWriting(ClientContext *clientContext); // TODO: Client fd ??
     void closeOldClientConnexions();
 };
 

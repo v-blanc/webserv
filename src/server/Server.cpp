@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 15:10:24 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/11 19:02:59 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/19 15:19:53 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,6 +28,8 @@ Server::Server(ServerConfig &serverConfig, int &epfd) : _serverConfig(serverConf
     catch (const std::exception &e)
     {
         std::cerr << e.what() << '\n';
+        this->closeServerSockets();
+        throwMajorIssueCreatingServer(this->_serverConfig.getServerName().at(0));
     }
 }
 
@@ -38,12 +40,33 @@ Server::~Server()
 void Server::closeServerSockets()
 {
     std::string pad(4, ' ');
-    for (std::size_t i = 0; i < this->_serverSockets.size(); i++)
+    for (std::map<int, ServerContext *>::iterator it = this->_serverContexts.begin(); it != this->_serverContexts.end(); it++)
     {
-        std::cout << pad << pad << MAGENTA "Closing server socket [" << i << "]: " << this->_serverSockets.at(i) << DEFAULT << std::endl;
-        close(this->_serverSockets.at(i));
+        std::cout << pad << pad << MAGENTA "Closing server socket: " << it->first << DEFAULT << std::endl;
+        close(it->first);
+        if (it->second != NULL)
+            delete it->second;
     }
     std::cout << std::endl;
+}
+
+static ServerContext *newServerContext(int &fd)
+{
+    ServerContext *serverContext;
+
+    try
+    {
+        serverContext = new ServerContext;
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << RED + getTimeOfDay() + " [emerg] : Unexpected error during `new`: \"" << e.what() << "\"" << DEFAULT << std::endl;
+        return (NULL);
+    }
+
+    serverContext->fd = fd;
+
+    return (serverContext);
 }
 
 void Server::setupServer()
@@ -57,7 +80,7 @@ void Server::setupServer()
         if (fd < 0)
             throw std::runtime_error(RED "socket() error" DEFAULT);
 
-        this->_serverSockets.push_back(fd);
+        this->_serverContexts[fd] = NULL;
 
         // Allow socket addr to be reused (if not, have to wait 1-4min before restarting server)
         int on = 1;
@@ -81,10 +104,17 @@ void Server::setupServer()
         if (listen(fd, SOMAXCONN) < 0)
             throw std::runtime_error(RED "listen() error" DEFAULT);
 
+        ServerContext *serverContext = newServerContext(fd);
+
+        if (serverContext == NULL)
+            throw std::runtime_error(RED + getTimeOfDay() + " [emerg] : Failed to create server ‘" ITALIC + this->_serverConfig.getServerName().at(0) + DEFAULT RED "’ (fd " + toString(fd) + ")" DEFAULT);
+
+        this->_serverContexts[fd] = serverContext;
+
         // Add the fd to epoll (EPOLL_CTL_ADD) as EPOLLIN (server side socket)
         struct epoll_event ev;
         ev.events = EPOLLIN | EPOLLRDHUP | EPOLLET;
-        ev.data.fd = fd;
+        ev.data.ptr = serverContext;
 
         if (epoll_ctl(this->_epfd, EPOLL_CTL_ADD, fd, &ev))
             throw std::runtime_error(RED "epoll_ctl() error" DEFAULT);

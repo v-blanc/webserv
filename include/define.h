@@ -47,6 +47,8 @@
 
 #define DEFAULT_CONFIG_PATH "config/good/webserv.conf"
 #define MAX_EPOLL_WAIT_EVENTS 128
+#define RECV_BUFFER_SIZE 128
+#define TIMEOUT_OLD_CONNEXIONS 4 // in seconds
 
 // TYPEDEF
 typedef std::pair<std::string, std::string> stringPair;

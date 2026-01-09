@@ -35,69 +35,36 @@ HTTPRequest::~HTTPRequest()
 {
 }
 
-static std::vector<std::string> getHTTPLines(std::string &request)
+void HTTPRequest::debugStandardReponse(int &clientFd)
 {
-    std::vector<std::string> lines;
-    std::string currLine;
+    if (!this->_isValidRequest)
+        return;
 
-    for (std::size_t i = 0; i < request.size(); i++)
+    // Avoid Chrome duplicates
+    if (this->_path.find("favicon.ico") != std::string::npos)
+        return;
+
+    std::string sendBuf = "HTTP/1.1 200 OK\r\nLocation: http://localhost:8080/\r\nContent-Length: ";
+    std::string fileName = "www" + this->_path;
+
+    if (this->_path == "/")
+        fileName.append("index.html");
+
+    // std::cout << "request: \n\"" << request << "\"" << std::endl;
+
+    if (isInvalidPath(fileName))
     {
-        if (request.at(i) == '\r')
-        {
-            if (i + 1 < request.size() && request.at(i + 1) == '\n')
-            {
-                lines.push_back(currLine);
-                currLine.clear();
-                i++;
-                continue;
-            }
-        }
-
-        currLine += request.at(i);
+        std::cerr << "Invalid path: contain invalid " << std::endl;
+        return;
     }
 
-    if (!currLine.empty())
-        lines.push_back(currLine);
+    std::string content = getLocalFileContent(fileName);
 
-    return lines;
-}
+    sendBuf.append(toString(content.size()));
+    sendBuf.append("\r\n\r\n");
+    sendBuf.append(content);
 
-void HTTPRequest::parseFirstLine(std::string &firstLine)
-{
-    std::size_t prevPos = 0, pos = firstLine.find(' ');
-
-    if (pos == 0 || pos != std::string::npos)
-    {
-        std::string method = firstLine.substr(prevPos, pos - prevPos);
-        if (method == "GET" || method == "POST" || method == "DELETE")
-            this->_method = method;
-        else
-            throw std::runtime_error("Unknown method");
-    }
-    else
-        throw std::runtime_error("HTTP Request wrong format");
-
-    prevPos = pos + 1;
-    pos = firstLine.find(' ', prevPos);
-
-    if (pos != std::string::npos)
-    {
-        std::string path = firstLine.substr(prevPos, pos - prevPos);
-        if (pos != prevPos)
-            this->_path = path;
-        else
-            throw std::runtime_error("HTTP Request path wrong format");
-    }
-    else
-        throw std::runtime_error("HTTP Request wrong format");
-
-    if (firstLine.substr(pos + 1, firstLine.size() - pos) != "HTTP/1.1")
-        throw std::runtime_error("HTTP Request HTTP version wrong format");
-}
-
-void HTTPRequest::parseHeader(std::string &line)
-{
-    std::size_t pos = line.find(':');
+    send(clientFd, sendBuf.c_str(), sendBuf.size(), MSG_NOSIGNAL);
 
     if (pos == std::string::npos)
         throw std::runtime_error("HTTP Request wrong format");
