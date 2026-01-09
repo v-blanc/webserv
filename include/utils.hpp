@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/06 12:10:43 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/19 13:48:15 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/17 18:50:40 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -49,6 +49,7 @@ void throwInvalidClientMaxValue(std::string directive, std::string fileName, std
 void throwDuplicateValues(std::string directive, std::string value, std::string fileName, std::string line);
 void throwUnknownDirective(std::string directive, std::string fileName, std::string line);
 void handleListenFormatError(std::string listen, std::string fileName, std::string line);
+void throwErrorPageInvalidValue(std::string value, std::string fileName, std::string line);
 
 // errorMessageServer.cpp
 void handleBindError(std::string listen, std::string fileName);
