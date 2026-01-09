@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 14:31:40 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/11 12:51:20 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/17 19:16:02 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -132,20 +132,20 @@ void GlobalConfig::fillGlobalConfig()
 void printGlobalConfig(GlobalConfig &globalConfig)
 {
     int indent = 4;
-    std::string pad(0, ' ');
+    std::string pad(indent, ' ');
     std::cout << "******** Global Config: ********" << std::endl;
 
-    std::cout << pad << "autoindex: " << (globalConfig.getAutoindex() == true ? "on" : "off") << std::endl;
-    std::cout << pad << "client_max_body_size: " << globalConfig.getClientMaxBodySize() << std::endl;
-    std::cout << pad << "root: " << globalConfig.getRoot() << std::endl;
-    std::cout << pad << "index: ";
+    std::cout << "autoindex: " << (globalConfig.getAutoindex() == true ? "on" : "off") << std::endl;
+    std::cout << "client_max_body_size: " << globalConfig.getClientMaxBodySize() << std::endl;
+    std::cout << "root: " << globalConfig.getRoot() << std::endl;
+    std::cout << "index: ";
     for (std::size_t i = 0; i < globalConfig.getIndex().size(); i++)
         std::cout << globalConfig.getIndex()[i] << ", ";
     std::cout << std::endl;
-    std::cout << pad << "error_page: ";
-    for (std::size_t i = 0; i < globalConfig.getErrorPage().size(); i++)
-        std::cout << globalConfig.getErrorPage()[i] << ", ";
-    std::cout << std::endl;
+    std::cout << "error_page: " << std::endl;
+    std::map<std::size_t, std::string> errorPage = globalConfig.getErrorPage();
+    for (std::map<std::size_t, std::string>::const_iterator it = errorPage.begin(); it != errorPage.end(); it++)
+        std::cout << pad << it->first << " -> \"" << it->second << "\"" << std::endl;
     std::cout << std::endl;
 
     std::vector<ServerConfig> serverConfig = globalConfig.getServerConfig();
@@ -161,10 +161,10 @@ void printGlobalConfig(GlobalConfig &globalConfig)
         for (std::size_t i = 0; i < serverConfig.at(j).getIndex().size(); i++)
             std::cout << serverConfig.at(j).getIndex().at(i) << ", ";
         std::cout << std::endl;
-        std::cout << pad << "error_page: ";
-        for (std::size_t i = 0; i < serverConfig.at(j).getErrorPage().size(); i++)
-            std::cout << serverConfig.at(j).getErrorPage().at(i) << ", ";
-        std::cout << std::endl;
+        std::cout << pad << "error_page: " << std::endl;
+        std::map<std::size_t, std::string> errorPage = serverConfig.at(j).getErrorPage();
+        for (std::map<std::size_t, std::string>::const_iterator it = errorPage.begin(); it != errorPage.end(); it++)
+            std::cout << pad << pad << it->first << " -> \"" << it->second << "\"" << std::endl;
         std::cout << pad << "listen: " << std::endl;
         for (std::size_t i = 0; i < serverConfig.at(j).getListen().size(); i++)
         {
@@ -175,13 +175,12 @@ void printGlobalConfig(GlobalConfig &globalConfig)
         for (std::size_t i = 0; i < serverConfig.at(j).getServerName().size(); i++)
             std::cout << serverConfig.at(j).getServerName().at(i) << ", ";
         std::cout << std::endl;
-        std::cout << pad << "cgi_handler: ";
+        std::cout << pad << "cgi_handler: " << std::endl;
         for (std::size_t i = 0; i < serverConfig.at(j).getCgiHandler().size(); i++)
         {
-            std::cout << "[" << serverConfig.at(j).getCgiHandler().at(i).first << ", ";
-            std::cout << serverConfig.at(j).getCgiHandler().at(i).second << "], ";
+            std::cout << pad << pad << "ext: \'" << serverConfig.at(j).getCgiHandler().at(i).first << "\' file: \"";
+            std::cout << serverConfig.at(j).getCgiHandler().at(i).second << "\"" << std::endl;
         }
-        std::cout << std::endl;
         std::cout << std::endl;
 
         std::vector<LocationConfig> locationConfig = serverConfig.at(j).getLocationConfig();
@@ -200,17 +199,16 @@ void printGlobalConfig(GlobalConfig &globalConfig)
             for (std::size_t i = 0; i < locationConfig.at(k).getIndex().size(); i++)
                 std::cout << locationConfig.at(k).getIndex().at(i) << ", ";
             std::cout << std::endl;
-            std::cout << pad << "error_page: ";
-            for (std::size_t i = 0; i < locationConfig.at(k).getErrorPage().size(); i++)
-                std::cout << locationConfig.at(k).getErrorPage().at(i) << ", ";
-            std::cout << std::endl;
-            std::cout << pad << "cgi_handler: ";
+            std::cout << pad << "error_page: " << std::endl;
+            std::map<std::size_t, std::string> errorPage = locationConfig.at(k).getErrorPage();
+            for (std::map<std::size_t, std::string>::const_iterator it = errorPage.begin(); it != errorPage.end(); it++)
+                std::cout << pad << "    " << it->first << " -> \"" << it->second << "\"" << std::endl;
+            std::cout << pad << "cgi_handler: " << std::endl;
             for (std::size_t i = 0; i < locationConfig.at(k).getCgiHandler().size(); i++)
             {
-                std::cout << "[" << locationConfig.at(k).getCgiHandler().at(i).first << ", ";
-                std::cout << locationConfig.at(k).getCgiHandler().at(i).second << "], ";
+                std::cout << pad << "    " << "ext: \'" << locationConfig.at(k).getCgiHandler().at(i).first << "\' file: \"";
+                std::cout << locationConfig.at(k).getCgiHandler().at(i).second << "\"" << std::endl;
             }
-            std::cout << std::endl;
             std::cout << pad << "limit_except: ";
             for (std::size_t i = 0; i < locationConfig.at(k).getLimitExcept().size(); i++)
                 std::cout << locationConfig.at(k).getLimitExcept().at(i) << ", ";

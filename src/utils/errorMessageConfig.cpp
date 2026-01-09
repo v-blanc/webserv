@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/06 12:15:31 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/08 17:53:23 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/17 18:50:31 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -131,4 +131,12 @@ void handleListenFormatError(std::string listen, std::string fileName, std::stri
     errorMessage += +"\" of the \"listen\" directive in " + fileName + ":" + line + DEFAULT;
 
     std::cerr << errorMessage << std::endl;
+}
+
+void throwErrorPageInvalidValue(std::string value, std::string fileName, std::string line)
+{
+    std::string errorMessage = RED + getTimeOfDay() + " [emerg] : invalid value \"" + value + "\" in ";
+    errorMessage += fileName + ":" + line + DEFAULT;
+
+    throw std::runtime_error(errorMessage);
 }

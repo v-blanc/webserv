@@ -6,14 +6,14 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/05 19:38:33 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/06 19:33:37 by vblanc           ###   ########.fr       */
+/*   Updated: 2025/12/17 19:16:12 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "LocationConfig.hpp"
 
 LocationConfig::LocationConfig(Node &node, std::string &path, std::string &fileName, int autoindex, long long clientMaxBodySize,
-                               std::string root, std::vector<std::string> index, std::vector<std::string> errorPage,
+                               std::string root, std::vector<std::string> index, std::map<std::size_t, std::string> errorPage,
                                std::vector<stringPair> cgiHandler)
     : _node(node), _fileName(fileName), _path(path), _autoindex(-1), _clientMaxBodySize(-1)
 {
