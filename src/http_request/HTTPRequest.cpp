@@ -173,61 +173,6 @@ void HTTPRequest::debugStandardReponse(int &clientFd)
     sendBuf.append(content);
 
     send(clientFd, sendBuf.c_str(), sendBuf.size(), MSG_NOSIGNAL);
-
-    if (pos == std::string::npos)
-        throw std::runtime_error("HTTP Request wrong format");
-
-    std::string headerName = line.substr(0, pos);
-
-    if (line.at(pos + 1) == ' ')
-        pos++;
-
-    if (headerName == "Host")
-        this->_host = line.substr(pos + 1);
-    else if (headerName == "Content-Length")
-    {
-        std::stringstream ss(line.substr(pos + 1));
-        ss >> this->_contentLength;
-
-        if (!ss.eof() || ss.fail())
-            throw std::runtime_error("HTTP Request error during stringstream");
-    }
-    else if (headerName == "Connection")
-    {
-        if (line.substr(pos + 1) == "keep-alive")
-            this->_connection = true;
-        else if (line.substr(pos + 1) == "close")
-            this->_connection = false;
-        else
-            throw std::runtime_error("HTTP Request wrong format");
-    }
-}
-
-void HTTPRequest::parseRequest(std::string &request)
-{
-    std::vector<std::string> lines = getHTTPLines(request);
-
-    // TODO: Debug
-    // std::cout << "******** Parse HTTP Request: ********" << std::endl;
-    // for (std::size_t j = 0; j < lines.size(); j++)
-    //     std::cout << "[" + lines[j] << "]" << std::endl;
-    // std::cout << std::endl;
-
-    // First Line
-    if (lines.size() > 1)
-        parseFirstLine(lines.at(0));
-    else
-        throw std::runtime_error("HTTP Request wrong format (empty request)");
-
-    // Header
-    std::size_t i = 1;
-    while (i < lines.size() && !lines.at(i).empty())
-        parseHeader(lines.at(i++));
-
-    // Body
-    i++;
-    while (i < lines.size())
-        this->_body += lines.at(i++) + "\r\n";
 }
 
 void printHTTPRequest(HTTPRequest &request)
