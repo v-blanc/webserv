@@ -488,6 +488,9 @@ void GlobalServer::handleReading(ClientContext *clientContext)
             }
             freeEnvp(envp);
             close(inPipe[0]);
+            std::string body = httpRequest.getBody();
+            if (!body.empty())
+                write(inPipe[1], body.c_str(), body.size());
             close(inPipe[1]);
             close(outPipe[1]);
 
