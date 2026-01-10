@@ -123,7 +123,6 @@ GlobalServer::GlobalServer(GlobalConfig &globalConfig) : _globalConfig(globalCon
     try
     {
         signal(SIGINT, sigHandler);
-
         this->setupGlobalServer();
         this->loopServer();
     }
@@ -191,9 +190,8 @@ void GlobalServer::loopServer()
 
         this->closeOldClientConnexions();
 
-        if (n == -1)
-            continue;
-
+        if (n < 0)
+            continue ;
         for (int i = 0; i < n; i++)
         {
             EpollContext *context = static_cast<EpollContext *>(events[i].data.ptr);
@@ -208,36 +206,41 @@ void GlobalServer::loopServer()
             }
             else if (CgiContext *cgiContext = dynamic_cast<CgiContext *>(context))
             {
-            if ((time(NULL) - cgiContext->startTime) > CGI_TIMEOUT_SECONDS)
-            {
-                kill(cgiContext->pid, SIGKILL);
-                waitpid(cgiContext->pid, NULL, WNOHANG);
+                // Timeout check
+                if ((time(NULL) - cgiContext->startTime) > CGI_TIMEOUT_SECONDS)
+                {
+                    kill(cgiContext->pid, SIGKILL);
+                    waitpid(cgiContext->pid, NULL, 0);
 
-                std::string resp = "HTTP/1.1 504 Gateway Timeout\r\n";
-                resp += "Content-Type: text/plain\r\n";
-                resp += "Connection: close\r\n\r\n";
-                resp += "CGI timeout\n";
-                send(cgiContext->client->fd, resp.c_str(), resp.size(), MSG_NOSIGNAL);
+                    std::string resp = "HTTP/1.1 504 Gateway Timeout\r\n";
+                    resp += "Content-Type: text/plain\r\n";
+                    resp += "Connection: close\r\n\r\n";
+                    resp += "CGI timeout\n";
+                    send(cgiContext->client->fd, resp.c_str(), resp.size(), MSG_NOSIGNAL);
 
-                epoll_ctl(this->_epfd, EPOLL_CTL_DEL, cgiContext->fd, NULL);
-                close(cgiContext->fd);
-                ClientContext *client = cgiContext->client;
-                delete cgiContext;
-                this->handleCloseConnexion(client);
-                continue;
-            }
-                if (events[i].events & EPOLLIN)
+                    epoll_ctl(this->_epfd, EPOLL_CTL_DEL, cgiContext->fd, NULL);
+                    close(cgiContext->fd);
+                    ClientContext *client = cgiContext->client;
+                    delete cgiContext;
+                    this->handleCloseConnexion(client);
+                    continue;
+                }
+
+                // Read CGI output (handle EPOLLIN, EPOLLHUP, EPOLLRDHUP)
+                if (events[i].events & (EPOLLIN | EPOLLHUP | EPOLLRDHUP))
                 {
                     char buf[4096];
                     ssize_t r;
 
-
+                    // Read all available data
                     while ((r = read(cgiContext->fd, buf, sizeof(buf))) > 0)
                         cgiContext->client->cgiOut.append(buf, r);
-                    if (r == 0)
+
+                    // EOF or pipe closed: send response
+                    if (r == 0 || (events[i].events & (EPOLLHUP | EPOLLRDHUP)))
                     {
                         int status;
-                        waitpid(cgiContext->pid, &status, WNOHANG);
+                        waitpid(cgiContext->pid, &status, 0);
 
                         std::string body = cgiContext->client->cgiOut;
                         std::string resp = "HTTP/1.1 200 OK\r\n";
@@ -253,17 +256,16 @@ void GlobalServer::loopServer()
                         delete cgiContext;
                         this->handleCloseConnexion(client);
                     }
-                else if (r < 0)
-                {
-                    if (errno != EAGAIN && errno != EWOULDBLOCK)
+                    else if (r < 0 && errno != EAGAIN && errno != EWOULDBLOCK)
                     {
+                        // Real error
+                        waitpid(cgiContext->pid, NULL, WNOHANG);
                         epoll_ctl(this->_epfd, EPOLL_CTL_DEL, cgiContext->fd, NULL);
                         close(cgiContext->fd);
                         ClientContext *client = cgiContext->client;
                         delete cgiContext;
                         this->handleCloseConnexion(client);
                     }
-                }
                 }
             }
             else if (ClientContext *clientContext = dynamic_cast<ClientContext *>(context))
@@ -372,6 +374,8 @@ void GlobalServer::handleReading(ClientContext *clientContext)
     while (true)
     {
         r = recv(clientContext->fd, buf, RECV_BUFFER_SIZE, 0);
+        if (r == -1)
+            std::cout << "recv() returned -1 errno=" << errno << std::endl;
         if (r > 0)
         {
             for (int i = 0; i < r; i++)
@@ -382,7 +386,7 @@ void GlobalServer::handleReading(ClientContext *clientContext)
         else
         {
             if (errno == EAGAIN)
-                break;
+                break ;
             if (errno == EINTR)
             {
                 std::cout << "errno == EINTR" << std::endl;
@@ -463,7 +467,7 @@ void GlobalServer::handleReading(ClientContext *clientContext)
                 scriptBase = scriptFilename.substr(slashPos + 1);
             }
             std::vector<std::string>    envVec = buildCgiEnv(httpRequest, scriptFilename);
-            char                        **envp = vectorToEnvp(envVec);
+            char**                      envp = vectorToEnvp(envVec);
 
             pid_t pid = fork();
             if (!pid)
