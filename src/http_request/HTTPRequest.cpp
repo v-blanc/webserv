@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/07 14:57:52 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/17 18:56:33 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/01/11 18:19:09 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,10 +38,6 @@ HTTPRequest::~HTTPRequest()
 void HTTPRequest::debugStandardReponse(int &clientFd)
 {
     if (!this->_isValidRequest)
-        return;
-
-    // Avoid Chrome duplicates
-    if (this->_path.find("favicon.ico") != std::string::npos)
         return;
 
     std::string sendBuf = "HTTP/1.1 200 OK\r\nLocation: http://localhost:8080/\r\nContent-Length: ";

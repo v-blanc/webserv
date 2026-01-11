@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/06 14:21:38 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/17 18:56:10 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/01/11 18:14:22 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -128,7 +128,7 @@ void handleListenDirective(Config &config, Node &node, std::string &directive)
 
     std::stringstream ss(portStr);
     ss >> port;
-    if (ss.fail())
+    if (!ss.eof() || ss.fail())
     {
         handleListenFormatError(node.args.at(0), config.getFileName(), node.line);
         return;
