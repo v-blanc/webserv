@@ -112,6 +112,11 @@ void HTTPRequest::parseHeader(std::string &line)
         else
             throw std::runtime_error("HTTP Request wrong format");
     }
+    else if (headerName == "Transfer-Encoding")
+    {
+        if (line.substr(pos + 1) == "chunked")
+            this->_isChunked = true;
+    }
 }
 
 void HTTPRequest::parseRequest(std::string &request)

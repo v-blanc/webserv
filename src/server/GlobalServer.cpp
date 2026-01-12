@@ -111,6 +111,28 @@ static ServerConfig const &pickServerConfig(std::vector<ServerConfig> const &ser
     return (servers.at(0));
 }
 
+static void unchunkBody(std::string &body)
+{
+    std::string unchunked;
+    std::size_t pos;
+
+    pos = 0;
+    while (pos < body.size())
+    {
+        std::size_t lineEnd = body.find("\r\n", pos);
+        if (lineEnd == std::string::npos)
+            break ;
+        std::string chunkSizeStr = body.substr(pos, lineEnd - pos);
+        std::size_t chunkSize = std::strtoul(chunkSizeStr.c_str(), NULL, 16);
+        pos = lineEnd + 2;
+        if (!chunkSize)
+            break ;
+        unchunked.append(body, pos, chunkSize);
+        pos += chunkSize + 2;
+    }
+    body = unchunked;
+}
+
 bool keepRunningServer = true;
 
 static void sigHandler(int signal)
@@ -490,6 +512,8 @@ void GlobalServer::handleReading(ClientContext *clientContext)
             freeEnvp(envp);
             close(inPipe[0]);
             std::string body = httpRequest.getBody();
+            if (httpRequest.isChunked())
+                unchunkBody(body);
             if (!body.empty())
                 write(inPipe[1], body.c_str(), body.size());
             close(inPipe[1]);

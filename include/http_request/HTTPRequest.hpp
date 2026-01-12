@@ -32,6 +32,7 @@ public:
     std::string getContentType() const { return this->_contentType; };
     bool getConnection() const { return this->_connection; }; // ?
     std::string getBody() const { return this->_body; };
+    bool        isChunked() const { return this->_isChunked; };
 
     // Execute
     // virtual void generateResponse() = 0;
@@ -57,6 +58,7 @@ private:
 
     // Body
     std::string _body;
+    bool        _isChunked;
 
     // Parsing
     void parseFirstLine(std::string &firstLine);
