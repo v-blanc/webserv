@@ -18,6 +18,7 @@ FILES := parsing_conf/LexerConfig.cpp parsing_conf/ParserConfig.cpp \
 		\
 		utils/getTimeOfDay.cpp utils/getLocalFileContent.cpp utils/isInvalidPath.cpp utils/generateAutoindexHTML.cpp \
 		utils/errorMessageConfig.cpp utils/errorMessageServer.cpp \
+		cgi/Cgi.cpp \
 		\
 		main.cpp
 

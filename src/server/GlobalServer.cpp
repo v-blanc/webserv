@@ -11,61 +11,11 @@
 /* ************************************************************************** */
 
 #include "GlobalServer.hpp"
+#include "cgi.hpp"
 #include <fcntl.h>
 #include <sys/wait.h>
 
 #define CGI_TIMEOUT_SECONDS 5
-
-static bool setNonBlocking(int fd)
-
-{
-	int const flags = fcntl(fd, F_GETFL, 0);
-
-	if (flags < 0)
-		return (false);
-	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
-		return (false);
-	return (true);
-}
-
-static std::vector<std::string> buildCgiEnv(HTTPRequest const& req, std::string const& scriptFilename)
-
-{
-    std::vector<std::string> env;
-
-    env.push_back("GATEWAY_INTERFACE=CGI/1.1");
-    env.push_back("SERVER_PROTOCOL=HTTP/1.1");
-    env.push_back("REQUEST_METHOD=" + req.getMethod());
-    env.push_back("QUERY_STRING=" + req.getQueryString());
-    env.push_back("SCRIPT_FILENAME=" + scriptFilename);
-    env.push_back("SCRIPT_NAME=" + req.getPathWithoutQuery());
-    env.push_back("CONTENT_LENGTH=" + toString(req.getContentLength()));
-    env.push_back("CONTENT_TYPE=" + req.getContentType());
-    return (env);
-}
-
-static char** vectorToEnvp(std::vector<std::string> const& env)
-
-{
-    char** envp = new char *[env.size() + 1];
-
-    for (std::size_t i = 0; i < env.size(); ++i)
-    {
-        envp[i] = new char[env[i].size() + 1];
-        std::strcpy(envp[i], env[i].c_str());
-    }
-    envp[env.size()] = NULL;
-    return (envp);
-}
-
-static void freeEnvp(char** envp)
-{
-    if (!envp)
-        return ;
-    for (std::size_t i = 0; envp[i] != NULL; ++i)
-        delete[] envp[i];
-    delete[] envp;
-}
 
 static bool pathStartsWithLocation(std::string const &path, std::string const &location)
 {
@@ -109,28 +59,6 @@ static ServerConfig const &pickServerConfig(std::vector<ServerConfig> const &ser
             return (servers[i]);
     }
     return (servers.at(0));
-}
-
-static void unchunkBody(std::string &body)
-{
-    std::string unchunked;
-    std::size_t pos;
-
-    pos = 0;
-    while (pos < body.size())
-    {
-        std::size_t lineEnd = body.find("\r\n", pos);
-        if (lineEnd == std::string::npos)
-            break ;
-        std::string chunkSizeStr = body.substr(pos, lineEnd - pos);
-        std::size_t chunkSize = std::strtoul(chunkSizeStr.c_str(), NULL, 16);
-        pos = lineEnd + 2;
-        if (!chunkSize)
-            break ;
-        unchunked.append(body, pos, chunkSize);
-        pos += chunkSize + 2;
-    }
-    body = unchunked;
 }
 
 bool keepRunningServer = true;
@@ -468,68 +396,9 @@ void GlobalServer::handleReading(ClientContext *clientContext)
         std::string interpreter;
         if (httpRequest.resolveCgiInterpreter(cgiHandlers, interpreter))
         {
-            int inPipe[2];
-            int outPipe[2];
-
-            if (pipe(inPipe) < 0 || pipe(outPipe) < 0)
-            {
+            CgiContext *cgiCtx = launchCgi(httpRequest, interpreter, clientContext, this->_epfd);
+            if (!cgiCtx)
                 httpRequest.debugStandardReponse(clientContext->fd);
-                return ;
-            }
-
-            setNonBlocking(outPipe[0]);
-            std::string                 scriptFilename = httpRequest.getPathWithoutQuery();
-            if (!scriptFilename.empty() && scriptFilename[0] == '/')
-                scriptFilename.erase(0, 1);
-            std::string                 scriptDir = "www";
-            std::string                 scriptBase = scriptFilename;
-            std::size_t                 slashPos = scriptFilename.rfind('/');
-            if (slashPos != std::string::npos)
-            {
-                scriptDir += "/" + scriptFilename.substr(0, slashPos);
-                scriptBase = scriptFilename.substr(slashPos + 1);
-            }
-            std::vector<std::string>    envVec = buildCgiEnv(httpRequest, scriptFilename);
-            char**                      envp = vectorToEnvp(envVec);
-
-            pid_t pid = fork();
-            if (!pid)
-            {
-                dup2(inPipe[0], STDIN_FILENO);
-                dup2(outPipe[1], STDOUT_FILENO);
-                dup2(outPipe[1], STDERR_FILENO);
-                close(inPipe[1]);
-                close(outPipe[0]);
-                chdir(scriptDir.c_str());
-
-                char *argv[3];
-                argv[0] = const_cast<char *>(interpreter.c_str());
-                argv[1] = const_cast<char *>(scriptBase.c_str());
-                argv[2] = NULL;
-                execve(argv[0], argv, envp);
-                _exit(1);
-            }
-            freeEnvp(envp);
-            close(inPipe[0]);
-            std::string body = httpRequest.getBody();
-            if (httpRequest.isChunked())
-                unchunkBody(body);
-            if (!body.empty())
-                write(inPipe[1], body.c_str(), body.size());
-            close(inPipe[1]);
-            close(outPipe[1]);
-
-            CgiContext *cgiCtx = new CgiContext;
-            cgiCtx->fd = outPipe[0];
-            cgiCtx->client = clientContext;
-            cgiCtx->pid = pid;
-            cgiCtx->startTime = time(NULL);
-            cgiCtx->script = scriptFilename;
-
-            struct epoll_event ev;
-            ev.events = EPOLLIN | EPOLLRDHUP | EPOLLET;
-            ev.data.ptr = cgiCtx;
-            epoll_ctl(this->_epfd, EPOLL_CTL_ADD, cgiCtx->fd, &ev);
             return ;
         }
         httpRequest.debugResponseWithCgiHandlers(clientContext->fd, cgiHandlers);
