@@ -29,6 +29,7 @@ public:
     std::string getPathWithoutQuery() const;
     std::string getHost() const { return this->_host; };
     long long getContentLength() const { return this->_contentLength; };
+    std::string getContentType() const { return this->_contentType; };
     bool getConnection() const { return this->_connection; }; // ?
     std::string getBody() const { return this->_body; };
 
@@ -51,6 +52,7 @@ private:
     // Header
     std::string _host;
     long long _contentLength;
+    std::string _contentType;
     bool _connection; // ? (keep-alive or close)
 
     // Body

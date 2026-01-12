@@ -101,6 +101,8 @@ void HTTPRequest::parseHeader(std::string &line)
         if (ss.fail())
             throw std::runtime_error("HTTP Request error during stringstream");
     }
+    else if (headerName == "Content-Type")
+        this->_contentType = line.substr(pos + 1);
     else if (headerName == "Connection")
     {
         if (line.substr(pos + 1) == "keep-alive")

@@ -40,6 +40,7 @@ static std::vector<std::string> buildCgiEnv(HTTPRequest const& req, std::string 
     env.push_back("SCRIPT_FILENAME=" + scriptFilename);
     env.push_back("SCRIPT_NAME=" + req.getPathWithoutQuery());
     env.push_back("CONTENT_LENGTH=" + toString(req.getContentLength()));
+    env.push_back("CONTENT_TYPE=" + req.getContentType());
     return (env);
 }
 
