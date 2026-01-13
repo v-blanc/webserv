@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 15:08:33 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/19 13:40:44 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/01/11 21:24:01 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,7 +25,8 @@ public:
     void closeServerSockets();
 
     // Getter
-    std::map<int, ServerContext *> getServerSockets() const { return this->_serverContexts; };
+    ServerConfig getServerConfig() const { return this->_serverConfig; };
+    std::map<int, ServerContext *> getServerContext() const { return this->_serverContexts; };
 
 private:
     ServerConfig &_serverConfig;

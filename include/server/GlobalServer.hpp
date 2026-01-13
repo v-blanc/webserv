@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:25 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/19 15:22:43 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/01/11 21:23:53 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,6 +25,7 @@ public:
 
 private:
     GlobalConfig &_globalConfig;
+    std::map<int, ServerConfig> _serversConfig;
     std::vector<Server> _servers;
 
     int _epfd;

@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/10 10:24:29 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/19 13:41:25 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/01/11 19:23:05 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,9 +27,20 @@ struct ServerContext : EpollContext
 
 struct ClientContext : EpollContext
 {
-    // receiveBuffer;
-    // sendBuffer;
-    // parseState;
+    // Request
+    std::string recvBuffer;
+    std::size_t expectedBodySize;
+    bool isChunkedRequest;
+    bool headerIsComplete;
+    std::size_t bodyStartIndex;
+    bool requestIsComplete;
+
+    // Response
+    std::string sendBuffer;
+    std::size_t sendBufferIndex;
+
+    // Client info
+    int serverFd;
     time_t lastActive;
     bool keepAlive;
 };
