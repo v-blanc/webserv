@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:14 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/19 16:49:18 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/01/13 16:46:39 by yabokhar         ###   ########lyon.fr   */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -127,6 +127,13 @@ void GlobalServer::setupGlobalServer()
         std::cout << GREEN + getTimeOfDay() + " [ok] : Created server ‘" ITALIC + serverConfig.at(i).getServerName().at(0) + DEFAULT GREEN "’ sucessfully!" DEFAULT << std::endl;
     }
 
+    for (std::size_t i = 0; i < this->_servers.size(); i++)
+    {
+        std::map<int, ServerContext *> serverContext = this->_servers.at(i).getServerContext();
+        for (std::map<int, ServerContext *>::iterator it = serverContext.begin(); it != serverContext.end(); it++)
+            this->_serversConfig.insert(std::make_pair(it->first, this->_servers.at(i).getServerConfig()));
+    }
+
     std::cout << GREEN + getTimeOfDay() + " [ok] : Created server(s) sucessfully!" DEFAULT << std::endl;
 }
 
@@ -150,10 +157,10 @@ void GlobalServer::loopServer()
             if (ServerContext *serverContext = dynamic_cast<ServerContext *>(context))
             {
                 if (events[i].events & EPOLLIN)
+                {
                     this->handleNewClientConnexion(serverContext->fd);
-                // TODO: Needed ??
-                // if (events[i].events & EPOLLOUT) // Write
-                //     this->handleWriting(serverContext);
+                    break;
+                }
             }
             else if (CgiContext *cgiContext = dynamic_cast<CgiContext *>(context))
             {
@@ -222,13 +229,22 @@ void GlobalServer::loopServer()
             else if (ClientContext *clientContext = dynamic_cast<ClientContext *>(context))
             {
                 if (events[i].events & (EPOLLERR | EPOLLHUP | EPOLLRDHUP))
+                {
                     this->handleCloseConnexion(clientContext);
+                    break;
+                }
                 else
                 {
                     if (events[i].events & EPOLLIN) // Read until EAGAIN
+                    {
                         this->handleReading(clientContext);
+                        break;
+                    }
                     if (events[i].events & EPOLLOUT) // Write
+                    {
                         this->handleWriting(clientContext);
+                        break;
+                    }
                 }
             }
         }
@@ -250,6 +266,18 @@ static ClientContext *newClientContext(int clientSocket, int serverFd)
     }
 
     clientContext->fd = clientSocket;
+
+    clientContext->recvBuffer.empty();
+    clientContext->expectedBodySize = 0;
+    clientContext->isChunkedRequest = false;
+    clientContext->headerIsComplete = false;
+    clientContext->bodyStartIndex = 0;
+    clientContext->requestIsComplete = false;
+
+    clientContext->sendBuffer.empty();
+    clientContext->sendBufferIndex = 0;
+
+    clientContext->serverFd = serverFd;
     clientContext->lastActive = time(NULL);
     clientContext->keepAlive = false;
     clientContext->serverFd = serverFd;
@@ -318,9 +346,10 @@ void GlobalServer::handleCloseConnexion(ClientContext *clientContext)
 
 void GlobalServer::handleReading(ClientContext *clientContext)
 {
-    ssize_t     r;
-    std::string request;
-    char        buf[RECV_BUFFER_SIZE];
+    std::cout << YELLOW DARKEN + getTimeOfDay() + " [debug] : Read from fd " << clientContext->fd << DEFAULT << std::endl;
+
+    ssize_t r;
+    char buf[RECV_BUFFER_SIZE];
 
     while (true)
     {
@@ -329,37 +358,91 @@ void GlobalServer::handleReading(ClientContext *clientContext)
             std::cout << "recv() returned -1 errno=" << errno << std::endl;
         if (r > 0)
         {
-            for (int i = 0; i < r; i++)
-                request.push_back(buf[i]);
-        }
-        else if (!r)
-            break;
-        else
-        {
-            if (errno == EAGAIN)
-                break ;
-            if (errno == EINTR)
+            for (ssize_t i = 0; i < r; i++)
+                clientContext->recvBuffer.push_back(buf[i]);
+
+            // Check if header is fully received
+            if (clientContext->headerIsComplete == false)
             {
-                std::cout << "errno == EINTR" << std::endl;
-                continue;
+                std::size_t pos = clientContext->recvBuffer.find("\r\n\r\n");
+                if (pos != std::string::npos)
+                {
+                    clientContext->bodyStartIndex = pos + 4;
+
+                    std::size_t posTransfer = clientContext->recvBuffer.find("Transfer-Encoding:");
+                    if (posTransfer != std::string::npos)
+                    {
+                        std::string transferEncodingLine = clientContext->recvBuffer.substr(posTransfer, clientContext->recvBuffer.find("\r\n", posTransfer) - posTransfer);
+                        if (transferEncodingLine.find("chunked") != std::string::npos)
+                            clientContext->isChunkedRequest = true;
+                        else
+                            throw std::runtime_error(RED "Error 400 (to handle proprely) due to Transfer-Encoding format" DEFAULT);
+                    }
+                    if (clientContext->isChunkedRequest == false)
+                    {
+                        std::string contentLengthFormat = "Content-Length:";
+                        std::size_t posContent = clientContext->recvBuffer.find(contentLengthFormat);
+                        if (posContent != std::string::npos)
+                        {
+                            std::size_t startSize = posContent + contentLengthFormat.size();
+                            std::size_t endSize = clientContext->recvBuffer.find("\r\n", startSize);
+
+                            std::stringstream ss(clientContext->recvBuffer.substr(startSize, endSize - startSize));
+                            ss >> clientContext->expectedBodySize;
+
+                            if (!ss.eof() || ss.fail())
+                                throw std::runtime_error(RED "Error 400 (to handle proprely) due to Content-Length format" DEFAULT);
+
+                            if (clientContext->expectedBodySize > static_cast<std::size_t>(this->_serversConfig.at(clientContext->serverFd).getClientMaxBodySize()))
+                                throw std::runtime_error(RED "Error 413 (to handle proprely) due to request body size > client_max_body_size" DEFAULT);
+                        }
+                    }
+
+                    clientContext->headerIsComplete = true;
+
+                    if (clientContext->isChunkedRequest == false && clientContext->expectedBodySize == 0)
+                        clientContext->requestIsComplete = true;
+                }
+            }
+            // Check if body size doesn't exceed client_max_body_size parameter for chunked requests or "Content-Length"
+            else if (clientContext->requestIsComplete == false)
+            {
+                if (clientContext->isChunkedRequest == true)
+                {
+                    // TODO
+                }
+                else if (clientContext->expectedBodySize > 0)
+                {
+                    if (clientContext->recvBuffer.size() - clientContext->bodyStartIndex > clientContext->expectedBodySize)
+                        throw std::runtime_error(RED "Error 413 (to handle proprely) due to request body size > client_max_body_size" DEFAULT);
+                }
+                else
+                    throw std::runtime_error(RED "Unknowned error during recv()" DEFAULT);
             }
             else
-            {
-                std::cout << "error ? r=" << r << " errno = " << errno << std::endl;
-                return;
-            }
+                throw std::runtime_error(RED "Error 400 (to handle proprely) due to too much data sent" DEFAULT);
         }
+        else if (r == -1 && errno == EAGAIN)
+        {
+            if (clientContext->recvBuffer.size() - clientContext->bodyStartIndex == clientContext->expectedBodySize)
+                clientContext->requestIsComplete = true;
+            break;
+        }
+        else
+            throw std::runtime_error(RED "error ? r=" + toString(r) + " errno = " + toString(errno) + DEFAULT);
     }
+    // std::cout << "Request is complete: " << (clientContext->requestIsComplete == true ? "true" : "false") << std::endl;
+    // std::cout << "\"" << clientContext->recvBuffer << "\"" << std::endl;
 
-    if (request.empty())
-    {
-        std::cout << "Empty request" << std::endl;
-        return;
-    }
+    // if (request.empty())
+    // {
+    //     std::cout << "Empty request" << std::endl;
+    //     return;
+    // }
 
     try
     {
-        HTTPRequest httpRequest(request);
+        HTTPRequest httpRequest(this->_serversConfig.at(clientContext->serverFd), clientContext->recvBuffer);
         // printHTTPRequest(httpRequest);
 
         std::vector<ServerConfig> servers = this->_globalConfig.getServerConfig();

@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/05 19:39:00 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/17 19:16:40 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/01/13 16:09:18 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,6 +37,9 @@ ServerConfig::ServerConfig(Node &node, std::string &fileName, int autoindex, lon
         if (directive == "location")
             handleLocationDirective(currNode, directive);
     }
+
+    for (std::size_t i = 0; i < this->_locationConfig.size(); i++)
+        this->_locationConfigByPath.insert(make_pair(this->_locationConfig.at(i).getPath(), this->_locationConfig.at(i)));
 }
 
 ServerConfig::~ServerConfig()
