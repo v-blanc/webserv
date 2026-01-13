@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:14 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/11 22:35:25 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/01/13 16:04:49 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -259,7 +259,8 @@ void GlobalServer::handleReading(ClientContext *clientContext)
                     std::size_t posTransfer = clientContext->recvBuffer.find("Transfer-Encoding:");
                     if (posTransfer != std::string::npos)
                     {
-                        if (clientContext->recvBuffer.find("Transfer-Encoding: chunked\r\n") != std::string::npos)
+                        std::string transferEncodingLine = clientContext->recvBuffer.substr(posTransfer, clientContext->recvBuffer.find("\r\n", posTransfer) - posTransfer);
+                        if (transferEncodingLine.find("chunked") != std::string::npos)
                             clientContext->isChunkedRequest = true;
                         else
                             throw std::runtime_error(RED "Error 400 (to handle proprely) due to Transfer-Encoding format" DEFAULT);
@@ -309,15 +310,16 @@ void GlobalServer::handleReading(ClientContext *clientContext)
                 throw std::runtime_error(RED "Error 400 (to handle proprely) due to too much data sent" DEFAULT);
         }
         else if (r == -1 && errno == EAGAIN)
+        {
+            if (clientContext->recvBuffer.size() - clientContext->bodyStartIndex == clientContext->expectedBodySize)
+                clientContext->requestIsComplete = true;
             break;
+        }
         else
             throw std::runtime_error(RED "error ? r=" + toString(r) + " errno = " + toString(errno) + DEFAULT);
     }
-
-    std::cout << "\"" << clientContext->recvBuffer << "\"" << std::endl;
-
-    if (clientContext->requestIsComplete == true)
-        std::cout << "Request is complete, handle response" << std::endl;
+    // std::cout << "Request is complete: " << (clientContext->requestIsComplete == true ? "true" : "false") << std::endl;
+    // std::cout << "\"" << clientContext->recvBuffer << "\"" << std::endl;
 
     // if (request.empty())
     // {
