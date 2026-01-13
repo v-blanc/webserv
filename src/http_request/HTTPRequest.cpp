@@ -12,7 +12,7 @@
 
 #include "HTTPRequest.hpp"
 
-HTTPRequest::HTTPRequest(std::string &request) : _isValidRequest(false), _contentLength(0), _connection(true)
+HTTPRequest::HTTPRequest(ServerConfig &serverConfig, std::string &request) : _serverConfig(serverConfig), _isValidRequest(false), _contentLength(0), _connection(true)
 {
     try
     {

@@ -6,19 +6,20 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/07 14:57:04 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/19 16:28:17 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/01/13 15:50:58 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef HTTPREQUEST_HPP
 #define HTTPREQUEST_HPP
 
+#include "ServerConfig.hpp"
 #include "utils.hpp"
 
 class HTTPRequest
 {
 public:
-    HTTPRequest(std::string &request);
+    HTTPRequest(ServerConfig &serverConfig, std::string &request);
     ~HTTPRequest();
 
     // Getter
@@ -37,6 +38,8 @@ public:
     void debugStandardReponse(int &clientFd);
 
 private:
+    ServerConfig _serverConfig;
+
     bool _isValidRequest;
 
     // Start Line
