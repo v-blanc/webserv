@@ -5,13 +5,14 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: yabokhar <yabokhar@student.42lyon.fr>      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/01/12 12:46:55 by yabokhar          #+#    #+#             */
-/*   Updated: 2026/01/12 12:46:56 by yabokhar         ###   ########lyon.fr   */
+/*   Created: 2026/01/13 14:58:49 by yabokhar          #+#    #+#             */
+/*   Updated: 2026/01/13 14:58:52 by yabokhar         ###   ########lyon.fr   */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "cgi.hpp"
 #include <sys/epoll.h>
+#include <sys/stat.h>
 
 static bool setNonBlocking(int fd)
 {
@@ -98,6 +99,25 @@ CgiContext* launchCgi(
 
 	setNonBlocking(outPipe[0]);
 
+	struct stat interpreterStat;
+	if (stat(interpreter.c_str(), &interpreterStat) != 0)
+	{
+		close(inPipe[0]);
+		close(inPipe[1]);
+		close(outPipe[0]);
+		close(outPipe[1]);
+		return (NULL);
+	}
+
+	if (!(interpreterStat.st_mode & S_IXUSR))
+	{
+		close(inPipe[0]);
+		close(inPipe[1]);
+		close(outPipe[0]);
+		close(outPipe[1]);
+		return (NULL);
+	}
+
 	std::string scriptFilename = httpRequest.getPathWithoutQuery();
 	if (!scriptFilename.empty() && scriptFilename[0] == '/')
 		scriptFilename.erase(0, 1);
@@ -109,6 +129,35 @@ CgiContext* launchCgi(
 	{
 		scriptDir += "/" + scriptFilename.substr(0, slashPos);
 		scriptBase = scriptFilename.substr(slashPos + 1);
+	}
+
+	std::string fullPath = "www/" + scriptFilename;
+	struct stat fileStat;
+	if (stat(fullPath.c_str(), &fileStat) != 0)
+	{
+		close(inPipe[0]);
+		close(inPipe[1]);
+		close(outPipe[0]);
+		close(outPipe[1]);
+		return (NULL);
+	}
+
+	if (!S_ISREG(fileStat.st_mode))
+	{
+		close(inPipe[0]);
+		close(inPipe[1]);
+		close(outPipe[0]);
+		close(outPipe[1]);
+		return (NULL);
+	}
+
+	if (!(fileStat.st_mode & S_IXUSR))
+	{
+		close(inPipe[0]);
+		close(inPipe[1]);
+		close(outPipe[0]);
+		close(outPipe[1]);
+		return (NULL);
 	}
 
 	std::vector<std::string> envVec = buildCgiEnv(httpRequest, scriptFilename);
