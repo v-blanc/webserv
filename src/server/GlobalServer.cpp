@@ -3,10 +3,14 @@
 /*                                                        :::      ::::::::   */
 /*   GlobalServer.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
+/*   By: yafahfou <yafahfou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:14 by vblanc            #+#    #+#             */
+<<<<<<< HEAD
 /*   Updated: 2026/01/19 19:59:30 by vblanc           ###   ########.fr       */
+=======
+/*   Updated: 2026/01/13 18:00:28 by yafahfou         ###   ########.fr       */
+>>>>>>> 056330b (initial commit with http request and response examples)
 /*                                                                            */
 /* ************************************************************************** */
 

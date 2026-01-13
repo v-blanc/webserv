@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HTTPRequest_parseRequest.cpp                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
+/*   By: yafahfou <yafahfou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/19 16:19:40 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/19 16:25:30 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/01/13 17:46:30 by yafahfou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,15 +24,14 @@ static std::vector<std::string> getHTTPLines(std::string &request)
             if (i + 1 < request.size() && request.at(i + 1) == '\n')
             {
                 lines.push_back(currLine);
+                std::cout<<"my thing: "<<lines.at(0)<<std::endl;
                 currLine.clear();
                 i++;
                 continue;
             }
         }
-
         currLine += request.at(i);
     }
-
     if (!currLine.empty())
         lines.push_back(currLine);
 

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HTTPRequest.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
+/*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/07 14:57:52 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/19 19:44:50 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/01/20 15:45:52 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -175,7 +175,7 @@ void HTTPRequest::debugStandardReponse(int &clientFd)
     send(clientFd, sendBuf.c_str(), sendBuf.size(), MSG_NOSIGNAL);
 }
 
-void printHTTPRequest(HTTPRequest &request)
+// void printHTTPRequest(HTTPRequest &request)
 {
     std::string pad(4, ' ');
 

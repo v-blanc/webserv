@@ -1,0 +1,23 @@
+GET / HTTP/1.1
+Host:localhost
+----------------------
+HTTP/1.1 200 OK
+Server: nginx/1.29.4
+Date: Tue, 13 Jan 2026 16:15:00 GMT
+Content-Type: text/html
+Content-Length: 202
+Last-Modified: Tue, 13 Jan 2026 14:00:00 GMT
+Connection: keep-alive
+ETag: "69664fe0-ca"
+Accept-Ranges: bytes
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Simple NGINX Server</title>
+</head>
+<body>
+    <h1>Hello from Docker!</h1>
+    <p>If you see this, your NGINX server is working correctly.</p>
+</body>
+</html>Connection closed by foreign host.
