@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:14 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/19 16:49:18 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/01/13 15:51:31 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -247,10 +247,10 @@ void GlobalServer::handleReading(ClientContext *clientContext)
 
     try
     {
-        HTTPRequest httpRequest(request);
+        // HTTPRequest httpRequest(request);
         // printHTTPRequest(httpRequest);
 
-        httpRequest.debugStandardReponse(clientContext->fd);
+        // httpRequest.debugStandardReponse(clientContext->fd);
     }
     catch (const std::exception &e)
     {

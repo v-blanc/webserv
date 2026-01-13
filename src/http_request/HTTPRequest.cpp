@@ -6,13 +6,13 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/07 14:57:52 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/17 18:56:33 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/01/13 15:51:10 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "HTTPRequest.hpp"
 
-HTTPRequest::HTTPRequest(std::string &request) : _isValidRequest(false), _contentLength(0), _connection(true)
+HTTPRequest::HTTPRequest(ServerConfig &serverConfig, std::string &request) : _serverConfig(serverConfig), _isValidRequest(false), _contentLength(0), _connection(true)
 {
     try
     {
