@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HTTPRequest.hpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
+/*   By: yafahfou <yafahfou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/07 14:57:04 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/13 15:50:58 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/01/13 18:01:28 by yafahfou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,7 +35,7 @@ public:
     // virtual void generateResponse() = 0;
 
     // TODO: Debug
-    void debugStandardReponse(int &clientFd);
+    // void debugStandardReponse(int &clientFd);
 
 private:
     ServerConfig _serverConfig;
@@ -61,6 +61,6 @@ private:
 };
 
 // TODO: Debug
-void printHTTPRequest(HTTPRequest &request);
+// void printHTTPRequest(HTTPRequest &request);
 
 #endif
