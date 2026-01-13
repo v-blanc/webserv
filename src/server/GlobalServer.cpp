@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:14 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/13 16:04:49 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/01/13 16:24:07 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -327,17 +327,17 @@ void GlobalServer::handleReading(ClientContext *clientContext)
     //     return;
     // }
 
-    // try
-    // {
-    //     HTTPRequest httpRequest(request);
-    //     // printHTTPRequest(httpRequest);
+    try
+    {
+        HTTPRequest httpRequest(this->_serversConfig.at(clientContext->serverFd), clientContext->recvBuffer);
+        // printHTTPRequest(httpRequest);
 
-    //     // httpRequest.debugStandardReponse(clientContext->fd);
-    // }
-    // catch (const std::exception &e)
-    // {
-    //     std::cerr << e.what() << std::endl;
-    // }
+        // httpRequest.debugStandardReponse(clientContext->fd);
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << e.what() << std::endl;
+    }
 }
 
 void GlobalServer::handleWriting(ClientContext *clientContext) // TODO: Client fd ?

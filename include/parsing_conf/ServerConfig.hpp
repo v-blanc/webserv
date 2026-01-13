@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/05 19:35:55 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/13 16:06:31 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/01/13 16:22:58 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,7 +35,7 @@ public:
     std::vector<std::string> getServerName() const { return this->_serverName; };
     std::vector<stringPair> getCgiHandler() const { return this->_cgiHandler; };
     std::vector<LocationConfig> getLocationConfig() const { return this->_locationConfig; };
-    std::map<std::string, LocationConfig> getLocationConfigByPath() const { return this->_locationConfigByPath; };
+    LocationConfig getLocationConfigByPath(std::string &path) const { return this->_locationConfigByPath.at(path); };
 
     // Setter
     void setAutoindex(const int autoindex) { this->_autoindex = autoindex; };
