@@ -10,7 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "cgi.hpp"
+#include "Cgi.hpp"
 #include <sys/epoll.h>
 #include <sys/stat.h>
 
@@ -60,28 +60,6 @@ void freeEnvp(char** envp)
 	for (std::size_t i = 0; envp[i] != NULL; ++i)
 		delete[] envp[i];
 	delete[] envp;
-}
-
-void unchunkBody(std::string &body)
-{
-	std::string		unchunked;
-	std::size_t		pos;
-
-	pos = 0;
-	while (pos < body.size())
-	{
-		std::size_t lineEnd = body.find("\r\n", pos);
-		if (lineEnd == std::string::npos)
-			break ;
-		std::string chunkSizeStr = body.substr(pos, lineEnd - pos);
-		std::size_t chunkSize = std::strtoul(chunkSizeStr.c_str(), NULL, 16);
-		pos = lineEnd + 2;
-		if (!chunkSize)
-			break ;
-		unchunked.append(body, pos, chunkSize);
-		pos += chunkSize + 2;
-	}
-	body = unchunked;
 }
 
 CgiContext* launchCgi(
@@ -193,10 +171,7 @@ CgiContext* launchCgi(
 
 	freeEnvp(envp);
 	close(inPipe[0]);
-
 	std::string body = httpRequest.getBody();
-	if (httpRequest.isChunked())
-		unchunkBody(body);
 	if (!body.empty())
 		write(inPipe[1], body.c_str(), body.size());
 	close(inPipe[1]);

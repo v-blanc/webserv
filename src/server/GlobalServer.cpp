@@ -11,7 +11,7 @@
 /* ************************************************************************** */
 
 #include "GlobalServer.hpp"
-#include "cgi.hpp"
+#include "Cgi.hpp"
 #include <fcntl.h>
 #include <sys/wait.h>
 
@@ -344,6 +344,29 @@ void GlobalServer::handleCloseConnexion(ClientContext *clientContext)
     delete clientContext;
 }
 
+void unchunkBody(std::string &body)
+
+{
+	std::string		unchunked;
+	std::size_t		pos;
+
+	pos = 0;
+	while (pos < body.size())
+	{
+		std::size_t lineEnd = body.find("\r\n", pos);
+		if (lineEnd == std::string::npos)
+			break ;
+		std::string chunkSizeStr = body.substr(pos, lineEnd - pos);
+		std::size_t chunkSize = std::strtoul(chunkSizeStr.c_str(), NULL, 16);
+		pos = lineEnd + 2;
+		if (!chunkSize)
+			break ;
+		unchunked.append(body, pos, chunkSize);
+		pos += chunkSize + 2;
+	}
+	body = unchunked;
+}
+
 void GlobalServer::handleReading(ClientContext *clientContext)
 {
     std::cout << YELLOW DARKEN + getTimeOfDay() + " [debug] : Read from fd " << clientContext->fd << DEFAULT << std::endl;
@@ -354,8 +377,6 @@ void GlobalServer::handleReading(ClientContext *clientContext)
     while (true)
     {
         r = recv(clientContext->fd, buf, RECV_BUFFER_SIZE, 0);
-        if (r == -1)
-            std::cout << "recv() returned -1 errno=" << errno << std::endl;
         if (r > 0)
         {
             for (ssize_t i = 0; i < r; i++)
@@ -409,7 +430,10 @@ void GlobalServer::handleReading(ClientContext *clientContext)
             {
                 if (clientContext->isChunkedRequest == true)
                 {
-                    // TODO
+                    // spots the end of chunked body : 0\r\n\r\n
+                    std::size_t endChunk = clientContext->recvBuffer.find("0\r\n\r\n", clientContext->bodyStartIndex);
+                    if (endChunk != std::string::npos)
+                        clientContext->requestIsComplete = true;
                 }
                 else if (clientContext->expectedBodySize > 0)
                 {
@@ -424,7 +448,13 @@ void GlobalServer::handleReading(ClientContext *clientContext)
         }
         else if (r == -1 && errno == EAGAIN)
         {
-            if (clientContext->recvBuffer.size() - clientContext->bodyStartIndex == clientContext->expectedBodySize)
+            if (clientContext->isChunkedRequest)
+            {
+                std::size_t endChunk = clientContext->recvBuffer.find("0\r\n\r\n", clientContext->bodyStartIndex);
+                if (endChunk != std::string::npos)
+                    clientContext->requestIsComplete = true;
+            }
+            else if (clientContext->recvBuffer.size() - clientContext->bodyStartIndex == clientContext->expectedBodySize)
                 clientContext->requestIsComplete = true;
             break;
         }
@@ -439,6 +469,14 @@ void GlobalServer::handleReading(ClientContext *clientContext)
     //     std::cout << "Empty request" << std::endl;
     //     return;
     // }
+
+    if (clientContext->isChunkedRequest && clientContext->requestIsComplete)
+    {
+        std::string bodyChunked = clientContext->recvBuffer.substr(clientContext->bodyStartIndex);
+        unchunkBody(bodyChunked);
+        clientContext->recvBuffer.erase(clientContext->bodyStartIndex);
+        clientContext->recvBuffer.append(bodyChunked);
+    }
 
     try
     {

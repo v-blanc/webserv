@@ -15,7 +15,6 @@
 std::vector<std::string>	buildCgiEnv(HTTPRequest const& req, std::string const& scriptFilename);
 char**						vectorToEnvp(std::vector<std::string> const& env);
 void						freeEnvp(char** envp);
-void						unchunkBody(std::string &body);
 
 CgiContext*	launchCgi(
 	HTTPRequest const& httpRequest,
