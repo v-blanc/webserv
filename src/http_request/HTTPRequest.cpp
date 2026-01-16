@@ -6,7 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/07 14:57:52 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/20 15:45:52 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/01/20 15:50:49 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,16 +22,16 @@ HTTPRequest::HTTPRequest(ServerConfig &serverConfig, std::string &request, std::
         // TODO: to test
         response = "HTTP/1.1 200 OK\r\nContent-Length: 54\r\nConnection: keep-alive\r\n\r\n<!DOCTYPE html>\n<html>\n<body>\n<h1>\nTEST\n</h1>\n</body>\n";
     }
-    catch (const std::runtime_error &e)
-    {
-        std::cerr << RED << e.what() << DEFAULT << std::endl;
-        return;
-    }
-    catch (const std::exception &e)
-    {
-        std::cerr << RED << e.what() << DEFAULT << '\n';
-        return;
-    }
+    // catch (const std::runtime_error &e)
+    // {
+    //     std::cerr << RED << e.what() << DEFAULT << std::endl;
+    //     return;
+    // }
+    // catch (const std::exception &e)
+    // {
+    //     std::cerr << RED << e.what() << DEFAULT << '\n';
+    //     return;
+    // }
 }
 
 HTTPRequest::~HTTPRequest()

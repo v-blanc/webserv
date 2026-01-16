@@ -21,3 +21,9 @@ Accept-Ranges: bytes
     <p>If you see this, your NGINX server is working correctly.</p>
 </body>
 </html>Connection closed by foreign host.
+
+
+
+
+class exception qui a un attribut prive status
+je gere dans le catch en initialisant la classe response

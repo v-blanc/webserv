@@ -6,7 +6,7 @@
 /*   By: yafahfou <yafahfou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/19 16:19:40 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/13 17:46:30 by yafahfou         ###   ########.fr       */
+/*   Updated: 2026/01/16 11:29:16 by yafahfou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,7 +24,6 @@ static std::vector<std::string> getHTTPLines(std::string &request)
             if (i + 1 < request.size() && request.at(i + 1) == '\n')
             {
                 lines.push_back(currLine);
-                std::cout<<"my thing: "<<lines.at(0)<<std::endl;
                 currLine.clear();
                 i++;
                 continue;
@@ -32,9 +31,9 @@ static std::vector<std::string> getHTTPLines(std::string &request)
         }
         currLine += request.at(i);
     }
+    //  std::cout<<"my thing: "<<lines.at(0)<<std::endl;
     if (!currLine.empty())
         lines.push_back(currLine);
-
     return lines;
 }
 
@@ -120,8 +119,9 @@ void HTTPRequest::parseHeader(std::string &line)
 
 void HTTPRequest::parseRequest(std::string &request)
 {
-    std::vector<std::string> lines = getHTTPLines(request);
 
+    std::vector<std::string> lines = getHTTPLines(request);
+    //  std::cout<<"my thing: "<<lines.at(0)<<std::endl;
     // TODO: Debug
     // std::cout << "******** Parse HTTP Request: ********" << std::endl;
     // for (std::size_t j = 0; j < lines.size(); j++)
@@ -129,8 +129,19 @@ void HTTPRequest::parseRequest(std::string &request)
     // std::cout << std::endl;
 
     // First Line
-    if (lines.size() > 1)
-        parseFirstLine(lines.at(0));
+    if (lines.size() >= 1)
+    {
+        try
+        {
+            parseFirstLine(lines.at(0));
+
+        }
+        catch(const std::runtime_error& e)
+        {
+            std::cerr << e.what() << '\n';
+        }
+        
+    }
     else
         throw std::runtime_error("HTTP Request wrong format (empty request)");
 

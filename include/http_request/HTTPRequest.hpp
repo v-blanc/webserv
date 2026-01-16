@@ -6,7 +6,11 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/07 14:57:04 by vblanc            #+#    #+#             */
+<<<<<<< HEAD
 /*   Updated: 2026/01/20 15:46:26 by yassinefahf      ###   ########.fr       */
+=======
+/*   Updated: 2026/01/16 13:48:35 by yafahfou         ###   ########.fr       */
+>>>>>>> 428f960 (added exception classe to handle status code for requests)
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,6 +39,17 @@ public:
     std::string getBody() const { return this->_body; };
     bool isChunked() const { return this->_isChunked; };
 
+
+    class StatusException: public std::exception {
+        private:
+            std::string _status;
+            std::string _message;
+        public:
+            StatusException(std::string status):_status(status) {}
+            virtual ~StatusException() throw() {}
+            virtual const char *what() const throw() {return _message.c_str();}
+            const std::string &getStatus() const {return _status;}
+    };
     // Execute
     // virtual void generateResponse() = 0;
 
@@ -47,6 +62,7 @@ private:
     ServerConfig _serverConfig;
 
     bool _isValidRequest;
+    std::pair<std::string, std::string> codeStatus;
 
     // Start Line
     std::string _method;
