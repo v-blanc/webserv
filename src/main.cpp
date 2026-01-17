@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 12:57:33 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/17 15:36:11 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/01/17 23:32:54 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,13 +24,17 @@ int main(int argc, char **argv)
     if (argc == 2)
         configFile = argv[1];
 
-    // std::string path = "www/";
-    // std::cout << generateAutoindexHTML(path) << std::endl;
+    try
+    {
+        GlobalConfig globalConfig(configFile.c_str());
+        printGlobalConfig(globalConfig);
 
-    GlobalConfig globalConfig(configFile.c_str());
-    printGlobalConfig(globalConfig);
-
-    GlobalServer globalServer(globalConfig);
+        GlobalServer globalServer(globalConfig);
+    }
+    catch (const std::exception &e)
+    {
+        return (ERROR);
+    }
 
     return (SUCCESS);
 }

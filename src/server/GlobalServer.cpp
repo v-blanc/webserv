@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:14 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/17 23:07:32 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/01/17 23:35:28 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,15 +27,18 @@ GlobalServer::GlobalServer(GlobalConfig &globalConfig) : _globalConfig(globalCon
     {
         signal(SIGINT, sigHandler);
         this->setupGlobalServer();
+
         this->loopServer();
     }
     catch (const std::runtime_error &e)
     {
         std::cerr << e.what() << std::endl;
+        throw std::exception();
     }
     catch (const std::exception &e)
     {
         std::cerr << e.what() << '\n';
+        throw std::exception();
     }
 }
 
