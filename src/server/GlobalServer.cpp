@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:14 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/15 20:37:51 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/01/17 22:36:59 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,7 +39,7 @@ GlobalServer::GlobalServer(GlobalConfig &globalConfig) : _globalConfig(globalCon
     }
 }
 
-GlobalServer::~GlobalServer() // Close every fd's here
+GlobalServer::~GlobalServer()
 {
     std::string pad(4, ' ');
     std::cout << MAGENTA BOLD "~GlobalServer():" DEFAULT << std::endl;
@@ -124,7 +124,7 @@ void GlobalServer::loopServer()
                 }
                 else
                 {
-                    if (events[i].events & EPOLLIN) // Read until EAGAIN
+                    if (events[i].events & EPOLLIN)
                     {
                         this->handleReading(clientContext);
                         break;
@@ -157,9 +157,10 @@ static ClientContext *newClientContext(int clientSocket, int serverFd)
     clientContext->fd = clientSocket;
 
     clientContext->recvBuffer.empty();
-    clientContext->expectedBodySize = 0;
     clientContext->isChunkedRequest = false;
     clientContext->headerIsComplete = false;
+    clientContext->currentUnchunkedIndex = 0;
+    clientContext->expectedBodySize = 0;
     clientContext->bodyStartIndex = 0;
     clientContext->requestIsComplete = false;
 
@@ -167,8 +168,8 @@ static ClientContext *newClientContext(int clientSocket, int serverFd)
     clientContext->sendBufferIndex = 0;
 
     clientContext->serverFd = serverFd;
-    clientContext->lastActive = time(NULL);
     clientContext->keepAlive = false;
+    clientContext->lastActive = time(NULL);
 
     return (clientContext);
 }
@@ -246,7 +247,7 @@ void GlobalServer::handleIncompletedHeader(ClientContext *clientContext)
             if (transferEncodingLine.find("chunked") != std::string::npos)
                 clientContext->isChunkedRequest = true;
             else
-                throw std::runtime_error(RED "Error 400 (to handle proprely) due to Transfer-Encoding format" DEFAULT);
+                throw std::runtime_error(RED "Error 400 (to handle proprely) due to Transfer-Encoding format" DEFAULT); // TODO: check expected behavior
         }
         if (clientContext->isChunkedRequest == false)
         {
@@ -283,30 +284,33 @@ void GlobalServer::checkBodySizeValidity(ClientContext *clientContext, std::stri
     }
     else if (clientContext->expectedBodySize > 0)
     {
-        if (clientContext->recvBuffer.size() - clientContext->bodyStartIndex > clientContext->expectedBodySize)
+        if (clientContext->recvBuffer.size() - clientContext->bodyStartIndex == clientContext->expectedBodySize)
+            clientContext->requestIsComplete = true;
+        else if (clientContext->recvBuffer.size() - clientContext->bodyStartIndex > clientContext->expectedBodySize)
             throw std::runtime_error(RED "Error 413 (to handle proprely) due to request body size > client_max_body_size" DEFAULT);
-
-        if (!pathRequest.empty())
-        {
-            std::string firstLine = clientContext->recvBuffer.substr(0, clientContext->recvBuffer.find("\r\n"));
-            std::size_t posPath = firstLine.find(" ") + 1;
-
-            if (posPath == std::string::npos)
-                throw std::runtime_error(RED "Error 400(?) (to handle proprely) due to first line format" DEFAULT);
-
-            pathRequest = clientContext->recvBuffer.substr(posPath, firstLine.find(" ", posPath) - posPath);
-        }
-
-        if (this->_serversConfig.at(clientContext->serverFd).isValidLocationPath(pathRequest))
-        {
-            if (clientContext->recvBuffer.size() - clientContext->bodyStartIndex > static_cast<std::size_t>(this->_serversConfig.at(clientContext->serverFd).getLocationConfigByPath(pathRequest).getClientMaxBodySize()))
-                throw std::runtime_error(RED "Error 413(?) (to handle proprely) due to request body size > client_max_body_size" DEFAULT);
-        }
-        else if (clientContext->recvBuffer.size() - clientContext->bodyStartIndex > static_cast<std::size_t>(this->_serversConfig.at(clientContext->serverFd).getClientMaxBodySize()))
-            throw std::runtime_error(RED "Error 413(?) (to handle proprely) due to request body size > client_max_body_size" DEFAULT);
     }
     else
         throw std::runtime_error(RED "Unknowned error during recv()" DEFAULT);
+
+    if (!pathRequest.empty())
+    {
+        std::string firstLine = clientContext->recvBuffer.substr(0, clientContext->recvBuffer.find("\r\n"));
+        std::size_t posPath = firstLine.find(" ") + 1;
+
+        if (posPath == std::string::npos)
+            throw std::runtime_error(RED "Error 400(?) (to handle proprely) due to first line format" DEFAULT);
+
+        pathRequest = clientContext->recvBuffer.substr(posPath, firstLine.find(" ", posPath) - posPath);
+    }
+
+    if (this->_serversConfig.at(clientContext->serverFd).isValidLocationPath(pathRequest))
+    {
+        long long locationClientMaxBodySize = this->_serversConfig.at(clientContext->serverFd).getLocationConfigByPath(pathRequest).getClientMaxBodySize();
+        if (clientContext->recvBuffer.size() - clientContext->bodyStartIndex > static_cast<std::size_t>(locationClientMaxBodySize))
+            throw std::runtime_error(RED "Error 413(?) (to handle proprely) due to request body size > client_max_body_size" DEFAULT);
+    }
+    else if (clientContext->recvBuffer.size() - clientContext->bodyStartIndex > static_cast<std::size_t>(this->_serversConfig.at(clientContext->serverFd).getClientMaxBodySize()))
+        throw std::runtime_error(RED "Error 413(?) (to handle proprely) due to request body size > client_max_body_size" DEFAULT);
 }
 
 void GlobalServer::handleReading(ClientContext *clientContext)
@@ -326,32 +330,23 @@ void GlobalServer::handleReading(ClientContext *clientContext)
             for (ssize_t i = 0; i < r; i++)
                 clientContext->recvBuffer.push_back(buf[i]);
 
-            // Check if header is fully received
             if (clientContext->headerIsComplete == false)
                 this->handleIncompletedHeader(clientContext);
-            // Check if body size doesn't exceed client_max_body_size parameter for chunked requests or "Content-Length"
             else if (clientContext->requestIsComplete == false)
                 this->checkBodySizeValidity(clientContext, pathRequest);
             else
                 throw std::runtime_error(RED "Error 400 (to handle proprely) due to too much data sent" DEFAULT);
         }
+        // else if (r == 0)
+        // {
+        //     // TODO ?
+        // }
         else if (r == -1 && errno == EAGAIN)
-        {
-            if (clientContext->recvBuffer.size() - clientContext->bodyStartIndex == clientContext->expectedBodySize)
-                clientContext->requestIsComplete = true;
             break;
-        }
         else
             throw std::runtime_error(RED "error ? r=" + toString(r) + " errno = " + toString(errno) + DEFAULT);
     }
-    // std::cout << "Request is complete: " << (clientContext->requestIsComplete == true ? "true" : "false") << std::endl;
-    std::cout << "\"" << clientContext->recvBuffer << "\"" << std::endl;
-
-    // if (request.empty())
-    // {
-    //     std::cout << "Empty request" << std::endl;
-    //     return;
-    // }
+    std::cout << "\"" << clientContext->recvBuffer << "\"" << std::endl; // TODO: for debug (to delete)
 
     try
     {
