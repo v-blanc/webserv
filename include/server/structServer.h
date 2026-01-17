@@ -14,6 +14,7 @@
 #define STRUCTSERVER_H
 
 #include "define.h"
+#include <string>
 
 struct EpollContext
 {

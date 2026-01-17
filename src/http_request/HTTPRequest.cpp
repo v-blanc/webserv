@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/07 14:57:52 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/11 18:19:09 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/01/13 16:45:26 by yabokhar         ###   ########lyon.fr   */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,23 +35,132 @@ HTTPRequest::~HTTPRequest()
 {
 }
 
+std::string HTTPRequest::getPathWithoutQuery() const
+{
+    std::size_t q = this->_path.find('?');
+    if (q == std::string::npos)
+        return (this->_path);
+    return (this->_path.substr(0, q));
+}
+
+bool HTTPRequest::isCgiExtension() const
+
+{
+	std::string lowerPath(this->getPathWithoutQuery());
+
+    for (size_t i = 0; i < lowerPath.size(); ++i)
+        lowerPath[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(lowerPath[i])));
+    if (lowerPath.size() >= 4 && lowerPath.rfind(".php") == lowerPath.size() - 4)
+        return (true);
+    if (lowerPath.size() >= 3 && lowerPath.rfind(".py") == lowerPath.size() - 3)
+        return (true);
+    if (lowerPath.size() >= 4 && lowerPath.rfind(".cgi") == lowerPath.size() - 4)
+        return (true);
+    return (false);
+}
+
+void HTTPRequest::sendCgiStubResponse(int &clientFd) const
+
+{
+    std::string resp;
+	std::string const body = "CGI detected for: " + this->_path + "\n";
+
+    resp = "HTTP/1.1 501 Not Implemented\r\n";
+    resp += "Content-Type: text/plain\r\n";
+    resp += "Content-Length: ";
+	resp += toString(body.size());
+    resp += "\r\n\r\n";
+	resp += body;
+    send(clientFd, resp.c_str(), resp.size(), MSG_NOSIGNAL);
+}
+
+std::string HTTPRequest::getNormalizedExtensionFromPath() const
+
+{
+	std::string lowerPath(this->getPathWithoutQuery());
+
+    for (size_t i = 0; i < lowerPath.size(); ++i)
+        lowerPath[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(lowerPath[i])));
+
+    std::size_t slash = lowerPath.find_last_of('/');
+    std::string base = (slash == std::string::npos) ? lowerPath : lowerPath.substr(slash + 1);
+    std::size_t dot = base.find_last_of('.');
+    if (dot == std::string::npos || dot == 0 || dot == base.size() - 1)
+        return ("");
+    return (base.substr(dot));
+}
+
+static std::string normalizeExt(std::string ext)
+
+{
+    for (size_t i = 0; i < ext.size(); ++i)
+        ext[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(ext[i])));
+    if (!ext.empty() && ext[0] != '.')
+        ext = "." + ext;
+    return (ext);
+}
+
+bool HTTPRequest::resolveCgiInterpreter(const std::vector<stringPair> &cgiHandlers, std::string &interpreter) const
+
+{
+    std::string const   ext = this->getNormalizedExtensionFromPath();
+
+    if (ext.empty())
+        return (false);
+    if (ext != ".php" && ext != ".py" && ext != ".cgi")
+        return (false);
+    for (size_t i = 0; i < cgiHandlers.size(); ++i)
+    {
+        if (normalizeExt(cgiHandlers[i].first) == ext)
+        {
+            interpreter = cgiHandlers[i].second;
+            return (true);
+        }
+    }
+    return (false);
+}
+
+void HTTPRequest::debugResponseWithCgiHandlers(int &clientFd, const std::vector<stringPair> &cgiHandlers)
+
+{
+    std::string interpreter;
+
+    if (this->resolveCgiInterpreter(cgiHandlers, interpreter))
+    {
+        std::string body = "CGI selected\n";
+        body += "path: " + this->_path + "\n";
+        body += "interpreter: " + interpreter + "\n";
+
+        std::string resp = "HTTP/1.1 501 Not Implemented\r\n";
+        resp += "Content-Type: text/plain\r\n";
+        resp += "Content-Length: " + toString(body.size()) + "\r\n\r\n";
+        resp += body;
+        send(clientFd, resp.c_str(), resp.size(), MSG_NOSIGNAL);
+        return ;
+    }
+    this->debugStandardReponse(clientFd);
+}
+
 void HTTPRequest::debugStandardReponse(int &clientFd)
 {
     if (!this->_isValidRequest)
-        return;
+        return ;
 
     std::string sendBuf = "HTTP/1.1 200 OK\r\nLocation: http://localhost:8080/\r\nContent-Length: ";
     std::string fileName = "www" + this->_path;
 
+    if (this->isCgiExtension())
+    {
+        this->sendCgiStubResponse(clientFd);
+        return ;
+    }
     if (this->_path == "/")
         fileName.append("index.html");
-
-    // std::cout << "request: \n\"" << request << "\"" << std::endl;
 
     if (isInvalidPath(fileName))
     {
         std::cerr << "Invalid path: contain invalid " << std::endl;
-        return;
+        return ;
     }
 
     std::string content = getLocalFileContent(fileName);
