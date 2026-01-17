@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/05 19:35:55 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/13 16:22:58 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/01/15 20:24:17 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,6 +47,8 @@ public:
     void pushBackListen(const listenPair listen) { this->_listen.push_back(listen); };
     void pushBackServerName(const std::string serverName) { this->_serverName.push_back(serverName); };
     void pushBackCgiHandler(const stringPair cgiHandler) { this->_cgiHandler.push_back(cgiHandler); };
+
+    bool isValidLocationPath(std::string &path) const { return (this->_locationConfigByPath.find(path) != this->_locationConfigByPath.end()); };
 
 private:
     Node &_node;

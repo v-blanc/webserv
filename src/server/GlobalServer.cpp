@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:14 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/13 16:24:07 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/01/15 20:37:51 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -232,12 +232,90 @@ void GlobalServer::handleCloseConnexion(ClientContext *clientContext)
     delete clientContext;
 }
 
+void GlobalServer::handleIncompletedHeader(ClientContext *clientContext)
+{
+    std::size_t pos = clientContext->recvBuffer.find("\r\n\r\n");
+    if (pos != std::string::npos)
+    {
+        clientContext->bodyStartIndex = pos + 4;
+
+        std::size_t posTransfer = clientContext->recvBuffer.find("Transfer-Encoding:");
+        if (posTransfer != std::string::npos)
+        {
+            std::string transferEncodingLine = clientContext->recvBuffer.substr(posTransfer, clientContext->recvBuffer.find("\r\n", posTransfer) - posTransfer);
+            if (transferEncodingLine.find("chunked") != std::string::npos)
+                clientContext->isChunkedRequest = true;
+            else
+                throw std::runtime_error(RED "Error 400 (to handle proprely) due to Transfer-Encoding format" DEFAULT);
+        }
+        if (clientContext->isChunkedRequest == false)
+        {
+            std::string contentLengthFormat = "Content-Length:";
+            std::size_t posContent = clientContext->recvBuffer.find(contentLengthFormat);
+            if (posContent != std::string::npos)
+            {
+                std::size_t startSize = posContent + contentLengthFormat.size();
+                std::size_t endSize = clientContext->recvBuffer.find("\r\n", startSize);
+
+                std::stringstream ss(clientContext->recvBuffer.substr(startSize, endSize - startSize));
+                ss >> clientContext->expectedBodySize;
+
+                if (!ss.eof() || ss.fail())
+                    throw std::runtime_error(RED "Error 400 (to handle proprely) due to Content-Length format" DEFAULT);
+
+                if (clientContext->expectedBodySize > static_cast<std::size_t>(this->_serversConfig.at(clientContext->serverFd).getClientMaxBodySize()))
+                    throw std::runtime_error(RED "Error 413 (to handle proprely) due to request body size > client_max_body_size" DEFAULT);
+            }
+        }
+
+        clientContext->headerIsComplete = true;
+
+        if (clientContext->isChunkedRequest == false && clientContext->expectedBodySize == 0)
+            clientContext->requestIsComplete = true;
+    }
+}
+
+void GlobalServer::checkBodySizeValidity(ClientContext *clientContext, std::string &pathRequest)
+{
+    if (clientContext->isChunkedRequest == true)
+    {
+        // TODO
+    }
+    else if (clientContext->expectedBodySize > 0)
+    {
+        if (clientContext->recvBuffer.size() - clientContext->bodyStartIndex > clientContext->expectedBodySize)
+            throw std::runtime_error(RED "Error 413 (to handle proprely) due to request body size > client_max_body_size" DEFAULT);
+
+        if (!pathRequest.empty())
+        {
+            std::string firstLine = clientContext->recvBuffer.substr(0, clientContext->recvBuffer.find("\r\n"));
+            std::size_t posPath = firstLine.find(" ") + 1;
+
+            if (posPath == std::string::npos)
+                throw std::runtime_error(RED "Error 400(?) (to handle proprely) due to first line format" DEFAULT);
+
+            pathRequest = clientContext->recvBuffer.substr(posPath, firstLine.find(" ", posPath) - posPath);
+        }
+
+        if (this->_serversConfig.at(clientContext->serverFd).isValidLocationPath(pathRequest))
+        {
+            if (clientContext->recvBuffer.size() - clientContext->bodyStartIndex > static_cast<std::size_t>(this->_serversConfig.at(clientContext->serverFd).getLocationConfigByPath(pathRequest).getClientMaxBodySize()))
+                throw std::runtime_error(RED "Error 413(?) (to handle proprely) due to request body size > client_max_body_size" DEFAULT);
+        }
+        else if (clientContext->recvBuffer.size() - clientContext->bodyStartIndex > static_cast<std::size_t>(this->_serversConfig.at(clientContext->serverFd).getClientMaxBodySize()))
+            throw std::runtime_error(RED "Error 413(?) (to handle proprely) due to request body size > client_max_body_size" DEFAULT);
+    }
+    else
+        throw std::runtime_error(RED "Unknowned error during recv()" DEFAULT);
+}
+
 void GlobalServer::handleReading(ClientContext *clientContext)
 {
     std::cout << YELLOW DARKEN + getTimeOfDay() + " [debug] : Read from fd " << clientContext->fd << DEFAULT << std::endl;
 
     ssize_t r;
     char buf[RECV_BUFFER_SIZE];
+    std::string pathRequest;
 
     while (true)
     {
@@ -250,62 +328,10 @@ void GlobalServer::handleReading(ClientContext *clientContext)
 
             // Check if header is fully received
             if (clientContext->headerIsComplete == false)
-            {
-                std::size_t pos = clientContext->recvBuffer.find("\r\n\r\n");
-                if (pos != std::string::npos)
-                {
-                    clientContext->bodyStartIndex = pos + 4;
-
-                    std::size_t posTransfer = clientContext->recvBuffer.find("Transfer-Encoding:");
-                    if (posTransfer != std::string::npos)
-                    {
-                        std::string transferEncodingLine = clientContext->recvBuffer.substr(posTransfer, clientContext->recvBuffer.find("\r\n", posTransfer) - posTransfer);
-                        if (transferEncodingLine.find("chunked") != std::string::npos)
-                            clientContext->isChunkedRequest = true;
-                        else
-                            throw std::runtime_error(RED "Error 400 (to handle proprely) due to Transfer-Encoding format" DEFAULT);
-                    }
-                    if (clientContext->isChunkedRequest == false)
-                    {
-                        std::string contentLengthFormat = "Content-Length:";
-                        std::size_t posContent = clientContext->recvBuffer.find(contentLengthFormat);
-                        if (posContent != std::string::npos)
-                        {
-                            std::size_t startSize = posContent + contentLengthFormat.size();
-                            std::size_t endSize = clientContext->recvBuffer.find("\r\n", startSize);
-
-                            std::stringstream ss(clientContext->recvBuffer.substr(startSize, endSize - startSize));
-                            ss >> clientContext->expectedBodySize;
-
-                            if (!ss.eof() || ss.fail())
-                                throw std::runtime_error(RED "Error 400 (to handle proprely) due to Content-Length format" DEFAULT);
-
-                            if (clientContext->expectedBodySize > static_cast<std::size_t>(this->_serversConfig.at(clientContext->serverFd).getClientMaxBodySize()))
-                                throw std::runtime_error(RED "Error 413 (to handle proprely) due to request body size > client_max_body_size" DEFAULT);
-                        }
-                    }
-
-                    clientContext->headerIsComplete = true;
-
-                    if (clientContext->isChunkedRequest == false && clientContext->expectedBodySize == 0)
-                        clientContext->requestIsComplete = true;
-                }
-            }
+                this->handleIncompletedHeader(clientContext);
             // Check if body size doesn't exceed client_max_body_size parameter for chunked requests or "Content-Length"
             else if (clientContext->requestIsComplete == false)
-            {
-                if (clientContext->isChunkedRequest == true)
-                {
-                    // TODO
-                }
-                else if (clientContext->expectedBodySize > 0)
-                {
-                    if (clientContext->recvBuffer.size() - clientContext->bodyStartIndex > clientContext->expectedBodySize)
-                        throw std::runtime_error(RED "Error 413 (to handle proprely) due to request body size > client_max_body_size" DEFAULT);
-                }
-                else
-                    throw std::runtime_error(RED "Unknowned error during recv()" DEFAULT);
-            }
+                this->checkBodySizeValidity(clientContext, pathRequest);
             else
                 throw std::runtime_error(RED "Error 400 (to handle proprely) due to too much data sent" DEFAULT);
         }
@@ -319,7 +345,7 @@ void GlobalServer::handleReading(ClientContext *clientContext)
             throw std::runtime_error(RED "error ? r=" + toString(r) + " errno = " + toString(errno) + DEFAULT);
     }
     // std::cout << "Request is complete: " << (clientContext->requestIsComplete == true ? "true" : "false") << std::endl;
-    // std::cout << "\"" << clientContext->recvBuffer << "\"" << std::endl;
+    std::cout << "\"" << clientContext->recvBuffer << "\"" << std::endl;
 
     // if (request.empty())
     // {
