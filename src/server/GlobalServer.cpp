@@ -6,60 +6,12 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:14 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/17 22:36:59 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/01/17 23:07:32 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "GlobalServer.hpp"
 #include "Cgi.hpp"
-#include <fcntl.h>
-#include <sys/wait.h>
-
-#define CGI_TIMEOUT_SECONDS 5
-
-static bool pathStartsWithLocation(std::string const &path, std::string const &location)
-{
-    if (location.empty())
-        return (false);
-    if (location == "/")
-        return (true);
-    if (path.size() < location.size())
-        return (false);
-    if (path.compare(0, location.size(), location) != 0)
-        return (false);
-    if (path.size() == location.size())
-        return (true);
-    return (path[location.size()] == '/');
-}
-
-static LocationConfig const *findBestLocation(std::vector<LocationConfig> const &locations, std::string const &path)
-{
-    LocationConfig const    *best;
-    std::size_t             bestLen;
-
-    best = NULL;
-    bestLen = 0;
-    for (std::size_t i = 0; i < locations.size(); ++i)
-    {
-        std::string const &locPath = locations[i].getPath();
-        if (pathStartsWithLocation(path, locPath) && locPath.size() >= bestLen)
-        {
-            best = &locations[i];
-            bestLen = locPath.size();
-        }
-    }
-    return (best);
-}
-
-static ServerConfig const &pickServerConfig(std::vector<ServerConfig> const &servers, std::vector<Server> const &runtimeServers, int serverFd)
-{
-    for (std::size_t i = 0; i < runtimeServers.size() && i < servers.size(); ++i)
-    {
-        if (runtimeServers[i].hasListenFd(serverFd))
-            return (servers[i]);
-    }
-    return (servers.at(0));
-}
 
 bool keepRunningServer = true;
 
@@ -149,7 +101,7 @@ void GlobalServer::loopServer()
         this->closeOldClientConnexions();
 
         if (n < 0)
-            continue ;
+            continue;
         for (int i = 0; i < n; i++)
         {
             EpollContext *context = static_cast<EpollContext *>(events[i].data.ptr);
@@ -160,70 +112,6 @@ void GlobalServer::loopServer()
                 {
                     this->handleNewClientConnexion(serverContext->fd);
                     break;
-                }
-            }
-            else if (CgiContext *cgiContext = dynamic_cast<CgiContext *>(context))
-            {
-                // Timeout check
-                if ((time(NULL) - cgiContext->startTime) > CGI_TIMEOUT_SECONDS)
-                {
-                    kill(cgiContext->pid, SIGKILL);
-                    waitpid(cgiContext->pid, NULL, 0);
-
-                    std::string resp = "HTTP/1.1 504 Gateway Timeout\r\n";
-                    resp += "Content-Type: text/plain\r\n";
-                    resp += "Connection: close\r\n\r\n";
-                    resp += "CGI timeout\n";
-                    send(cgiContext->client->fd, resp.c_str(), resp.size(), MSG_NOSIGNAL);
-
-                    epoll_ctl(this->_epfd, EPOLL_CTL_DEL, cgiContext->fd, NULL);
-                    close(cgiContext->fd);
-                    ClientContext *client = cgiContext->client;
-                    delete cgiContext;
-                    this->handleCloseConnexion(client);
-                    continue;
-                }
-
-                // Read CGI output (handle EPOLLIN, EPOLLHUP, EPOLLRDHUP)
-                if (events[i].events & (EPOLLIN | EPOLLHUP | EPOLLRDHUP))
-                {
-                    char buf[4096];
-                    ssize_t r;
-
-                    // Read all available data
-                    while ((r = read(cgiContext->fd, buf, sizeof(buf))) > 0)
-                        cgiContext->client->cgiOut.append(buf, r);
-
-                    // EOF or pipe closed: send response
-                    if (r == 0 || (events[i].events & (EPOLLHUP | EPOLLRDHUP)))
-                    {
-                        int status;
-                        waitpid(cgiContext->pid, &status, 0);
-
-                        std::string body = cgiContext->client->cgiOut;
-                        std::string resp = "HTTP/1.1 200 OK\r\n";
-                        resp += "Content-Type: text/plain\r\n";
-                        resp += "Content-Length: " + toString(body.size()) + "\r\n";
-                        resp += "Connection: close\r\n\r\n";
-                        resp += body;
-                        send(cgiContext->client->fd, resp.c_str(), resp.size(), MSG_NOSIGNAL);
-
-                        epoll_ctl(this->_epfd, EPOLL_CTL_DEL, cgiContext->fd, NULL);
-                        close(cgiContext->fd);
-                        ClientContext *client = cgiContext->client;
-                        delete cgiContext;
-                        this->handleCloseConnexion(client);
-                    }
-                    else if (r < 0 && errno != EAGAIN && errno != EWOULDBLOCK)
-                    {
-                        // Real error
-                        waitpid(cgiContext->pid, NULL, WNOHANG);
-                        epoll_ctl(this->_epfd, EPOLL_CTL_DEL, cgiContext->fd, NULL);
-                        close(cgiContext->fd);
-                        ClientContext *client = cgiContext->client;
-                        delete cgiContext;
-                        this->handleCloseConnexion(client);
-                    }
                 }
             }
             else if (ClientContext *clientContext = dynamic_cast<ClientContext *>(context))
@@ -331,13 +219,13 @@ void GlobalServer::handleCloseConnexion(ClientContext *clientContext)
     if (this->_clientContexts.count(clientContext->fd) == 0)
     {
         std::cout << MAGENTA + getTimeOfDay() + " [debug] : Trying to close client fd " << clientContext->fd << " but is already closed" DEFAULT << std::endl;
-        return ;
+        return;
     }
 
     std::cout << MAGENTA + getTimeOfDay() + " [debug] : Close connexion fd " << clientContext->fd << DEFAULT << std::endl;
 
     if (epoll_ctl(this->_epfd, EPOLL_CTL_DEL, clientContext->fd, NULL))
-        throw (std::runtime_error(RED "epoll_ctl() HERE error" DEFAULT));
+        throw(std::runtime_error(RED "epoll_ctl() HERE error" DEFAULT));
 
     close(clientContext->fd);
     this->_clientContexts.erase(clientContext->fd);
@@ -458,59 +346,12 @@ void GlobalServer::handleReading(ClientContext *clientContext)
     }
     std::cout << "\"" << clientContext->recvBuffer << "\"" << std::endl; // TODO: for debug (to delete)
 
-    if (clientContext->isChunkedRequest && clientContext->requestIsComplete)
-    {
-        std::string bodyChunked = clientContext->recvBuffer.substr(clientContext->bodyStartIndex);
-        unchunkBody(bodyChunked);
-        clientContext->recvBuffer.erase(clientContext->bodyStartIndex);
-        clientContext->recvBuffer.append(bodyChunked);
-    }
-
     try
     {
         HTTPRequest httpRequest(this->_serversConfig.at(clientContext->serverFd), clientContext->recvBuffer);
         // printHTTPRequest(httpRequest);
 
-        std::vector<ServerConfig> servers = this->_globalConfig.getServerConfig();
-        if (!servers.empty())
-        {
-            ServerConfig const &server = pickServerConfig(servers, this->_servers, clientContext->serverFd);
-            std::string serverName = "<unknown>";
-            if (!server.getServerName().empty())
-                serverName = server.getServerName().at(0);
-            std::string listenStr = "<unknown>";
-            if (!server.getListenStr().empty())
-                listenStr = server.getListenStr().at(0);
-            std::cout << YELLOW DARKEN + getTimeOfDay() + " [debug] : Read from fd " << clientContext->fd
-                    << " (server='" << serverName << "' listen='" << listenStr << "')" << DEFAULT << std::endl;
-        }
-        else
-            std::cout << YELLOW DARKEN + getTimeOfDay() + " [debug] : Read from fd " << clientContext->fd << DEFAULT << std::endl;
-        if (servers.empty())
-        {
-            httpRequest.debugStandardReponse(clientContext->fd);
-            return ;
-        }
-
-        ServerConfig const &server = pickServerConfig(servers, this->_servers, clientContext->serverFd);
-        std::vector<LocationConfig> const locations = server.getLocationConfig();
-        LocationConfig const *bestLoc = findBestLocation(locations, httpRequest.getPathWithoutQuery());
-
-        std::vector<stringPair> cgiHandlers;
-        if (bestLoc != NULL)
-            cgiHandlers = bestLoc->getCgiHandler();
-        else
-            cgiHandlers = server.getCgiHandler();
-
-        std::string interpreter;
-        if (httpRequest.resolveCgiInterpreter(cgiHandlers, interpreter))
-        {
-            CgiContext *cgiCtx = launchCgi(httpRequest, interpreter, clientContext, this->_epfd);
-            if (!cgiCtx)
-                httpRequest.debugStandardReponse(clientContext->fd);
-            return ;
-        }
-        httpRequest.debugResponseWithCgiHandlers(clientContext->fd, cgiHandlers);
+        // httpRequest.debugResponseWithCgiHandlers(clientContext->fd, cgiHandlers);
     }
     catch (const std::exception &e)
     {

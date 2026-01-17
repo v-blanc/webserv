@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/10 10:24:29 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/17 22:12:07 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/01/17 23:09:52 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,6 +45,14 @@ struct ClientContext : EpollContext
     int serverFd;
     bool keepAlive;
     time_t lastActive;
+};
+
+struct CgiContext : EpollContext
+{
+    ClientContext *client;
+    pid_t pid;
+    time_t startTime;
+    std::string script;
 };
 
 #endif
