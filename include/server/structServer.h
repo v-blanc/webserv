@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/10 10:24:29 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/11 19:23:05 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/01/13 16:48:48 by yabokhar         ###   ########lyon.fr   */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 #define STRUCTSERVER_H
 
 #include "define.h"
+#include <string>
 
 struct EpollContext
 {
@@ -43,6 +44,17 @@ struct ClientContext : EpollContext
     int serverFd;
     time_t lastActive;
     bool keepAlive;
+
+    // CGI output
+    std::string cgiOut;
+};
+
+struct CgiContext : EpollContext
+{
+    ClientContext* client;
+    pid_t pid;
+    time_t startTime;
+    std::string script;
 };
 
 #endif

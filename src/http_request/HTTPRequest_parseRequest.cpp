@@ -59,9 +59,16 @@ void HTTPRequest::parseFirstLine(std::string &firstLine)
 
     if (pos != std::string::npos)
     {
-        std::string path = firstLine.substr(prevPos, pos - prevPos);
+        std::string const path = firstLine.substr(prevPos, pos - prevPos);
         if (pos != prevPos)
+        {
             this->_path = path;
+            std::size_t const q = path.find('?');
+            if (q != std::string::npos)
+                this->_queryString = path.substr(q + 1);
+            else
+                this->_queryString.clear();
+        }
         else
             throw std::runtime_error("HTTP Request path wrong format");
     }
@@ -94,6 +101,8 @@ void HTTPRequest::parseHeader(std::string &line)
         if (ss.fail())
             throw std::runtime_error("HTTP Request error during stringstream");
     }
+    else if (headerName == "Content-Type")
+        this->_contentType = line.substr(pos + 1);
     else if (headerName == "Connection")
     {
         if (line.substr(pos + 1) == "keep-alive")
@@ -102,6 +111,11 @@ void HTTPRequest::parseHeader(std::string &line)
             this->_connection = false;
         else
             throw std::runtime_error("HTTP Request wrong format");
+    }
+    else if (headerName == "Transfer-Encoding")
+    {
+        if (line.substr(pos + 1) == "chunked")
+            this->_isChunked = true;
     }
 }
 
