@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/04 12:35:58 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/11 18:57:45 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/01/19 20:03:39 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,7 +48,8 @@
 #define DEFAULT_CONFIG_PATH "config/good/webserv.conf"
 #define MAX_EPOLL_WAIT_EVENTS 128
 #define RECV_BUFFER_SIZE 128
-#define TIMEOUT_OLD_CONNEXIONS 4 // in seconds
+#define MAX_HEADER_SIZE 8192
+#define TIMEOUT_OLD_CONNEXIONS 20 // in seconds
 
 // TYPEDEF
 typedef std::pair<std::string, std::string> stringPair;
