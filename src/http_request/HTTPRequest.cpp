@@ -6,18 +6,21 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/07 14:57:52 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/13 16:45:26 by yabokhar         ###   ########lyon.fr   */
+/*   Updated: 2026/01/19 19:44:50 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "HTTPRequest.hpp"
 
-HTTPRequest::HTTPRequest(ServerConfig &serverConfig, std::string &request) : _serverConfig(serverConfig), _isValidRequest(false), _contentLength(0), _connection(true)
+HTTPRequest::HTTPRequest(ServerConfig &serverConfig, std::string &request, std::string &response) : _serverConfig(serverConfig), _isValidRequest(false), _contentLength(0), _connection(true)
 {
     try
     {
         this->parseRequest(request);
         this->_isValidRequest = true;
+
+        // TODO: to test
+        response = "HTTP/1.1 200 OK\r\nContent-Length: 54\r\nConnection: keep-alive\r\n\r\n<!DOCTYPE html>\n<html>\n<body>\n<h1>\nTEST\n</h1>\n</body>\n";
     }
     catch (const std::runtime_error &e)
     {
@@ -46,7 +49,7 @@ std::string HTTPRequest::getPathWithoutQuery() const
 bool HTTPRequest::isCgiExtension() const
 
 {
-	std::string lowerPath(this->getPathWithoutQuery());
+    std::string lowerPath(this->getPathWithoutQuery());
 
     for (size_t i = 0; i < lowerPath.size(); ++i)
         lowerPath[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(lowerPath[i])));
@@ -63,21 +66,21 @@ void HTTPRequest::sendCgiStubResponse(int &clientFd) const
 
 {
     std::string resp;
-	std::string const body = "CGI detected for: " + this->_path + "\n";
+    std::string const body = "CGI detected for: " + this->_path + "\n";
 
     resp = "HTTP/1.1 501 Not Implemented\r\n";
     resp += "Content-Type: text/plain\r\n";
     resp += "Content-Length: ";
-	resp += toString(body.size());
+    resp += toString(body.size());
     resp += "\r\n\r\n";
-	resp += body;
+    resp += body;
     send(clientFd, resp.c_str(), resp.size(), MSG_NOSIGNAL);
 }
 
 std::string HTTPRequest::getNormalizedExtensionFromPath() const
 
 {
-	std::string lowerPath(this->getPathWithoutQuery());
+    std::string lowerPath(this->getPathWithoutQuery());
 
     for (size_t i = 0; i < lowerPath.size(); ++i)
         lowerPath[i] = static_cast<char>(std::tolower(static_cast<unsigned char>(lowerPath[i])));
@@ -103,7 +106,7 @@ static std::string normalizeExt(std::string ext)
 bool HTTPRequest::resolveCgiInterpreter(const std::vector<stringPair> &cgiHandlers, std::string &interpreter) const
 
 {
-    std::string const   ext = this->getNormalizedExtensionFromPath();
+    std::string const ext = this->getNormalizedExtensionFromPath();
 
     if (ext.empty())
         return (false);
@@ -136,7 +139,7 @@ void HTTPRequest::debugResponseWithCgiHandlers(int &clientFd, const std::vector<
         resp += "Content-Length: " + toString(body.size()) + "\r\n\r\n";
         resp += body;
         send(clientFd, resp.c_str(), resp.size(), MSG_NOSIGNAL);
-        return ;
+        return;
     }
     this->debugStandardReponse(clientFd);
 }
@@ -144,7 +147,7 @@ void HTTPRequest::debugResponseWithCgiHandlers(int &clientFd, const std::vector<
 void HTTPRequest::debugStandardReponse(int &clientFd)
 {
     if (!this->_isValidRequest)
-        return ;
+        return;
 
     std::string sendBuf = "HTTP/1.1 200 OK\r\nLocation: http://localhost:8080/\r\nContent-Length: ";
     std::string fileName = "www" + this->_path;
@@ -152,7 +155,7 @@ void HTTPRequest::debugStandardReponse(int &clientFd)
     if (this->isCgiExtension())
     {
         this->sendCgiStubResponse(clientFd);
-        return ;
+        return;
     }
     if (this->_path == "/")
         fileName.append("index.html");
@@ -160,7 +163,7 @@ void HTTPRequest::debugStandardReponse(int &clientFd)
     if (isInvalidPath(fileName))
     {
         std::cerr << "Invalid path: contain invalid " << std::endl;
-        return ;
+        return;
     }
 
     std::string content = getLocalFileContent(fileName);

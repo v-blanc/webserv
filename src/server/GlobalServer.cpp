@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:14 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/17 23:35:28 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/01/19 19:59:30 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -131,7 +131,7 @@ void GlobalServer::loopServer()
                         this->handleReading(clientContext);
                         break;
                     }
-                    if (events[i].events & EPOLLOUT) // Write
+                    if (events[i].events & EPOLLOUT)
                     {
                         this->handleWriting(clientContext);
                         break;
@@ -140,6 +140,20 @@ void GlobalServer::loopServer()
             }
         }
     }
+}
+
+static void resetClientContext(ClientContext *clientContext)
+{
+    clientContext->state = READING_HEADERS;
+
+    clientContext->recvBuffer.empty();
+    clientContext->isChunkedRequest = false;
+    clientContext->currentUnchunkedIndex = 0;
+    clientContext->expectedBodySize = 0;
+    clientContext->bodyStartIndex = 0;
+
+    clientContext->sendBuffer.empty();
+    clientContext->sendBufferIndex = 0;
 }
 
 static ClientContext *newClientContext(int clientSocket, int serverFd)
@@ -158,16 +172,7 @@ static ClientContext *newClientContext(int clientSocket, int serverFd)
 
     clientContext->fd = clientSocket;
 
-    clientContext->recvBuffer.empty();
-    clientContext->isChunkedRequest = false;
-    clientContext->headerIsComplete = false;
-    clientContext->currentUnchunkedIndex = 0;
-    clientContext->expectedBodySize = 0;
-    clientContext->bodyStartIndex = 0;
-    clientContext->requestIsComplete = false;
-
-    clientContext->sendBuffer.empty();
-    clientContext->sendBufferIndex = 0;
+    resetClientContext(clientContext);
 
     clientContext->serverFd = serverFd;
     clientContext->keepAlive = false;
@@ -217,25 +222,27 @@ void GlobalServer::handleNewClientConnexion(int &serverFd)
     }
 }
 
-void GlobalServer::handleCloseConnexion(ClientContext *clientContext)
+static void enableEPOLLOUT(int &epfd, ClientContext *clientContext)
 {
-    if (this->_clientContexts.count(clientContext->fd) == 0)
-    {
-        std::cout << MAGENTA + getTimeOfDay() + " [debug] : Trying to close client fd " << clientContext->fd << " but is already closed" DEFAULT << std::endl;
-        return;
-    }
+    struct epoll_event ev;
+    ev.events = EPOLLIN | EPOLLOUT | EPOLLRDHUP | EPOLLET;
+    ev.data.ptr = clientContext;
 
-    std::cout << MAGENTA + getTimeOfDay() + " [debug] : Close connexion fd " << clientContext->fd << DEFAULT << std::endl;
-
-    if (epoll_ctl(this->_epfd, EPOLL_CTL_DEL, clientContext->fd, NULL))
-        throw(std::runtime_error(RED "epoll_ctl() HERE error" DEFAULT));
-
-    close(clientContext->fd);
-    this->_clientContexts.erase(clientContext->fd);
-    delete clientContext;
+    if (epoll_ctl(epfd, EPOLL_CTL_MOD, clientContext->fd, &ev))
+        throw std::runtime_error(RED "epoll_ctl() error" DEFAULT); // TODO: handle proprely
 }
 
-void GlobalServer::handleIncompletedHeader(ClientContext *clientContext)
+static void disableEPOLLOUT(int &epfd, ClientContext *clientContext)
+{
+    struct epoll_event ev;
+    ev.events = EPOLLIN | EPOLLRDHUP | EPOLLET;
+    ev.data.ptr = clientContext;
+
+    if (epoll_ctl(epfd, EPOLL_CTL_MOD, clientContext->fd, &ev))
+        throw std::runtime_error(RED "epoll_ctl() error" DEFAULT); // TODO: handle proprely
+}
+
+static void handleHeaders(ClientContext *clientContext)
 {
     std::size_t pos = clientContext->recvBuffer.find("\r\n\r\n");
     if (pos != std::string::npos)
@@ -248,8 +255,6 @@ void GlobalServer::handleIncompletedHeader(ClientContext *clientContext)
             std::string transferEncodingLine = clientContext->recvBuffer.substr(posTransfer, clientContext->recvBuffer.find("\r\n", posTransfer) - posTransfer);
             if (transferEncodingLine.find("chunked") != std::string::npos)
                 clientContext->isChunkedRequest = true;
-            else
-                throw std::runtime_error(RED "Error 400 (to handle proprely) due to Transfer-Encoding format" DEFAULT); // TODO: check expected behavior
         }
         if (clientContext->isChunkedRequest == false)
         {
@@ -266,19 +271,19 @@ void GlobalServer::handleIncompletedHeader(ClientContext *clientContext)
                 if (!ss.eof() || ss.fail())
                     throw std::runtime_error(RED "Error 400 (to handle proprely) due to Content-Length format" DEFAULT);
 
-                if (clientContext->expectedBodySize > static_cast<std::size_t>(this->_serversConfig.at(clientContext->serverFd).getClientMaxBodySize()))
-                    throw std::runtime_error(RED "Error 413 (to handle proprely) due to request body size > client_max_body_size" DEFAULT);
+                if (clientContext->expectedBodySize > MAX_HEADER_SIZE)
+                    throw std::runtime_error(RED "Error 431 (to handle proprely) due to Request Header Fields Too Large" DEFAULT);
             }
         }
 
-        clientContext->headerIsComplete = true;
+        clientContext->state = READING_BODY;
 
         if (clientContext->isChunkedRequest == false && clientContext->expectedBodySize == 0)
-            clientContext->requestIsComplete = true;
+            clientContext->state = READY_TO_SEND;
     }
 }
 
-void GlobalServer::checkBodySizeValidity(ClientContext *clientContext, std::string &pathRequest)
+static void handleBody(ClientContext *clientContext, std::string &pathRequest, ServerConfig &serverConfig)
 {
     if (clientContext->isChunkedRequest == true)
     {
@@ -287,7 +292,7 @@ void GlobalServer::checkBodySizeValidity(ClientContext *clientContext, std::stri
     else if (clientContext->expectedBodySize > 0)
     {
         if (clientContext->recvBuffer.size() - clientContext->bodyStartIndex == clientContext->expectedBodySize)
-            clientContext->requestIsComplete = true;
+            clientContext->state = READY_TO_SEND;
         else if (clientContext->recvBuffer.size() - clientContext->bodyStartIndex > clientContext->expectedBodySize)
             throw std::runtime_error(RED "Error 413 (to handle proprely) due to request body size > client_max_body_size" DEFAULT);
     }
@@ -305,19 +310,25 @@ void GlobalServer::checkBodySizeValidity(ClientContext *clientContext, std::stri
         pathRequest = clientContext->recvBuffer.substr(posPath, firstLine.find(" ", posPath) - posPath);
     }
 
-    if (this->_serversConfig.at(clientContext->serverFd).isValidLocationPath(pathRequest))
+    if (serverConfig.isValidLocationPath(pathRequest))
     {
-        long long locationClientMaxBodySize = this->_serversConfig.at(clientContext->serverFd).getLocationConfigByPath(pathRequest).getClientMaxBodySize();
+        long long locationClientMaxBodySize = serverConfig.getLocationConfigByPath(pathRequest).getClientMaxBodySize();
         if (clientContext->recvBuffer.size() - clientContext->bodyStartIndex > static_cast<std::size_t>(locationClientMaxBodySize))
             throw std::runtime_error(RED "Error 413(?) (to handle proprely) due to request body size > client_max_body_size" DEFAULT);
     }
-    else if (clientContext->recvBuffer.size() - clientContext->bodyStartIndex > static_cast<std::size_t>(this->_serversConfig.at(clientContext->serverFd).getClientMaxBodySize()))
+    else if (clientContext->recvBuffer.size() - clientContext->bodyStartIndex > static_cast<std::size_t>(serverConfig.getClientMaxBodySize()))
         throw std::runtime_error(RED "Error 413(?) (to handle proprely) due to request body size > client_max_body_size" DEFAULT);
 }
 
 void GlobalServer::handleReading(ClientContext *clientContext)
 {
     std::cout << YELLOW DARKEN + getTimeOfDay() + " [debug] : Read from fd " << clientContext->fd << DEFAULT << std::endl;
+
+    if (clientContext->state != READING_HEADERS && clientContext->state != READING_BODY)
+    {
+        std::cout << YELLOW DARKEN + getTimeOfDay() + " [debug] : Trying to read but ‘clientContext->state != *READING*’ (" << clientContext->state << ")..." DEFAULT << std::endl;
+        return;
+    }
 
     ssize_t r;
     char buf[RECV_BUFFER_SIZE];
@@ -331,10 +342,10 @@ void GlobalServer::handleReading(ClientContext *clientContext)
             for (ssize_t i = 0; i < r; i++)
                 clientContext->recvBuffer.push_back(buf[i]);
 
-            if (clientContext->headerIsComplete == false)
-                this->handleIncompletedHeader(clientContext);
-            else if (clientContext->requestIsComplete == false)
-                this->checkBodySizeValidity(clientContext, pathRequest);
+            if (clientContext->state == READING_HEADERS)
+                handleHeaders(clientContext);
+            else if (clientContext->state == READING_BODY)
+                handleBody(clientContext, pathRequest, this->_serversConfig.at(clientContext->serverFd));
             else
                 throw std::runtime_error(RED "Error 400 (to handle proprely) due to too much data sent" DEFAULT);
         }
@@ -349,22 +360,83 @@ void GlobalServer::handleReading(ClientContext *clientContext)
     }
     std::cout << "\"" << clientContext->recvBuffer << "\"" << std::endl; // TODO: for debug (to delete)
 
-    try
+    if (clientContext->state == READY_TO_SEND)
     {
-        HTTPRequest httpRequest(this->_serversConfig.at(clientContext->serverFd), clientContext->recvBuffer);
-        // printHTTPRequest(httpRequest);
+        try
+        {
+            std::cout << YELLOW "Trying HTTPRequest()" DEFAULT << std::endl; // TODO: debug (to delete)
+            HTTPRequest httpRequest(this->_serversConfig.at(clientContext->serverFd), clientContext->recvBuffer, clientContext->sendBuffer);
+            std::cout << YELLOW "Response generated by HTTPRequest()" DEFAULT << std::endl; // TODO: debug (to delete)
 
-        // httpRequest.debugResponseWithCgiHandlers(clientContext->fd, cgiHandlers);
-    }
-    catch (const std::exception &e)
-    {
-        std::cerr << e.what() << std::endl;
+            enableEPOLLOUT(this->_epfd, clientContext);
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << e.what() << std::endl;
+        }
     }
 }
 
-void GlobalServer::handleWriting(ClientContext *clientContext) // TODO: Client fd ?
+void GlobalServer::handleWriting(ClientContext *clientContext)
 {
-    std::cout << "Write socket " << clientContext->fd << std::endl;
+    std::cout << YELLOW DARKEN + getTimeOfDay() + " [debug] : Write from fd " << clientContext->fd << DEFAULT << std::endl;
+
+    if (clientContext->state != READY_TO_SEND && clientContext->state != SENDING)
+    {
+        std::cout << YELLOW DARKEN + getTimeOfDay() + " [debug] : Trying to write but ‘clientContext->state != *SEND*’ (" << clientContext->state << ")..." DEFAULT << std::endl;
+        return;
+    }
+
+    if (clientContext->state == READY_TO_SEND)
+        clientContext->state = SENDING;
+
+    ssize_t s;
+    while (clientContext->sendBufferIndex < static_cast<ssize_t>(clientContext->sendBuffer.size()))
+    {
+        s = send(clientContext->fd, clientContext->sendBuffer.c_str() + clientContext->sendBufferIndex, clientContext->sendBuffer.size() - clientContext->sendBufferIndex, MSG_NOSIGNAL);
+
+        if (s > 0)
+            clientContext->sendBufferIndex += s;
+        else if (s == -1 && (errno == EAGAIN || errno == EWOULDBLOCK))
+        {
+            enableEPOLLOUT(this->_epfd, clientContext);
+            return;
+        }
+        else
+        {
+            throw std::runtime_error(RED "error ? s=" + toString(s) + " errno = " + toString(errno) + DEFAULT);
+            this->handleCloseConnexion(clientContext);
+        }
+    }
+
+    if (clientContext->sendBufferIndex == static_cast<ssize_t>(clientContext->sendBuffer.size()))
+    {
+        disableEPOLLOUT(this->_epfd, clientContext);
+        if (clientContext->keepAlive == false)
+            this->handleCloseConnexion(clientContext);
+        else
+            resetClientContext(clientContext);
+    }
+    else
+        throw std::runtime_error(RED "Unexpected error during handleWriting(): clientContext->sendBufferIndex != clientContext->sendBuffer.size()" DEFAULT);
+}
+
+void GlobalServer::handleCloseConnexion(ClientContext *clientContext)
+{
+    if (this->_clientContexts.count(clientContext->fd) == 0)
+    {
+        std::cout << MAGENTA + getTimeOfDay() + " [debug] : Trying to close client fd " << clientContext->fd << " but is already closed" DEFAULT << std::endl;
+        return;
+    }
+
+    std::cout << MAGENTA + getTimeOfDay() + " [debug] : Close connexion fd " << clientContext->fd << DEFAULT << std::endl;
+
+    if (epoll_ctl(this->_epfd, EPOLL_CTL_DEL, clientContext->fd, NULL))
+        throw(std::runtime_error(RED "epoll_ctl() HERE error" DEFAULT));
+
+    close(clientContext->fd);
+    this->_clientContexts.erase(clientContext->fd);
+    delete clientContext;
 }
 
 void GlobalServer::closeOldClientConnexions()
