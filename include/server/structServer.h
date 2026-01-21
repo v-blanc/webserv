@@ -26,20 +26,28 @@ struct ServerContext : EpollContext
 {
 };
 
+enum ClientState
+{
+    READING_HEADERS,
+    READING_BODY,
+    READY_TO_SEND,
+    SENDING
+};
+
 struct ClientContext : EpollContext
 {
+    ClientState state;
+
     // Request params
     std::string recvBuffer;
     bool isChunkedRequest;
-    bool headerIsComplete;
     std::size_t currentUnchunkedIndex;
     std::size_t expectedBodySize;
     std::size_t bodyStartIndex;
-    bool requestIsComplete;
 
     // Response params
     std::string sendBuffer;
-    std::size_t sendBufferIndex;
+    ssize_t sendBufferIndex;
 
     // Client info
     int serverFd;
@@ -53,6 +61,7 @@ struct CgiContext : EpollContext
     pid_t pid;
     time_t startTime;
     std::string script;
+    std::string cgiOut;
 };
 
 #endif
