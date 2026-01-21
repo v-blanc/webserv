@@ -168,7 +168,6 @@ CgiContext* launchCgi(
 		execve(argv[0], argv, envp);
 		_exit(1);
 	}
-
 	freeEnvp(envp);
 	close(inPipe[0]);
 	std::string body = httpRequest.getBody();
@@ -195,7 +194,6 @@ CgiContext* launchCgi(
 		delete cgiCtx;
 		return (NULL);
 	}
-
 	return (cgiCtx);
 }
 

@@ -11,11 +11,8 @@
 /* ************************************************************************** */
 
 #include "GlobalServer.hpp"
+#include "CgiHandler.hpp"
 #include "Cgi.hpp"
-#include <fcntl.h>
-#include <sys/wait.h>
-
-#define CGI_TIMEOUT_SECONDS 5
 
 bool keepRunningServer = true;
 
@@ -123,67 +120,8 @@ void GlobalServer::loopServer()
             }
             else if (CgiContext *cgiContext = dynamic_cast<CgiContext *>(context))
             {
-                // Timeout check
-                if ((time(NULL) - cgiContext->startTime) > CGI_TIMEOUT_SECONDS)
-                {
-                    kill(cgiContext->pid, SIGKILL);
-                    waitpid(cgiContext->pid, NULL, 0);
-
-                    std::string resp = "HTTP/1.1 504 Gateway Timeout\r\n";
-                    resp += "Content-Type: text/plain\r\n";
-                    resp += "Connection: close\r\n\r\n";
-                    resp += "CGI timeout\n";
-                    send(cgiContext->client->fd, resp.c_str(), resp.size(), MSG_NOSIGNAL);
-
-                    epoll_ctl(this->_epfd, EPOLL_CTL_DEL, cgiContext->fd, NULL);
-                    close(cgiContext->fd);
-                    ClientContext *client = cgiContext->client;
-                    delete cgiContext;
-                    this->handleCloseConnexion(client);
-                    continue;
-                }
-
-                // Read CGI output (handle EPOLLIN, EPOLLHUP, EPOLLRDHUP)
-                if (events[i].events & (EPOLLIN | EPOLLHUP | EPOLLRDHUP))
-                {
-                    char buf[4096];
-                    ssize_t r;
-
-                    // Read all available data
-                    while ((r = read(cgiContext->fd, buf, sizeof(buf))) > 0)
-                        cgiContext->cgiOut.append(buf, r);
-
-                    // EOF or pipe closed: send response
-                    if (r == 0 || (events[i].events & (EPOLLHUP | EPOLLRDHUP)))
-                    {
-                        int status;
-                        waitpid(cgiContext->pid, &status, 0);
-
-                        std::string body = cgiContext->cgiOut;
-                        std::string resp = "HTTP/1.1 200 OK\r\n";
-                        resp += "Content-Type: text/plain\r\n";
-                        resp += "Content-Length: " + toString(body.size()) + "\r\n";
-                        resp += "Connection: close\r\n\r\n";
-                        resp += body;
-                        send(cgiContext->client->fd, resp.c_str(), resp.size(), MSG_NOSIGNAL);
-
-                        epoll_ctl(this->_epfd, EPOLL_CTL_DEL, cgiContext->fd, NULL);
-                        close(cgiContext->fd);
-                        ClientContext *client = cgiContext->client;
-                        delete cgiContext;
-                        this->handleCloseConnexion(client);
-                    }
-                    else if (r < 0 && errno != EAGAIN && errno != EWOULDBLOCK)
-                    {
-                        // Real error
-                        waitpid(cgiContext->pid, NULL, WNOHANG);
-                        epoll_ctl(this->_epfd, EPOLL_CTL_DEL, cgiContext->fd, NULL);
-                        close(cgiContext->fd);
-                        ClientContext *client = cgiContext->client;
-                        delete cgiContext;
-                        this->handleCloseConnexion(client);
-                    }
-                }
+                handleCgiEvent(events[i], this->_epfd);
+                break;
             }
             else if (ClientContext *clientContext = dynamic_cast<ClientContext *>(context))
             {
@@ -310,72 +248,6 @@ static void disableEPOLLOUT(int &epfd, ClientContext *clientContext)
         throw std::runtime_error(RED "epoll_ctl() error" DEFAULT); // TODO: handle proprely
 }
 
-static void unchunkBody(std::string &body)
-{
-	std::string		unchunked;
-	std::size_t		pos;
-
-	pos = 0;
-	while (pos < body.size())
-	{
-		std::size_t lineEnd = body.find("\r\n", pos);
-		if (lineEnd == std::string::npos)
-			break ;
-		std::string chunkSizeStr = body.substr(pos, lineEnd - pos);
-		std::size_t chunkSize = std::strtoul(chunkSizeStr.c_str(), NULL, 16);
-		pos = lineEnd + 2;
-		if (!chunkSize)
-			break ;
-		unchunked.append(body, pos, chunkSize);
-		pos += chunkSize + 2;
-	}
-	body = unchunked;
-}
-
-static bool pathStartsWithLocation(std::string const &path, std::string const &location)
-{
-    if (location.empty())
-        return (false);
-    if (location == "/")
-        return (true);
-    if (path.size() < location.size())
-        return (false);
-    if (path.compare(0, location.size(), location) != 0)
-        return (false);
-    if (path.size() == location.size())
-        return (true);
-    return (path[location.size()] == '/');
-}
-
-static LocationConfig const *findBestLocation(std::vector<LocationConfig> const &locations, std::string const &path)
-{
-    LocationConfig const    *best;
-    std::size_t             bestLen;
-
-    best = NULL;
-    bestLen = 0;
-    for (std::size_t i = 0; i < locations.size(); ++i)
-    {
-        std::string const &locPath = locations[i].getPath();
-        if (pathStartsWithLocation(path, locPath) && locPath.size() >= bestLen)
-        {
-            best = &locations[i];
-            bestLen = locPath.size();
-        }
-    }
-    return (best);
-}
-
-static ServerConfig const &pickServerConfig(std::vector<ServerConfig> const &servers, std::vector<Server> const &runtimeServers, int serverFd)
-{
-    for (std::size_t i = 0; i < runtimeServers.size() && i < servers.size(); ++i)
-    {
-        if (runtimeServers[i].hasListenFd(serverFd))
-            return (servers[i]);
-    }
-    return (servers.at(0));
-}
-
 static void handleHeaders(ClientContext *clientContext)
 {
     std::size_t pos = clientContext->recvBuffer.find("\r\n\r\n");
@@ -421,7 +293,6 @@ static void handleBody(ClientContext *clientContext, std::string &pathRequest, S
 {
     if (clientContext->isChunkedRequest == true)
     {
-        // spots the end of chunked body : 0\r\n\r\n
         std::size_t endChunk = clientContext->recvBuffer.find("0\r\n\r\n", clientContext->bodyStartIndex);
         if (endChunk != std::string::npos)
             clientContext->state = READY_TO_SEND;
@@ -492,13 +363,13 @@ void GlobalServer::handleReading(ClientContext *clientContext)
         // }
         else if (r == -1 && errno == EAGAIN)
         {
-            if (clientContext->isChunkedRequest)
+            if (clientContext->isChunkedRequest && clientContext->state == READING_BODY)
             {
                 std::size_t endChunk = clientContext->recvBuffer.find("0\r\n\r\n", clientContext->bodyStartIndex);
                 if (endChunk != std::string::npos)
                     clientContext->state = READY_TO_SEND;
             }
-            else if (clientContext->recvBuffer.size() - clientContext->bodyStartIndex == clientContext->expectedBodySize)
+            else if (clientContext->state == READING_BODY && clientContext->recvBuffer.size() - clientContext->bodyStartIndex == clientContext->expectedBodySize)
                 clientContext->state = READY_TO_SEND;
             break;
         }
@@ -507,52 +378,24 @@ void GlobalServer::handleReading(ClientContext *clientContext)
     }
     std::cout << "\"" << clientContext->recvBuffer << "\"" << std::endl; // TODO: for debug (to delete)
 
-    // Unchunk body if chunked request
-    if (clientContext->isChunkedRequest && clientContext->state == READY_TO_SEND)
-    {
-        std::string bodyChunked = clientContext->recvBuffer.substr(clientContext->bodyStartIndex);
-        unchunkBody(bodyChunked);
-        clientContext->recvBuffer.erase(clientContext->bodyStartIndex);
-        clientContext->recvBuffer.append(bodyChunked);
-    }
-
     if (clientContext->state == READY_TO_SEND)
     {
+        if (clientContext->isChunkedRequest)
+        {
+            std::string bodyChunked = clientContext->recvBuffer.substr(clientContext->bodyStartIndex);
+            unchunkBody(bodyChunked);
+            clientContext->recvBuffer.erase(clientContext->bodyStartIndex);
+            clientContext->recvBuffer.append(bodyChunked);
+        }
+
         try
         {
             std::cout << YELLOW "Trying HTTPRequest()" DEFAULT << std::endl; // TODO: debug (to delete)
             HTTPRequest httpRequest(this->_serversConfig.at(clientContext->serverFd), clientContext->recvBuffer, clientContext->sendBuffer);
             std::cout << YELLOW "Response generated by HTTPRequest()" DEFAULT << std::endl; // TODO: debug (to delete)
 
-            // Check if CGI
-            std::vector<ServerConfig> servers = this->_globalConfig.getServerConfig();
-            if (!servers.empty())
-            {
-                ServerConfig const &server = pickServerConfig(servers, this->_servers, clientContext->serverFd);
-                std::vector<LocationConfig> const locations = server.getLocationConfig();
-                LocationConfig const *bestLoc = findBestLocation(locations, httpRequest.getPathWithoutQuery());
-
-                std::vector<stringPair> cgiHandlers;
-                if (bestLoc != NULL)
-                    cgiHandlers = bestLoc->getCgiHandler();
-                else
-                    cgiHandlers = server.getCgiHandler();
-
-                std::string interpreter;
-                if (httpRequest.resolveCgiInterpreter(cgiHandlers, interpreter))
-                {
-                    CgiContext *cgiCtx = launchCgi(httpRequest, interpreter, clientContext, this->_epfd);
-                    if (!cgiCtx)
-                    {
-                        // CGI launch failed, send error via sendBuffer
-                        clientContext->sendBuffer = "HTTP/1.1 500 Internal Server Error\r\nContent-Type: text/plain\r\n\r\nCGI launch failed\n";
-                        enableEPOLLOUT(this->_epfd, clientContext);
-                    }
-                    // CGI launched successfully, return early (CGI handler will send response)
-                    return;
-                }
-            }
-
+            if (tryLaunchCgi(httpRequest, this->_globalConfig, this->_servers, clientContext, this->_epfd))
+                return;
             enableEPOLLOUT(this->_epfd, clientContext);
         }
         catch (const std::exception &e)
