@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:25 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/15 20:37:07 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/01/19 20:03:31 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,22 +24,24 @@ public:
     ~GlobalServer();
 
 private:
-    GlobalConfig &_globalConfig;
+    // Servers info
     std::map<int, ServerConfig> _serversConfig;
-    std::vector<Server> _servers;
 
+    // Internal info
     int _epfd;
+    GlobalConfig &_globalConfig;
+    std::vector<Server> _servers;
     std::map<int, ClientContext *> _clientContexts;
 
+    // Main methods
     void setupGlobalServer();
     void loopServer();
 
+    // Other methods
     void handleNewClientConnexion(int &serverFd);
-    void handleCloseConnexion(ClientContext *clientContext);
-    void handleIncompletedHeader(ClientContext *clientContext);
-    void checkBodySizeValidity(ClientContext *clientContext, std::string &pathRequest);
     void handleReading(ClientContext *clientContext);
-    void handleWriting(ClientContext *clientContext); // TODO: Client fd ??
+    void handleWriting(ClientContext *clientContext);
+    void handleCloseConnexion(ClientContext *clientContext);
     void closeOldClientConnexions();
 };
 
