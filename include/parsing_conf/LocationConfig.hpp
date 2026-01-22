@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/05 19:37:24 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/17 19:17:07 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/01/22 11:07:05 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,7 +31,7 @@ public:
     long long getClientMaxBodySize() const { return this->_clientMaxBodySize; };
     std::string getRoot() const { return this->_root; };
     std::string getUploadStore() const { return this->_uploadStore; };
-    stringPair getReturn() const { return this->_return; };
+    std::string getReturn() const { return this->_return; };
     std::vector<std::string> getIndex() const { return this->_index; };
     std::map<std::size_t, std::string> getErrorPage() const { return this->_errorPage; };
     std::vector<std::string> getLimitExcept() const { return this->_limitExcept; };
@@ -42,7 +42,7 @@ public:
     void setClientMaxBodySize(const long long clientMaxBodySize) { this->_clientMaxBodySize = clientMaxBodySize; };
     void setRoot(const std::string root) { this->_root = root; };
     void setUploadStore(const std::string uploadStore) { this->_uploadStore = uploadStore; };
-    void setReturn(const stringPair returnPair) { this->_return = returnPair; };
+    void setReturn(const std::string returnStr) { this->_return = returnStr; };
     void pushBackIndex(const std::string index) { this->_index.push_back(index); };
     void pushBackErrorPage(const std::size_t errorCode, const std::string file) { this->_errorPage[errorCode] = file; };
     void pushBackLimitExcept(const std::string limitExcept) { this->_limitExcept.push_back(limitExcept); };
@@ -57,7 +57,7 @@ private:
     long long _clientMaxBodySize;
     std::string _root;
     std::string _uploadStore;
-    stringPair _return;                            // 1 or 2 (code URL)
+    std::string _return;                            // 1 or 2 (code URL)
     std::vector<std::string> _index;               // No limit
     std::map<std::size_t, std::string> _errorPage; // No limit (at least 2, last URI)
     std::vector<std::string> _limitExcept;         // No limit
