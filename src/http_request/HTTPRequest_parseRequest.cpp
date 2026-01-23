@@ -3,14 +3,14 @@
 /*                                                        :::      ::::::::   */
 /*   HTTPRequest_parseRequest.cpp                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: yafahfou <yafahfou@student.42.fr>          +#+  +:+       +#+        */
+/*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/19 16:19:40 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/16 11:29:16 by yafahfou         ###   ########.fr       */
+/*   Updated: 2026/01/20 21:23:18 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "HTTPRequest.hpp"
+#include "../../include/http_request/HTTPRequest.hpp"
 
 static std::vector<std::string> getHTTPLines(std::string &request)
 {
@@ -41,20 +41,18 @@ void HTTPRequest::parseFirstLine(std::string &firstLine)
 {
     std::size_t prevPos = 0, pos = firstLine.find(' ');
 
-    if (pos == 0 || pos != std::string::npos)
+    if (pos != 0 && pos != std::string::npos)
     {
         std::string method = firstLine.substr(prevPos, pos - prevPos);
         if (method == "GET" || method == "POST" || method == "DELETE")
             this->_method = method;
         else
-            throw std::runtime_error("Unknown method");
+            throw StatusException("405", "Method Not Allowed");
     }
     else
-        throw std::runtime_error("HTTP Request wrong format");
-
+        throw StatusException("400", "Bad Request");
     prevPos = pos + 1;
     pos = firstLine.find(' ', prevPos);
-
     if (pos != std::string::npos)
     {
         std::string const path = firstLine.substr(prevPos, pos - prevPos);
@@ -68,36 +66,31 @@ void HTTPRequest::parseFirstLine(std::string &firstLine)
                 this->_queryString.clear();
         }
         else
-            throw std::runtime_error("HTTP Request path wrong format");
+            throw StatusException("400", "HTTP Request path wrong format");
     }
     else
-        throw std::runtime_error("HTTP Request wrong format");
+        throw StatusException("400", "HTTP Request wrong format");
 
     if (firstLine.substr(pos + 1, firstLine.size() - pos) != "HTTP/1.1")
-        throw std::runtime_error("HTTP Request HTTP version wrong format");
+        throw StatusException("505", "HTTP Version Not Supported");
 }
 
 void HTTPRequest::parseHeader(std::string &line)
 {
     std::size_t pos = line.find(':');
-
     if (pos == std::string::npos)
-        throw std::runtime_error("HTTP Request wrong format");
-
+        throw StatusException("400", "HTTP Request wrong format");
     std::string headerName = line.substr(0, pos);
-
     if (line.at(pos + 1) == ' ')
         pos++;
-
     if (headerName == "Host")
         this->_host = line.substr(pos + 1);
     else if (headerName == "Content-Length")
     {
         std::stringstream ss(line.substr(pos + 1));
         ss >> this->_contentLength;
-
         if (ss.fail())
-            throw std::runtime_error("HTTP Request error during stringstream");
+            throw StatusException("400", "HTTP Request error during stringstream");
     }
     else if (headerName == "Content-Type")
         this->_contentType = line.substr(pos + 1);
@@ -136,15 +129,14 @@ void HTTPRequest::parseRequest(std::string &request)
             parseFirstLine(lines.at(0));
 
         }
-        catch(const std::runtime_error& e)
+        catch(const std::exception& e)
         {
             std::cerr << e.what() << '\n';
         }
         
     }
     else
-        throw std::runtime_error("HTTP Request wrong format (empty request)");
-
+        throw StatusException("400", "HTTP Request wrong format (empty request)");
     // Header
     std::size_t i = 1;
     while (i < lines.size() && !lines.at(i).empty())

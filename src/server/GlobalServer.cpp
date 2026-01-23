@@ -3,14 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   GlobalServer.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: yafahfou <yafahfou@student.42.fr>          +#+  +:+       +#+        */
+/*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:14 by vblanc            #+#    #+#             */
-<<<<<<< HEAD
-/*   Updated: 2026/01/19 19:59:30 by vblanc           ###   ########.fr       */
-=======
-/*   Updated: 2026/01/13 18:00:28 by yafahfou         ###   ########.fr       */
->>>>>>> 056330b (initial commit with http request and response examples)
+/*   Updated: 2026/01/21 11:50:46 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -351,7 +347,7 @@ void GlobalServer::handleReading(ClientContext *clientContext)
             else if (clientContext->state == READING_BODY)
                 handleBody(clientContext, pathRequest, this->_serversConfig.at(clientContext->serverFd));
             else
-                throw std::runtime_error(RED "Error 400 (to handle proprely) due to too much data sent" DEFAULT);
+                throw std::runtime_error(RED "Error 414 (to handle proprely) due to too much data sent" DEFAULT);
         }
         // else if (r == 0)
         // {

@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  webserv:
+    build: .
+    container_name: webserv_dev
+    volumes:
+      - .:/workspace
+    ports:
+      - "8080:8080"
+    stdin_open: true
+    tty: true
+    working_dir: /workspace

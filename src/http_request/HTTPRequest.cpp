@@ -6,32 +6,33 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/07 14:57:52 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/20 15:50:49 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/01/21 16:30:22 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "HTTPRequest.hpp"
+#include "../../include/http_request/HTTPRequest.hpp"
 
-HTTPRequest::HTTPRequest(ServerConfig &serverConfig, std::string &request, std::string &response) : _serverConfig(serverConfig), _isValidRequest(false), _contentLength(0), _connection(true)
+HTTPRequest::HTTPRequest(ServerConfig &serverConfig, std::string &request, std::string &responseBuff) : _isValidRequest(false), _contentLength(0), _connection(true)
 {
     try
     {
         this->parseRequest(request);
         this->_isValidRequest = true;
 
+        HTTPResponse myResponse(*this, "", serverConfig);
         // TODO: to test
-        response = "HTTP/1.1 200 OK\r\nContent-Length: 54\r\nConnection: keep-alive\r\n\r\n<!DOCTYPE html>\n<html>\n<body>\n<h1>\nTEST\n</h1>\n</body>\n";
+        responseBuff = "HTTP/1.1 200 OK\r\nContent-Length: 54\r\nConnection: keep-alive\r\n\r\n<!DOCTYPE html>\n<html>\n<body>\n<h1>\nTEST\n</h1>\n</body>\n";
     }
     // catch (const std::runtime_error &e)
     // {
     //     std::cerr << RED << e.what() << DEFAULT << std::endl;
     //     return;
     // }
-    // catch (const std::exception &e)
-    // {
-    //     std::cerr << RED << e.what() << DEFAULT << '\n';
-    //     return;
-    // }
+    catch (const std::exception &e)
+    {
+        std::cerr << RED << e.what() << DEFAULT << '\n';
+        return;
+    }
 }
 
 HTTPRequest::~HTTPRequest()
@@ -78,7 +79,6 @@ void HTTPRequest::sendCgiStubResponse(int &clientFd) const
 }
 
 std::string HTTPRequest::getNormalizedExtensionFromPath() const
-
 {
     std::string lowerPath(this->getPathWithoutQuery());
 
@@ -124,7 +124,6 @@ bool HTTPRequest::resolveCgiInterpreter(const std::vector<stringPair> &cgiHandle
 }
 
 void HTTPRequest::debugResponseWithCgiHandlers(int &clientFd, const std::vector<stringPair> &cgiHandlers)
-
 {
     std::string interpreter;
 
@@ -175,7 +174,7 @@ void HTTPRequest::debugStandardReponse(int &clientFd)
     send(clientFd, sendBuf.c_str(), sendBuf.size(), MSG_NOSIGNAL);
 }
 
-// void printHTTPRequest(HTTPRequest &request)
+void printHTTPRequest(HTTPRequest &request)
 {
     std::string pad(4, ' ');
 

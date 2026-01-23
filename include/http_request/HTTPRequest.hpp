@@ -6,11 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/07 14:57:04 by vblanc            #+#    #+#             */
-<<<<<<< HEAD
-/*   Updated: 2026/01/20 15:46:26 by yassinefahf      ###   ########.fr       */
-=======
-/*   Updated: 2026/01/16 13:48:35 by yafahfou         ###   ########.fr       */
->>>>>>> 428f960 (added exception classe to handle status code for requests)
+/*   Updated: 2026/01/21 16:30:06 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,11 +15,11 @@
 
 #include "ServerConfig.hpp"
 #include "utils.hpp"
-
+#include "HTTPResponse.hpp"
 class HTTPRequest
 {
 public:
-    HTTPRequest(ServerConfig &serverConfig, std::string &request, std::string &response);
+    HTTPRequest(ServerConfig &serverConfig, std::string &request, std::string &responseBuff);
     ~HTTPRequest();
 
     // Getter
@@ -45,10 +41,10 @@ public:
             std::string _status;
             std::string _message;
         public:
-            StatusException(std::string status):_status(status) {}
+            StatusException(std::string status, std::string message):_status(status), _message(message) {}
             virtual ~StatusException() throw() {}
             virtual const char *what() const throw() {return _message.c_str();}
-            const std::string &getStatus() const {return _status;}
+            const std::string &getStatus() const  {return _status;}
     };
     // Execute
     // virtual void generateResponse() = 0;
@@ -59,7 +55,6 @@ public:
     bool resolveCgiInterpreter(const std::vector<stringPair> &cgiHandlers, std::string &interpreter) const;
 
 private:
-    ServerConfig _serverConfig;
 
     bool _isValidRequest;
     std::pair<std::string, std::string> codeStatus;
