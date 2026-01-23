@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/06 14:21:38 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/11 18:14:22 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/01/22 11:10:47 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -220,7 +220,7 @@ void handleCgiHandlerDirective(Config &config, Node &node, std::string &directiv
 template <typename Config>
 void handleUpdloadStoreDirective(Config &config, Node &node, std::string &directive)
 {
-    if (!config.getRoot().empty())
+    if (!config.getUploadStore().empty())
         throwDirectiveIsDuplicate(directive, config.getFileName(), node.line);
     else if (node.args.size() != 1)
         throwInvalidNumberOfArguments(directive, config.getFileName(), node.line);
@@ -231,21 +231,18 @@ void handleUpdloadStoreDirective(Config &config, Node &node, std::string &direct
 template <typename Config>
 void handleReturnDirective(Config &config, Node &node, std::string &directive)
 {
-    if (!config.getRoot().empty())
+    if (!config.getReturn().empty())
         throwDirectiveIsDuplicate(directive, config.getFileName(), node.line);
-    else if (node.args.size() != 1 && node.args.size() != 2)
+    else if (node.args.size() != 1)
         throwInvalidNumberOfArguments(directive, config.getFileName(), node.line);
 
-    if (node.args.size() == 1)
-        config.setReturn(make_pair(node.args.at(0), ""));
-    else
-        config.setReturn(make_pair(node.args.at(0), node.args.at(0)));
+    config.setReturn(node.args.at(0));
 }
 
 template <typename Config>
 void handleLimitExceptDirective(Config &config, Node &node, std::string &directive)
 {
-    if (!config.getRoot().empty())
+    if (!config.getLimitExcept().empty())
         throwDirectiveIsDuplicate(directive, config.getFileName(), node.line);
 
     for (std::size_t i = 0; i < node.args.size(); i++)

@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 14:31:40 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/17 23:33:34 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/01/22 11:07:48 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -191,7 +191,7 @@ void printGlobalConfig(GlobalConfig &globalConfig)
             std::cout << pad << "autoindex: " << (locationConfig.at(k).getAutoindex() == true ? "on" : "off") << std::endl;
             std::cout << pad << "client_max_body_size: " << locationConfig.at(k).getClientMaxBodySize() << std::endl;
             std::cout << pad << "root: " << locationConfig.at(k).getRoot() << std::endl;
-            std::cout << pad << "return: [" << locationConfig.at(k).getReturn().first << ", " << locationConfig.at(k).getReturn().second << "]" << std::endl;
+            std::cout << pad << "return: " << locationConfig.at(k).getReturn() << std::endl;
 
             std::cout << pad << "index: ";
             for (std::size_t i = 0; i < locationConfig.at(k).getIndex().size(); i++)
