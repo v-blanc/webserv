@@ -6,7 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/07 14:57:52 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/21 16:30:22 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/01/24 12:01:06 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,9 +19,9 @@ HTTPRequest::HTTPRequest(ServerConfig &serverConfig, std::string &request, std::
         this->parseRequest(request);
         this->_isValidRequest = true;
 
-        HTTPResponse myResponse(*this, "", serverConfig);
+        HTTPResponse myResponse(*this, "", serverConfig, "");
         // TODO: to test
-        responseBuff = "HTTP/1.1 200 OK\r\nContent-Length: 54\r\nConnection: keep-alive\r\n\r\n<!DOCTYPE html>\n<html>\n<body>\n<h1>\nTEST\n</h1>\n</body>\n";
+        responseBuff = "HTTP/1.1 200 OK\r\nContent-Length: 24\r\nConnection: keep-alive\r\n\r\n<!DOCTYPE html>\n<html>\n<body>\n<h1>\nTEST\n</h1>\n</body>\n";
     }
     // catch (const std::runtime_error &e)
     // {

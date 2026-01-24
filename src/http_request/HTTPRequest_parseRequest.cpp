@@ -6,7 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/19 16:19:40 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/20 21:23:18 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/01/23 12:03:52 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -141,7 +141,6 @@ void HTTPRequest::parseRequest(std::string &request)
     std::size_t i = 1;
     while (i < lines.size() && !lines.at(i).empty())
         parseHeader(lines.at(i++));
-
     // Body
     i++;
     while (i < lines.size())

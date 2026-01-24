@@ -6,7 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/07 14:57:04 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/21 16:30:06 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/01/24 11:30:26 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,6 +45,7 @@ public:
             virtual ~StatusException() throw() {}
             virtual const char *what() const throw() {return _message.c_str();}
             const std::string &getStatus() const  {return _status;}
+            const std::string &getMessage() const {return _message;}
     };
     // Execute
     // virtual void generateResponse() = 0;

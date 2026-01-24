@@ -6,7 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 13:49:54 by yassinefahf       #+#    #+#             */
-/*   Updated: 2026/01/21 16:33:58 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/01/24 12:00:46 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,11 +20,18 @@ class HTTPResponse
 {
 	private:
 		ServerConfig &_serverConfig;
+		std::string	_body;
+		std::size_t _contentLength;
+		std::string _response;
 	public:
-		HTTPResponse(const HTTPRequest &request, const std::string &status, ServerConfig &serverConfig);
+		HTTPResponse(const HTTPRequest &request, const std::string &status, ServerConfig &serverConfig, std::string message);
 		~HTTPResponse();
 		void handleGetMethod(const HTTPRequest &request);
-		void handleBadRequest(const std::string &status);
+		void handleBadRequest(const std::string &status, const std::string &message);
 		void handlePostMethod(const HTTPRequest &request);
+		static bool ismethodNotAllowed(std::vector<std::string> methods, std::string myMethod);
+		void readBody(int fd);
+		const std::string &getResponse() const {return this->_response;}
+		void prepareResponse(const HTTPRequest &request);
 };
 #endif
