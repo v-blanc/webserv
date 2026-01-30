@@ -6,7 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/07 14:57:52 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/24 12:01:06 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/01/30 18:51:14 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,17 +21,12 @@ HTTPRequest::HTTPRequest(ServerConfig &serverConfig, std::string &request, std::
 
         HTTPResponse myResponse(*this, "", serverConfig, "");
         // TODO: to test
-        responseBuff = "HTTP/1.1 200 OK\r\nContent-Length: 24\r\nConnection: keep-alive\r\n\r\n<!DOCTYPE html>\n<html>\n<body>\n<h1>\nTEST\n</h1>\n</body>\n";
+        responseBuff = myResponse.getResponse();
     }
-    // catch (const std::runtime_error &e)
-    // {
-    //     std::cerr << RED << e.what() << DEFAULT << std::endl;
-    //     return;
-    // }
-    catch (const std::exception &e)
+    catch (const StatusException &e)
     {
-        std::cerr << RED << e.what() << DEFAULT << '\n';
-        return;
+        HTTPResponse badResponse(*this, e.getStatus(), e.getMessage());
+        responseBuff = badResponse.getResponse();
     }
 }
 

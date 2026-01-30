@@ -6,7 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/07 14:57:04 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/24 11:30:26 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/01/30 14:53:38 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,6 +34,7 @@ public:
     bool getConnection() const { return this->_connection; }; // ?
     std::string getBody() const { return this->_body; };
     bool isChunked() const { return this->_isChunked; };
+
 
 
     class StatusException: public std::exception {
@@ -77,7 +78,7 @@ private:
 
     // Parsing
     void parseFirstLine(std::string &firstLine);
-    void parseHeader(std::string &line);
+    bool parseHeader(std::string &line, bool checkedHost, bool isLastLine);
     void parseRequest(std::string &request);
 
     bool isCgiExtension(void) const;

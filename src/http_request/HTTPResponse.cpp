@@ -6,7 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 14:04:09 by yassinefahf       #+#    #+#             */
-/*   Updated: 2026/01/24 12:14:00 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/01/30 15:08:55 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,12 +53,12 @@ void	HTTPResponse::prepareResponse(const HTTPRequest &request)
 	std::string response;
 
 	(void)request;
-	if (this->_body != "")
-		this->_contentLength = sizeof(this->_body);
+	// if (this->_body != "")
+		// this->_contentLength = this->_body;
 	std::ostringstream oss;
 	oss <<"HTTP/1.1 200 OK\r\nContent-Length: " << this->_contentLength << "\r\n\r\n" << this->_body;
 	this->_response = oss.str();
-	std::cout<<this->_response<<std::endl;
+	// std::cout<<"response: "this->_response<<std::endl;
 }
 
 HTTPResponse::~HTTPResponse(){}
@@ -71,7 +71,11 @@ void	HTTPResponse::handleBadRequest(const std::string &status, const std::string
 
 void	HTTPResponse::handlePostMethod(const HTTPRequest &request)
 {
-	(void)request;
+	if (this->_serverConfig.isValidLocationPath(request.getPathWithoutQuery()))
+	{
+		LocationConfig myLocation = this->_serverConfig.getLocationConfigByPath(request.getPathWithoutQuery());
+		
+	}
 }
 
 bool	HTTPResponse::ismethodNotAllowed(std::vector<std::string> methods, std::string myMethod)
@@ -84,11 +88,6 @@ bool	HTTPResponse::ismethodNotAllowed(std::vector<std::string> methods, std::str
 
 void HTTPResponse::handleGetMethod(const HTTPRequest &request)
 {
-	// if (request.getPathWithoutQuery() == "/")
-		// std::string myPath = request.getPathWithoutQuery() + "index.html";
-	// else
-		// std::string myPath = this->_serverConfig.getRoot() + request.getPathWithoutQuery();
-	// std::cout<<"concerned path: "<<request.getPathWithoutQuery()<<std::endl;
 	if (this->_serverConfig.isValidLocationPath(request.getPathWithoutQuery()))
 	{
 		LocationConfig	myLocation = this->_serverConfig.getLocationConfigByPath(request.getPathWithoutQuery());
@@ -99,10 +98,11 @@ void HTTPResponse::handleGetMethod(const HTTPRequest &request)
 		{
 			std::vector<std::string> indices = myLocation.getIndex();
 			int fd;
+			std::string rightPath;
 			for (std::vector<std::string>::iterator it = indices.begin(); it != indices.end(); ++it)
 			{
 				std::string	rightIndex = *it;
-				std::string rightPath = myLocation.getRoot();
+				rightPath = myLocation.getRoot();
 				rightPath = rightPath.substr(1, rightPath.size());
 				rightPath += '/' + rightIndex;
 				fd = open(rightPath.c_str(), O_RDONLY);
@@ -110,21 +110,14 @@ void HTTPResponse::handleGetMethod(const HTTPRequest &request)
 					break;
 			}
 			if (fd == -1)
+			{
 				throw (HTTPRequest::StatusException("404", "Not Found"));
+			}
 			else
-				readBody(fd);
+			{
+				close(fd);
+				this->_body = getLocalFileContent(rightPath.c_str());
+			}
 		}
 	}
-}
-
-void HTTPResponse::readBody(int fd)
-{
-	char buff[128];
-	std::size_t bytes = read(fd, buff, sizeof(buff));
-	while (bytes > 0)
-	{
-		this->_body.append(buff, bytes);
-		bytes = read(fd, buff, sizeof(buff));
-	}
-	close(fd);
 }

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   getLocalFileContent.cpp                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
+/*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/11 13:31:19 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/11 14:30:00 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/01/24 20:14:44 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,7 +21,7 @@ std::string getLocalFileContent(const std::string &fileName)
         throwSafeOpenFileError(file, fileName);
 
     while (std::getline(file, buf))
-        content.append(buf);
+        content.append(buf + "\n");
 
     file.close();
     if (file.fail() && !file.eof())

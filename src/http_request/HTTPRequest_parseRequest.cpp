@@ -6,7 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/19 16:19:40 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/23 12:03:52 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/01/30 18:41:42 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,7 +23,8 @@ static std::vector<std::string> getHTTPLines(std::string &request)
         {
             if (i + 1 < request.size() && request.at(i + 1) == '\n')
             {
-                lines.push_back(currLine);
+                if (!currLine.empty())
+                    lines.push_back(currLine);
                 currLine.clear();
                 i++;
                 continue;
@@ -37,13 +38,13 @@ static std::vector<std::string> getHTTPLines(std::string &request)
     return lines;
 }
 
-void HTTPRequest::parseFirstLine(std::string &firstLine)
+void HTTPRequest:: parseFirstLine(std::string &firstLine)
 {
     std::size_t prevPos = 0, pos = firstLine.find(' ');
 
     if (pos != 0 && pos != std::string::npos)
     {
-        std::string method = firstLine.substr(prevPos, pos - prevPos);
+        std::string method = firstLine.substr(prevPos, pos);
         if (method == "GET" || method == "POST" || method == "DELETE")
             this->_method = method;
         else
@@ -75,7 +76,7 @@ void HTTPRequest::parseFirstLine(std::string &firstLine)
         throw StatusException("505", "HTTP Version Not Supported");
 }
 
-void HTTPRequest::parseHeader(std::string &line)
+bool HTTPRequest::parseHeader(std::string &line, bool checkedHost, bool isLastLine)
 {
     std::size_t pos = line.find(':');
     if (pos == std::string::npos)
@@ -83,6 +84,8 @@ void HTTPRequest::parseHeader(std::string &line)
     std::string headerName = line.substr(0, pos);
     if (line.at(pos + 1) == ' ')
         pos++;
+    if (headerName != "Host" && !checkedHost && isLastLine)
+        return (false);
     if (headerName == "Host")
         this->_host = line.substr(pos + 1);
     else if (headerName == "Content-Length")
@@ -108,11 +111,12 @@ void HTTPRequest::parseHeader(std::string &line)
         if (line.substr(pos + 1) == "chunked")
             this->_isChunked = true;
     }
+    return (true);
 }
 
 void HTTPRequest::parseRequest(std::string &request)
 {
-
+    bool isLastLine;
     std::vector<std::string> lines = getHTTPLines(request);
     //  std::cout<<"my thing: "<<lines.at(0)<<std::endl;
     // TODO: Debug
@@ -122,7 +126,7 @@ void HTTPRequest::parseRequest(std::string &request)
     // std::cout << std::endl;
 
     // First Line
-    if (lines.size() >= 1)
+    if (lines.size() > 1)
     {
         try
         {
@@ -136,11 +140,17 @@ void HTTPRequest::parseRequest(std::string &request)
         
     }
     else
-        throw StatusException("400", "HTTP Request wrong format (empty request)");
+        throw StatusException("400", "HTTP Request wrong format");
     // Header
     std::size_t i = 1;
+    // std::cout<<"bool test: "<<test<<std::endl;
     while (i < lines.size() && !lines.at(i).empty())
-        parseHeader(lines.at(i++));
+    {
+        isLastLine = (i + 1  == lines.size());
+        if (!parseHeader(lines.at(i), this->_host != "", isLastLine))
+            throw StatusException("400", "Bad Request");
+        i++;
+    }
     // Body
     i++;
     while (i < lines.size())
