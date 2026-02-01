@@ -6,7 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/07 14:57:52 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/30 18:51:14 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/01/31 22:06:44 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,7 +25,7 @@ HTTPRequest::HTTPRequest(ServerConfig &serverConfig, std::string &request, std::
     }
     catch (const StatusException &e)
     {
-        HTTPResponse badResponse(*this, e.getStatus(), e.getMessage());
+        HTTPResponse badResponse(*this, e.getStatus(), serverConfig, e.getMessage());
         responseBuff = badResponse.getResponse();
     }
 }

@@ -6,7 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 14:04:09 by yassinefahf       #+#    #+#             */
-/*   Updated: 2026/01/30 15:08:55 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/02/01 19:56:11 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,11 +23,10 @@ HTTPResponse::HTTPResponse(const HTTPRequest &request, const std::string &status
 			try
 			{
 				handleGetMethod(request);
-				prepareResponse(request);
+				prepareResponse();
 			}
 			catch(const HTTPRequest::StatusException &e)
 			{
-				std::cout<<e.what()<<std::endl;
 				handleBadRequest(e.getStatus(), e.getMessage());
 			}
 		}
@@ -48,13 +47,12 @@ HTTPResponse::HTTPResponse(const HTTPRequest &request, const std::string &status
 	}
 }
 
-void	HTTPResponse::prepareResponse(const HTTPRequest &request)
+void	HTTPResponse::prepareResponse()
 {
 	std::string response;
 
-	(void)request;
-	// if (this->_body != "")
-		// this->_contentLength = this->_body;
+	if (this->_body != "")
+		this->_contentLength = this->_body.size();
 	std::ostringstream oss;
 	oss <<"HTTP/1.1 200 OK\r\nContent-Length: " << this->_contentLength << "\r\n\r\n" << this->_body;
 	this->_response = oss.str();
@@ -65,8 +63,18 @@ HTTPResponse::~HTTPResponse(){}
 
 void	HTTPResponse::handleBadRequest(const std::string &status, const std::string &message)
 {
-	(void)status;
-	(void)message;
+	if (message == "Page not found")
+	{
+		this->_body = getLocalFileContent("www/error/404.html");
+		this->_contentLength = this->_body.size();
+	}
+	std::ostringstream oss;
+	oss <<"HTTP/1.1 "<<status<<" "<<message<<"\r\n";
+	if (!this->_body.empty())
+		oss<<"Content Length: "<<this->_contentLength<<"\r\n\r\n"<<this->_body;
+	else
+		oss<<"Content Length: 0\r\n\r\n";
+	this->_response = oss.str();
 }
 
 void	HTTPResponse::handlePostMethod(const HTTPRequest &request)
@@ -86,38 +94,48 @@ bool	HTTPResponse::ismethodNotAllowed(std::vector<std::string> methods, std::str
 	return (false);
 }
 
+void HTTPResponse::handleIndexFile(const LocationConfig &myLocation)
+{
+	std::vector<std::string> indices = myLocation.getIndex();
+	int fd;
+	std::string rightPath;
+	for (std::vector<std::string>::iterator it = indices.begin(); it != indices.end(); ++it)
+	{
+		std::string	rightIndex = *it;
+		rightPath = myLocation.getRoot();
+		rightPath = rightPath.substr(1, rightPath.size());
+		rightPath += '/' + rightIndex;
+		fd = open(rightPath.c_str(), O_RDONLY);
+		if (fd != -1)
+			break;
+	}
+	if (fd == -1)
+	{
+		// if (myLocation.getAutoindex()) TODO: gerer autoindex
+		throw (HTTPRequest::StatusException("404", "Page Not Found"));
+	}
+	else
+	{
+		close(fd);
+		this->_body = getLocalFileContent(rightPath.c_str());
+	}
+}
+
 void HTTPResponse::handleGetMethod(const HTTPRequest &request)
 {
 	if (this->_serverConfig.isValidLocationPath(request.getPathWithoutQuery()))
 	{
 		LocationConfig	myLocation = this->_serverConfig.getLocationConfigByPath(request.getPathWithoutQuery());
-		// std::vector<std::string> methods = myLocation.getLimitExcept();
+		std::cout<<"my location: "<<myLocation.getPath()<<std::endl;
 		if (this->ismethodNotAllowed(myLocation.getLimitExcept(), request.getMethod()))
 			throw HTTPRequest::StatusException("405", "Method Not Allowed");// TODO: check autoindex rules, if path is file or folder
+		std::string requestPath = request.getPathWithoutQuery();
 		if (request.getPathWithoutQuery() == "/")
-		{
-			std::vector<std::string> indices = myLocation.getIndex();
-			int fd;
-			std::string rightPath;
-			for (std::vector<std::string>::iterator it = indices.begin(); it != indices.end(); ++it)
-			{
-				std::string	rightIndex = *it;
-				rightPath = myLocation.getRoot();
-				rightPath = rightPath.substr(1, rightPath.size());
-				rightPath += '/' + rightIndex;
-				fd = open(rightPath.c_str(), O_RDONLY);
-				if (fd != -1)
-					break;
-			}
-			if (fd == -1)
-			{
-				throw (HTTPRequest::StatusException("404", "Not Found"));
-			}
-			else
-			{
-				close(fd);
-				this->_body = getLocalFileContent(rightPath.c_str());
-			}
-		}
+			handleIndexFile(myLocation);
+		else if (request.getPathWithoutQuery().at(request.getPathWithoutQuery().size() - 1) == '/')
+			this->_response = generateAutoindexHTML(request.getPathWithoutQuery());
+		
 	}
+	else
+		throw HTTPRequest::StatusException("404", "Page not found");
 }
