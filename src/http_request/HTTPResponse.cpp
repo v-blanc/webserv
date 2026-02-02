@@ -6,7 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 14:04:09 by yassinefahf       #+#    #+#             */
-/*   Updated: 2026/02/01 19:56:11 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/02/02 14:54:36 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,7 +23,7 @@ HTTPResponse::HTTPResponse(const HTTPRequest &request, const std::string &status
 			try
 			{
 				handleGetMethod(request);
-				prepareResponse();
+				prepareGoodResponse();
 			}
 			catch(const HTTPRequest::StatusException &e)
 			{
@@ -47,15 +47,16 @@ HTTPResponse::HTTPResponse(const HTTPRequest &request, const std::string &status
 	}
 }
 
-void	HTTPResponse::prepareResponse()
+void	HTTPResponse::prepareGoodResponse()
 {
-	std::string response;
-
-	if (this->_body != "")
-		this->_contentLength = this->_body.size();
-	std::ostringstream oss;
-	oss <<"HTTP/1.1 200 OK\r\nContent-Length: " << this->_contentLength << "\r\n\r\n" << this->_body;
-	this->_response = oss.str();
+	if(this->_response.empty())
+	{
+		if (this->_body != "")
+			this->_contentLength = this->_body.size();
+		std::ostringstream oss;
+		oss <<"HTTP/1.1 200 OK\r\nContent-Length: " << this->_contentLength << "\r\n\r\n" << this->_body;
+		this->_response = oss.str();
+	}
 	// std::cout<<"response: "this->_response<<std::endl;
 }
 
@@ -111,8 +112,10 @@ void HTTPResponse::handleIndexFile(const LocationConfig &myLocation)
 	}
 	if (fd == -1)
 	{
-		// if (myLocation.getAutoindex()) TODO: gerer autoindex
-		throw (HTTPRequest::StatusException("404", "Page Not Found"));
+		if (myLocation.getAutoindex())
+			this->_response = generateAutoindexHTML("./www");
+		else
+			throw (HTTPRequest::StatusException("404", "Page Not Found"));
 	}
 	else
 	{
@@ -126,14 +129,18 @@ void HTTPResponse::handleGetMethod(const HTTPRequest &request)
 	if (this->_serverConfig.isValidLocationPath(request.getPathWithoutQuery()))
 	{
 		LocationConfig	myLocation = this->_serverConfig.getLocationConfigByPath(request.getPathWithoutQuery());
-		std::cout<<"my location: "<<myLocation.getPath()<<std::endl;
 		if (this->ismethodNotAllowed(myLocation.getLimitExcept(), request.getMethod()))
 			throw HTTPRequest::StatusException("405", "Method Not Allowed");// TODO: check autoindex rules, if path is file or folder
 		std::string requestPath = request.getPathWithoutQuery();
 		if (request.getPathWithoutQuery() == "/")
 			handleIndexFile(myLocation);
 		else if (request.getPathWithoutQuery().at(request.getPathWithoutQuery().size() - 1) == '/')
-			this->_response = generateAutoindexHTML(request.getPathWithoutQuery());
+		{
+			if (myLocation.getAutoindex())
+				this->_response = generateAutoindexHTML(request.getPathWithoutQuery());
+			else
+				throw HTTPRequest::StatusException("404", "Page not found");
+		}
 		
 	}
 	else

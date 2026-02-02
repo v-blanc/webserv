@@ -6,7 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 13:49:54 by yassinefahf       #+#    #+#             */
-/*   Updated: 2026/02/01 19:36:37 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/02/02 14:51:30 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,6 +33,6 @@ class HTTPResponse
 		void handleIndexFile(const LocationConfig &myLocation);
 		void handleAutoIndex(const LocationConfig &myLocation);
 		const std::string &getResponse() const {return this->_response;}
-		void prepareResponse();
+		void prepareGoodResponse();
 };
 #endif
