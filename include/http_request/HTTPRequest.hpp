@@ -6,7 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/07 14:57:04 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/30 14:53:38 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/02/06 12:04:14 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,6 +28,7 @@ public:
     const std::string &getPath() const { return this->_path; };
     const std::string &getQueryString() const { return this->_queryString; };
     std::string getPathWithoutQuery() const;
+    void setPath(std::string returnPath) {this->_path = returnPath;}
     std::string getHost() const { return this->_host; };
     long long getContentLength() const { return this->_contentLength; };
     std::string getContentType() const { return this->_contentType; };

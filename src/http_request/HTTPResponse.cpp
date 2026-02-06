@@ -6,13 +6,13 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 14:04:09 by yassinefahf       #+#    #+#             */
-/*   Updated: 2026/02/02 14:54:36 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/02/06 12:45:59 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "HTTPResponse.hpp"
 
-HTTPResponse::HTTPResponse(const HTTPRequest &request, const std::string &status, ServerConfig &serverConfig, std::string message): _serverConfig(serverConfig), _body(""), _contentLength(0), _response("")
+HTTPResponse::HTTPResponse(HTTPRequest &request, const std::string &status, ServerConfig &serverConfig, std::string message): _serverConfig(serverConfig), _body(""), _contentLength(0), _response("")
 {
 	if (status != "")
 		handleBadRequest(status, message);
@@ -54,7 +54,15 @@ void	HTTPResponse::prepareGoodResponse()
 		if (this->_body != "")
 			this->_contentLength = this->_body.size();
 		std::ostringstream oss;
-		oss <<"HTTP/1.1 200 OK\r\nContent-Length: " << this->_contentLength << "\r\n\r\n" << this->_body;
+		if (this->_status.empty() && this->_message.empty())
+		{
+			this->_status = "200";
+			this->_message = "OK";
+		}
+		if (!this->_newLocation.empty())
+			oss <<"HTTP/1.1 "<<this->_status + " "<<this->_message<<"\r\n"<<"Location: "<<this->_newLocation<<"\r\n"<<"Content-Length: " << this->_contentLength << "\r\n\r\n" << this->_body;
+		else
+			oss <<"HTTP/1.1 "<<this->_status + " "<<this->_message<<"\r\nContent-Length: " << this->_contentLength << "\r\n\r\n" << this->_body;
 		this->_response = oss.str();
 	}
 	// std::cout<<"response: "this->_response<<std::endl;
@@ -124,11 +132,20 @@ void HTTPResponse::handleIndexFile(const LocationConfig &myLocation)
 	}
 }
 
-void HTTPResponse::handleGetMethod(const HTTPRequest &request)
+void HTTPResponse::handleGetMethod(HTTPRequest &request)
 {
 	if (this->_serverConfig.isValidLocationPath(request.getPathWithoutQuery()))
 	{
 		LocationConfig	myLocation = this->_serverConfig.getLocationConfigByPath(request.getPathWithoutQuery());
+		if (!myLocation.getReturn().empty())// TODO : gerer le return dans la location
+		{
+			std::string	newPath = myLocation.getReturn();
+			request.setPath(newPath);
+			this->_status = "301";
+			this->_message = "Moved Permanently";
+			this->_newLocation = newPath;
+			return (handleGetMethod(request));
+		}
 		if (this->ismethodNotAllowed(myLocation.getLimitExcept(), request.getMethod()))
 			throw HTTPRequest::StatusException("405", "Method Not Allowed");// TODO: check autoindex rules, if path is file or folder
 		std::string requestPath = request.getPathWithoutQuery();
