@@ -6,7 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 13:49:54 by yassinefahf       #+#    #+#             */
-/*   Updated: 2026/02/09 17:15:25 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/02/09 18:43:21 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,6 +37,6 @@ class HTTPResponse
 		void handleIndexFile(const LocationConfig &myLocation);
 		const std::string &getResponse() const {return this->_response;}
 		void prepareGoodResponse();
-		std::string	handlePostPath(std::string requestPath, bool isFileName);
+		std::string	handleRequestPath(std::string requestPath, bool isFileName);
 };
 #endif

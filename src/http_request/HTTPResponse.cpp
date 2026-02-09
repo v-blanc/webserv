@@ -6,7 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 14:04:09 by yassinefahf       #+#    #+#             */
-/*   Updated: 2026/02/09 18:09:43 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/02/09 18:57:23 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -86,7 +86,7 @@ void	HTTPResponse::handleBadRequest(const std::string &status, const std::string
 	this->_response = oss.str();
 }
 
-std::string	HTTPResponse::handlePostPath(std::string requestPath, bool isFileName)
+std::string	HTTPResponse::handleRequestPath(std::string requestPath, bool isFileName)
 {
 	std::size_t pos = requestPath.find_last_of('/');
 	if (pos != std::string::npos)
@@ -101,15 +101,15 @@ std::string	HTTPResponse::handlePostPath(std::string requestPath, bool isFileNam
 
 void	HTTPResponse::handlePostMethod(const HTTPRequest &request)
 {
-	std::string path =  handlePostPath(request.getPathWithoutQuery(), false);
+	std::string path =  handleRequestPath(request.getPathWithoutQuery(), false);
 	if (this->_serverConfig.isValidLocationPath(path))
 	{
 		LocationConfig myLocation = this->_serverConfig.getLocationConfigByPath(path);
 		std::string fileName;
 		if (!myLocation.getUploadStore().empty())
-			fileName = myLocation.getUploadStore() + handlePostPath(request.getPathWithoutQuery(), true);
+			fileName = myLocation.getUploadStore() + handleRequestPath(request.getPathWithoutQuery(), true);
 		else
-			fileName = "www/upload_store/" + handlePostPath(request.getPathWithoutQuery(), true);
+			fileName = "www/upload_store/" + handleRequestPath(request.getPathWithoutQuery(), true);
 		std::ofstream file(fileName.c_str());
 		if (!file.is_open())
 			throw HTTPRequest::StatusException("505", "Internal Server Error");
@@ -159,10 +159,11 @@ void HTTPResponse::handleIndexFile(const LocationConfig &myLocation)
 
 void HTTPResponse::handleGetMethod(HTTPRequest &request)
 {
-	if (this->_serverConfig.isValidLocationPath(request.getPathWithoutQuery()))
+	std::string path =  handleRequestPath(request.getPathWithoutQuery(), false);
+	if (this->_serverConfig.isValidLocationPath(path))
 	{
-		LocationConfig	myLocation = this->_serverConfig.getLocationConfigByPath(request.getPathWithoutQuery());
-		if (!myLocation.getReturn().empty())// TODO : gerer le return dans la location
+		LocationConfig	myLocation = this->_serverConfig.getLocationConfigByPath(path);
+		if (!myLocation.getReturn().empty())
 		{
 			std::string	newPath = myLocation.getReturn();
 			request.setPath(newPath);
@@ -174,7 +175,7 @@ void HTTPResponse::handleGetMethod(HTTPRequest &request)
 		if (this->ismethodNotAllowed(myLocation.getLimitExcept(), request.getMethod()))
 			throw HTTPRequest::StatusException("405", "Method Not Allowed");// TODO: check autoindex rules, if path is file or folder
 		std::string requestPath = request.getPathWithoutQuery();
-		if (request.getPathWithoutQuery() == "/")
+		if (path == "/")
 			handleIndexFile(myLocation);
 		else if (request.getPathWithoutQuery().at(request.getPathWithoutQuery().size() - 1) == '/')
 		{
@@ -183,8 +184,25 @@ void HTTPResponse::handleGetMethod(HTTPRequest &request)
 			else
 				throw HTTPRequest::StatusException("404", "Page not found");
 		}
-		
+		else
+		{
+			std::string ressource =  handleRequestPath(request.getPathWithoutQuery(), true);
+			ressource = "www/" + ressource;
+			std::ifstream file(ressource.c_str());
+			if (!file.is_open())
+				throw HTTPRequest::StatusException("404", "Page Not Found");
+			file.close();
+			this->_response = getLocalFileContent(ressource);
+		}
 	}
 	else
-		throw HTTPRequest::StatusException("404", "Page not found");
+	{
+		std::string ressource =  handleRequestPath(request.getPathWithoutQuery(), true);
+		ressource = "www/" + ressource;
+		std::ifstream file(ressource.c_str());
+		if (!file.is_open())
+			throw HTTPRequest::StatusException("404", "Page Not Found");
+		file.close();
+		this->_response = getLocalFileContent(ressource);
+	}
 }
