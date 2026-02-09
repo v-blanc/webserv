@@ -6,7 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 14:04:09 by yassinefahf       #+#    #+#             */
-/*   Updated: 2026/02/06 12:45:59 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/02/09 18:09:43 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,6 +35,7 @@ HTTPResponse::HTTPResponse(HTTPRequest &request, const std::string &status, Serv
 			try
 			{
 				handlePostMethod(request);
+				prepareGoodResponse();
 			}
 			catch (const HTTPRequest::StatusException &e)
 			{
@@ -65,7 +66,6 @@ void	HTTPResponse::prepareGoodResponse()
 			oss <<"HTTP/1.1 "<<this->_status + " "<<this->_message<<"\r\nContent-Length: " << this->_contentLength << "\r\n\r\n" << this->_body;
 		this->_response = oss.str();
 	}
-	// std::cout<<"response: "this->_response<<std::endl;
 }
 
 HTTPResponse::~HTTPResponse(){}
@@ -86,13 +86,38 @@ void	HTTPResponse::handleBadRequest(const std::string &status, const std::string
 	this->_response = oss.str();
 }
 
+std::string	HTTPResponse::handlePostPath(std::string requestPath, bool isFileName)
+{
+	std::size_t pos = requestPath.find_last_of('/');
+	if (pos != std::string::npos)
+	{
+		if (isFileName)
+			return (requestPath.substr(pos, requestPath.size()));
+		else
+			return (requestPath.substr(0, pos));
+	}
+	return (requestPath);
+}
+
 void	HTTPResponse::handlePostMethod(const HTTPRequest &request)
 {
-	if (this->_serverConfig.isValidLocationPath(request.getPathWithoutQuery()))
+	std::string path =  handlePostPath(request.getPathWithoutQuery(), false);
+	if (this->_serverConfig.isValidLocationPath(path))
 	{
-		LocationConfig myLocation = this->_serverConfig.getLocationConfigByPath(request.getPathWithoutQuery());
-		
+		LocationConfig myLocation = this->_serverConfig.getLocationConfigByPath(path);
+		std::string fileName;
+		if (!myLocation.getUploadStore().empty())
+			fileName = myLocation.getUploadStore() + handlePostPath(request.getPathWithoutQuery(), true);
+		else
+			fileName = "www/upload_store/" + handlePostPath(request.getPathWithoutQuery(), true);
+		std::ofstream file(fileName.c_str());
+		if (!file.is_open())
+			throw HTTPRequest::StatusException("505", "Internal Server Error");
+		file << request.getBody();
+		file.close();
 	}
+	else
+		throw HTTPRequest::StatusException("404", "Page Not Found");
 }
 
 bool	HTTPResponse::ismethodNotAllowed(std::vector<std::string> methods, std::string myMethod)

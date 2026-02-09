@@ -6,7 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 13:49:54 by yassinefahf       #+#    #+#             */
-/*   Updated: 2026/02/06 12:43:15 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/02/09 17:15:25 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,8 +35,8 @@ class HTTPResponse
 		void handlePostMethod(const HTTPRequest &request);
 		static bool ismethodNotAllowed(std::vector<std::string> methods, std::string myMethod);
 		void handleIndexFile(const LocationConfig &myLocation);
-		void handleAutoIndex(const LocationConfig &myLocation);
 		const std::string &getResponse() const {return this->_response;}
 		void prepareGoodResponse();
+		std::string	handlePostPath(std::string requestPath, bool isFileName);
 };
 #endif
