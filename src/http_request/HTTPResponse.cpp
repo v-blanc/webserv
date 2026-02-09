@@ -6,7 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 14:04:09 by yassinefahf       #+#    #+#             */
-/*   Updated: 2026/02/09 18:57:23 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/02/09 19:02:01 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -157,6 +157,17 @@ void HTTPResponse::handleIndexFile(const LocationConfig &myLocation)
 	}
 }
 
+void HTTPResponse::handleRessource(HTTPRequest &request)
+{
+	std::string ressource =  handleRequestPath(request.getPathWithoutQuery(), true);
+	ressource = "www/" + ressource;
+	std::ifstream file(ressource.c_str());
+	if (!file.is_open())
+		throw HTTPRequest::StatusException("404", "Page Not Found");
+	file.close();
+	this->_response = getLocalFileContent(ressource);
+}
+
 void HTTPResponse::handleGetMethod(HTTPRequest &request)
 {
 	std::string path =  handleRequestPath(request.getPathWithoutQuery(), false);
@@ -185,24 +196,8 @@ void HTTPResponse::handleGetMethod(HTTPRequest &request)
 				throw HTTPRequest::StatusException("404", "Page not found");
 		}
 		else
-		{
-			std::string ressource =  handleRequestPath(request.getPathWithoutQuery(), true);
-			ressource = "www/" + ressource;
-			std::ifstream file(ressource.c_str());
-			if (!file.is_open())
-				throw HTTPRequest::StatusException("404", "Page Not Found");
-			file.close();
-			this->_response = getLocalFileContent(ressource);
-		}
+			handleRessource(request);
 	}
 	else
-	{
-		std::string ressource =  handleRequestPath(request.getPathWithoutQuery(), true);
-		ressource = "www/" + ressource;
-		std::ifstream file(ressource.c_str());
-		if (!file.is_open())
-			throw HTTPRequest::StatusException("404", "Page Not Found");
-		file.close();
-		this->_response = getLocalFileContent(ressource);
-	}
+		handleRessource(request);
 }

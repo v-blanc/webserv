@@ -6,7 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 13:49:54 by yassinefahf       #+#    #+#             */
-/*   Updated: 2026/02/09 18:43:21 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/02/09 19:01:20 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,5 +38,6 @@ class HTTPResponse
 		const std::string &getResponse() const {return this->_response;}
 		void prepareGoodResponse();
 		std::string	handleRequestPath(std::string requestPath, bool isFileName);
+		void handleRessource(HTTPRequest &request);
 };
 #endif
