@@ -6,7 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 14:04:09 by yassinefahf       #+#    #+#             */
-/*   Updated: 2026/02/09 19:02:01 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/02/10 13:23:42 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -66,6 +66,7 @@ void	HTTPResponse::prepareGoodResponse()
 			oss <<"HTTP/1.1 "<<this->_status + " "<<this->_message<<"\r\nContent-Length: " << this->_contentLength << "\r\n\r\n" << this->_body;
 		this->_response = oss.str();
 	}
+
 }
 
 HTTPResponse::~HTTPResponse(){}
@@ -165,7 +166,7 @@ void HTTPResponse::handleRessource(HTTPRequest &request)
 	if (!file.is_open())
 		throw HTTPRequest::StatusException("404", "Page Not Found");
 	file.close();
-	this->_response = getLocalFileContent(ressource);
+	this->_body = getLocalFileContent(ressource);
 }
 
 void HTTPResponse::handleGetMethod(HTTPRequest &request)
