@@ -6,7 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 14:04:09 by yassinefahf       #+#    #+#             */
-/*   Updated: 2026/02/10 13:23:42 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/02/10 13:31:36 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -90,6 +90,8 @@ void	HTTPResponse::handleBadRequest(const std::string &status, const std::string
 std::string	HTTPResponse::handleRequestPath(std::string requestPath, bool isFileName)
 {
 	std::size_t pos = requestPath.find_last_of('/');
+	if (pos == 0 && isFileName == false)
+		return (requestPath);
 	if (pos != std::string::npos)
 	{
 		if (isFileName)
@@ -131,6 +133,7 @@ bool	HTTPResponse::ismethodNotAllowed(std::vector<std::string> methods, std::str
 
 void HTTPResponse::handleIndexFile(const LocationConfig &myLocation)
 {
+	std::cout<<"ici"<<std::endl;
 	std::vector<std::string> indices = myLocation.getIndex();
 	int fd;
 	std::string rightPath;
