@@ -33,6 +33,8 @@ class HTTPResponse
 		void handleGetMethod(HTTPRequest &request);
 		void handleBadRequest(const std::string &status, const std::string &message);
 		void handlePostMethod(const HTTPRequest &request);
+		void handleDeleteMethod(const HTTPRequest &request);
+
 		static bool ismethodNotAllowed(std::vector<std::string> methods, std::string myMethod);
 		void handleIndexFile(const LocationConfig &myLocation);
 		const std::string &getResponse() const {return this->_response;}

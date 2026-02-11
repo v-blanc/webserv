@@ -42,6 +42,19 @@ HTTPResponse::HTTPResponse(HTTPRequest &request, const std::string &status, Serv
 				handleBadRequest(e.getStatus(), e.getMessage());
 			}
 		}
+		else if (request.getMethod() == "DELETE")
+		{
+			try
+			{
+				handleDeleteMethod(request);
+				prepareGoodResponse();
+			}
+			catch(const HTTPRequest::StatusException& e)
+			{
+				handleBadRequest(e.getStatus(), e.getMessage());
+			}
+			
+		}
 		else
 			return ;// TODO: handle delete method
 		
@@ -204,4 +217,24 @@ void HTTPResponse::handleGetMethod(HTTPRequest &request)
 	}
 	else
 		handleRessource(request);
+}
+
+void	HTTPResponse::handleDeleteMethod(const HTTPRequest &request)
+
+{
+	std::string const	path = handleRequestPath(request.getPathWithoutQuery(), false);
+	std::string const	filename = "www" + path;
+
+	if (std::remove(filename.c_str()) == 0)
+	{
+		this->_status = "204";
+		this->_message = "No Content";
+		this->_body.clear();
+	}
+	else
+	{
+		this->_status = "204";
+		this->_message = "No Content";
+		this->_body.clear();
+	}
 }
