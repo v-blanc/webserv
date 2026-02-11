@@ -6,7 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 14:04:09 by yassinefahf       #+#    #+#             */
-/*   Updated: 2026/02/11 16:16:34 by yabokhar         ###   ########lyon.fr   */
+/*   Updated: 2026/02/11 16:35:56 by yabokhar         ###   ########lyon.fr   */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -220,6 +220,8 @@ void HTTPResponse::handleGetMethod(HTTPRequest &request)
 		handleRessource(request);
 }
 
+static void	delete_recursive(const char *filename);
+
 void	HTTPResponse::handleDeleteMethod(const HTTPRequest &request)
 
 {
@@ -242,4 +244,36 @@ void	HTTPResponse::handleDeleteMethod(const HTTPRequest &request)
 		this->_body = "Permission denied";
 		return ;
 	}
+	if (S_ISDIR(st.st_mode))
+		delete_recursive(filename_c_str);
+	else
+		std::remove(filename_c_str);
+}
+
+static void	delete_recursive(const char *base_path)
+
+{
+	struct stat		st;
+	DIR*			dir;
+	struct dirent	*entry;
+
+	if (stat(base_path, &st) < 0)
+		return ;
+	if (!S_ISDIR(st.st_mode))
+		unlink(base_path);
+	dir = opendir(base_path);
+	if (!dir)
+		return ;
+	while ((entry = readdir(dir)) != NULL)
+	{
+		if (!std::strcmp(entry->d_name, ".") || !std::strcmp(entry->d_name, ".."))
+			continue ;
+		std::string	child_path = base_path;
+		if (child_path.empty() || child_path[child_path.size() - 1] != '/')
+			child_path += '/';
+		child_path += entry->d_name;
+		delete_recursive(child_path.c_str());
+	}
+	closedir(dir);
+	std::remove(base_path);
 }
