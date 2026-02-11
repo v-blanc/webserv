@@ -6,11 +6,12 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 14:04:09 by yassinefahf       #+#    #+#             */
-/*   Updated: 2026/02/10 13:31:36 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/02/11 16:16:34 by yabokhar         ###   ########lyon.fr   */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "HTTPResponse.hpp"
+#include <sys/stat.h>
 
 HTTPResponse::HTTPResponse(HTTPRequest &request, const std::string &status, ServerConfig &serverConfig, std::string message): _serverConfig(serverConfig), _body(""), _contentLength(0), _response("")
 {
@@ -224,17 +225,21 @@ void	HTTPResponse::handleDeleteMethod(const HTTPRequest &request)
 {
 	std::string const	path = handleRequestPath(request.getPathWithoutQuery(), false);
 	std::string const	filename = "www" + path;
+	const char*			filename_c_str = filename.c_str();
+	struct stat			st;
 
-	if (std::remove(filename.c_str()) == 0)
+	if (stat(filename_c_str, &st) < 0)
 	{
 		this->_status = "204";
 		this->_message = "No Content";
 		this->_body.clear();
+		return ;
 	}
-	else
+	if (access(filename_c_str, W_OK) < 0)
 	{
-		this->_status = "204";
-		this->_message = "No Content";
-		this->_body.clear();
+		this->_status = "403";
+		this->_message = "Forbidden";
+		this->_body = "Permission denied";
+		return ;
 	}
 }
