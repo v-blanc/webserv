@@ -6,7 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 14:04:09 by yassinefahf       #+#    #+#             */
-/*   Updated: 2026/02/11 16:35:56 by yabokhar         ###   ########lyon.fr   */
+/*   Updated: 2026/02/12 13:14:26 by yabokhar         ###   ########lyon.fr   */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -57,8 +57,7 @@ HTTPResponse::HTTPResponse(HTTPRequest &request, const std::string &status, Serv
 			
 		}
 		else
-			return ;// TODO: handle delete method
-		
+			return ;
 	}
 }
 
@@ -222,14 +221,26 @@ void HTTPResponse::handleGetMethod(HTTPRequest &request)
 
 static void	delete_recursive(const char *filename);
 
-void	HTTPResponse::handleDeleteMethod(const HTTPRequest &request)
+void	HTTPResponse::handleDeleteMethod(HTTPRequest &request)
 
 {
 	std::string const	path = handleRequestPath(request.getPathWithoutQuery(), false);
-	std::string const	filename = "www" + path;
-	const char*			filename_c_str = filename.c_str();
-	struct stat			st;
+	std::string const		filename = "www" + path;
+	const char*				filename_c_str = filename.c_str();
+	struct stat				st;
+	LocationConfig const	location = this->_serverConfig.getLocationConfigByPath(path); 
 
+	if (!location.getReturn().empty())
+	{
+		std::string	newPath = location.getReturn();
+		request.setPath(newPath);
+		this->_status = "301";
+		this->_message = "Moved Permanently";
+		this->_newLocation = newPath;
+		return (handleGetMethod(request));
+	}
+	if (this->ismethodNotAllowed(location.getLimitExcept(), request.getMethod()))
+			throw HTTPRequest::StatusException("405", "Method Not Allowed");
 	if (stat(filename_c_str, &st) < 0)
 	{
 		this->_status = "204";

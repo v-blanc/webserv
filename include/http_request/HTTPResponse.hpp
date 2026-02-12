@@ -6,7 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 13:49:54 by yassinefahf       #+#    #+#             */
-/*   Updated: 2026/02/09 19:01:20 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/02/12 13:13:15 by yabokhar         ###   ########lyon.fr   */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,7 +33,7 @@ class HTTPResponse
 		void handleGetMethod(HTTPRequest &request);
 		void handleBadRequest(const std::string &status, const std::string &message);
 		void handlePostMethod(const HTTPRequest &request);
-		void handleDeleteMethod(const HTTPRequest &request);
+		void handleDeleteMethod(HTTPRequest &request);
 
 		static bool ismethodNotAllowed(std::vector<std::string> methods, std::string myMethod);
 		void handleIndexFile(const LocationConfig &myLocation);
