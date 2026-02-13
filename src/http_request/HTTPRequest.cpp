@@ -6,7 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/07 14:57:52 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/31 22:06:44 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/02/13 18:28:00 by yabokhar         ###   ########lyon.fr   */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,9 @@ HTTPRequest::HTTPRequest(ServerConfig &serverConfig, std::string &request, std::
     {
         this->parseRequest(request);
         this->_isValidRequest = true;
+
+		for (std::map<std::string, std::string>::iterator it = _cookies.begin(); it != _cookies.end(); ++it)
+			std::cout << "[Cookie] " << it->first << " = " << it->second << std::endl;
 
         HTTPResponse myResponse(*this, "", serverConfig, "");
         // TODO: to test
@@ -186,4 +189,17 @@ void printHTTPRequest(HTTPRequest &request)
 
     std::cout << "Body:" << std::endl;
     std::cout << "\"" << request.getBody() << "\"" << std::endl;
+}
+
+std::string	HTTPRequest::getCookie(const std::string &name) const
+{
+	std::map<std::string, std::string>::const_iterator	it = _cookies.find(name);
+	if (it != _cookies.end())
+		return (it->second);
+	return ("");
+}
+
+void	HTTPRequest::pushBackCookies(const std::string key, const std::string value)
+{
+	_cookies[key] = value;
 }

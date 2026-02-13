@@ -6,7 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/07 14:57:04 by vblanc            #+#    #+#             */
-/*   Updated: 2026/02/09 16:13:52 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/02/13 18:12:21 by yabokhar         ###   ########lyon.fr   */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,6 +35,8 @@ public:
     bool getConnection() const { return this->_connection; }; // ?
     std::string getBody() const { return this->_body; };
     bool isChunked() const { return this->_isChunked; };
+	std::string	getCookie(const std::string& name) const;
+	void		pushBackCookies(const std::string key, const std::string value);
 
 
 
@@ -86,6 +88,10 @@ private:
     void sendCgiStubResponse(int &clientFd) const;
     std::string getNormalizedExtensionFromPath(void) const;
     // (moved to public)
+
+	//Cookies
+	std::map<std::string, std::string>	_cookies;
+
 };
 
 // TODO: Debug

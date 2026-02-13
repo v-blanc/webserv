@@ -146,7 +146,6 @@ bool	HTTPResponse::ismethodNotAllowed(std::vector<std::string> methods, std::str
 
 void HTTPResponse::handleIndexFile(const LocationConfig &myLocation)
 {
-	std::cout<<"ici"<<std::endl;
 	std::vector<std::string> indices = myLocation.getIndex();
 	int fd;
 	std::string rightPath;

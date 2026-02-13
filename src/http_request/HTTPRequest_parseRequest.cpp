@@ -6,7 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/19 16:19:40 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/31 22:07:04 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/02/13 18:11:36 by yabokhar         ###   ########lyon.fr   */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -111,6 +111,33 @@ bool HTTPRequest::parseHeader(std::string &line, bool checkedHost, bool isLastLi
         if (line.substr(pos + 1) == "chunked")
             this->_isChunked = true;
     }
+	else if (headerName == "Cookie")
+	{
+		std::string cookieStr = line.substr(pos + 1);
+    
+		while (!cookieStr.empty())
+		{
+			std::size_t semicolon_pos = cookieStr.find(';');
+			std::string pair;
+			if (semicolon_pos != std::string::npos)
+			{
+				pair = cookieStr.substr(0, semicolon_pos);
+				cookieStr = cookieStr.substr(semicolon_pos + 1);
+			}
+			else
+			{
+				pair = cookieStr;
+				cookieStr.clear();
+			}
+			std::size_t start = pair.find_first_not_of(' ');
+			if (start == std::string::npos)
+				continue;
+			pair = pair.substr(start);
+			std::size_t equals_sign_pos = pair.find('=');
+			if (equals_sign_pos != std::string::npos)
+				this->_cookies[pair.substr(0, equals_sign_pos)] = pair.substr(equals_sign_pos + 1);
+		}
+	}
     return (true);
 }
 
