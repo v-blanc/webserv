@@ -12,7 +12,7 @@
 
 #include "../../include/http_request/HTTPRequest.hpp"
 
-HTTPRequest::HTTPRequest(ServerConfig &serverConfig, std::string &request, std::string &responseBuff) : _isValidRequest(false), _contentLength(0), _connection(true)
+HTTPRequest::HTTPRequest(ServerConfig &serverConfig, std::string &request, std::string &responseBuff, SessionManager &sessionManager) : _isValidRequest(false), _contentLength(0), _connection(true)
 {
     try
     {
@@ -20,15 +20,19 @@ HTTPRequest::HTTPRequest(ServerConfig &serverConfig, std::string &request, std::
         this->_isValidRequest = true;
 
 		for (std::map<std::string, std::string>::iterator it = _cookies.begin(); it != _cookies.end(); ++it)
+        {
+            char    timeString[20];
+            time_t  createdAt = sessionManager.getSessionData(this->getCookie(it->first)).createdAt;
 			std::cout << "[Cookie] " << it->first << " = " << it->second << std::endl;
-
-        HTTPResponse myResponse(*this, "", serverConfig, "");
-        // TODO: to test
+            std::strftime(timeString, sizeof(timeString), "%Y-%m-%d %H:%M:%S", std::localtime(&createdAt));
+            std::cout << "[Cookie-CreatedAt] " << timeString << std::endl;
+        }
+        HTTPResponse myResponse(*this, "", serverConfig, "", sessionManager);
         responseBuff = myResponse.getResponse();
     }
     catch (const StatusException &e)
     {
-        HTTPResponse badResponse(*this, e.getStatus(), serverConfig, e.getMessage());
+        HTTPResponse badResponse(*this, e.getStatus(), serverConfig, e.getMessage(), sessionManager);
         responseBuff = badResponse.getResponse();
     }
 }

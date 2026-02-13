@@ -16,10 +16,13 @@
 #include "ServerConfig.hpp"
 #include "utils.hpp"
 #include "HTTPResponse.hpp"
+
+class SessionManager;
+
 class HTTPRequest
 {
 public:
-    HTTPRequest(ServerConfig &serverConfig, std::string &request, std::string &responseBuff);
+    HTTPRequest(ServerConfig &serverConfig, std::string &request, std::string &responseBuff, SessionManager &sessionManager);
     ~HTTPRequest();
 
     // Getter

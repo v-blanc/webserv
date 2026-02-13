@@ -12,25 +12,49 @@
 
 #include "SessionManager.hpp"
 #include <sstream>
+#include <cstdlib>
 
-#include <iostream>
-SessionManager::SessionManager(void)
-
+SessionManager::SessionManager(void) : _counter(0)
 {
-	std::cout << "<<<<<<< Session created" << std::endl;
+	std::srand(static_cast<unsigned int>(std::time(NULL)));
 }
 
-SessionManager::~SessionManager(void)
+SessionManager::~SessionManager(void) {}
 
-{
-	std::cout << "<<<<<<< Session destroyed" << std::endl;
-}
-
-std::string	generateSessionId(void)
+std::string	SessionManager::createSession(void)
 
 {
 	std::ostringstream	oss;
+	std::string			id;
+	SessionData			data;
 
-	(void)oss;
-	return ("feur");
+
+	oss << std::hex;
+	oss << static_cast<unsigned long>(std::time(NULL));
+	oss << static_cast<unsigned long>(++_counter);
+	oss << static_cast<unsigned long>(std::rand());
+
+	id = oss.str();
+	while (id.size() < 32)
+		id += "0";
+
+	data.createdAt = std::time(NULL);
+	data.lastAccess = data.createdAt;
+	_sessions[id] = data;
+	return (id);
+}
+
+bool	SessionManager::sessionExists(const std::string &sessionId) const
+
+{
+	return (_sessions.find(sessionId) != _sessions.end());
+}
+
+SessionData	SessionManager::getSessionData(const std::string &sessionId) const
+
+{
+	std::map<std::string, SessionData>::const_iterator it = _sessions.find(sessionId);
+	if (it != _sessions.end())
+		return (it->second);
+	return (SessionData());
 }

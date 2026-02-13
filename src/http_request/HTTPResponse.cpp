@@ -13,8 +13,14 @@
 #include "HTTPResponse.hpp"
 #include <sys/stat.h>
 
-HTTPResponse::HTTPResponse(HTTPRequest &request, const std::string &status, ServerConfig &serverConfig, std::string message): _serverConfig(serverConfig), _body(""), _contentLength(0), _response("")
+HTTPResponse::HTTPResponse(HTTPRequest &request, const std::string &status, ServerConfig &serverConfig, std::string message, SessionManager &sessionManager): _serverConfig(serverConfig), _sessionManager(sessionManager), _body(""), _contentLength(0), _response("")
 {
+	std::string existingId = request.getCookie("session_id");
+	if (!existingId.empty() && _sessionManager.sessionExists(existingId))
+		_sessionId = existingId;
+	else
+		_sessionId = _sessionManager.createSession();
+
 	if (status != "")
 		handleBadRequest(status, message);
 	else
@@ -74,9 +80,9 @@ void	HTTPResponse::prepareGoodResponse()
 			this->_message = "OK";
 		}
 		if (!this->_newLocation.empty())
-			oss <<"HTTP/1.1 "<<this->_status + " "<<this->_message<<"\r\n"<<"Location: "<<this->_newLocation<<"\r\n"<<"Content-Length: " << this->_contentLength << "\r\n\r\n" << this->_body;
+			oss <<"HTTP/1.1 "<<this->_status + " "<<this->_message<<"\r\n"<<"Location: "<<this->_newLocation<<"\r\n"<<"Set-Cookie: session_id="<<this->_sessionId<<"; Path=/; Max-Age=3600\r\n"<<"Content-Length: " << this->_contentLength << "\r\n\r\n" << this->_body;
 		else
-			oss <<"HTTP/1.1 "<<this->_status + " "<<this->_message<<"\r\nContent-Length: " << this->_contentLength << "\r\n\r\n" << this->_body;
+			oss <<"HTTP/1.1 "<<this->_status + " "<<this->_message<<"\r\n"<<"Set-Cookie: session_id="<<this->_sessionId<<"; Path=/; Max-Age=3600\r\n"<<"Content-Length: " << this->_contentLength << "\r\n\r\n" << this->_body;
 		this->_response = oss.str();
 	}
 
