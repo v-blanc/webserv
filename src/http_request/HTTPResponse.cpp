@@ -228,8 +228,21 @@ void	HTTPResponse::handleDeleteMethod(HTTPRequest &request)
 	std::string const		filename = "www" + path;
 	const char*				filename_c_str = filename.c_str();
 	struct stat				st;
-	LocationConfig const	location = this->_serverConfig.getLocationConfigByPath(path); 
+	LocationConfig 			location;
 
+	try
+	{
+		location = this->_serverConfig.getLocationConfigByPath(path);
+	}
+	catch(const std::out_of_range& e)
+	{
+		location = this->_serverConfig.getLocationConfigByPath("/");
+	}
+	if (!this->_serverConfig.isValidLocationPath(path))
+	{
+		location = this->_serverConfig.getLocationConfigByPath("/");
+		std::cout << "location path: " << location.getPath() << std::endl;
+	} 
 	if (!location.getReturn().empty())
 	{
 		std::string	newPath = location.getReturn();
@@ -271,7 +284,7 @@ static void	delete_recursive(const char *base_path)
 	if (stat(base_path, &st) < 0)
 		return ;
 	if (!S_ISDIR(st.st_mode))
-		unlink(base_path);
+		std::remove(base_path);
 	dir = opendir(base_path);
 	if (!dir)
 		return ;

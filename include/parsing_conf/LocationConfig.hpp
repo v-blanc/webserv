@@ -22,6 +22,8 @@ public:
     LocationConfig(Node &node, std::string &path, std::string &fileName, int autoindex, long long clientMaxBodySize,
                    std::string root, std::vector<std::string> index, std::map<std::size_t, std::string> errorPage,
                    std::vector<stringPair> cgiHandler);
+    LocationConfig(void);
+    LocationConfig& operator=(const LocationConfig &other);
     ~LocationConfig();
 
     // Getter

@@ -34,6 +34,27 @@ LocationConfig::LocationConfig(Node &node, std::string &path, std::string &fileN
         this->_cgiHandler = cgiHandler;
 }
 
+LocationConfig::LocationConfig(void) : _node(*(new Node())), _fileName(*(new std::string())), _path(""), _autoindex(-1), _clientMaxBodySize(-1)
+{}
+
+LocationConfig& LocationConfig::operator=(const LocationConfig &other)
+{
+    if (this != &other)
+    {
+        this->_path = other._path;
+        this->_autoindex = other._autoindex;
+        this->_clientMaxBodySize = other._clientMaxBodySize;
+        this->_root = other._root;
+        this->_uploadStore = other._uploadStore;
+        this->_return = other._return;
+        this->_index = other._index;
+        this->_errorPage = other._errorPage;
+        this->_limitExcept = other._limitExcept;
+        this->_cgiHandler = other._cgiHandler;
+    }
+    return (*this);
+}
+
 LocationConfig::~LocationConfig()
 {
 }
