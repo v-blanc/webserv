@@ -16,6 +16,7 @@
 #include "structServer.h"
 #include "HTTPRequest.hpp"
 #include "Server.hpp"
+#include "SessionManager.hpp"
 
 class GlobalServer
 {
@@ -32,6 +33,7 @@ private:
     GlobalConfig &_globalConfig;
     std::vector<Server> _servers;
     std::map<int, ClientContext *> _clientContexts;
+    SessionManager _sessionManager;
 
     // Main methods
     void setupGlobalServer();

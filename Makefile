@@ -13,7 +13,7 @@ FILES := parsing_conf/LexerConfig.cpp parsing_conf/ParserConfig.cpp \
 		parsing_conf/GlobalConfig.cpp parsing_conf/ServerConfig.cpp parsing_conf/LocationConfig.cpp \
 		\
 		http_request/HTTPRequest.cpp http_request/HTTPRequest_parseRequest.cpp \
-		http_request/HTTPResponse.cpp\
+		http_request/HTTPResponse.cpp http_request/SessionManager.cpp\
 		server/GlobalServer.cpp server/Server.cpp \
 		\
 		utils/getTimeOfDay.cpp utils/getLocalFileContent.cpp utils/isInvalidPath.cpp utils/generateAutoindexHTML.cpp \
