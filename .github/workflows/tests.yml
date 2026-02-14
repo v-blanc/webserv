@@ -1,0 +1,75 @@
+name: Webserv Full Tests
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            valgrind \
+            curl \
+            netcat \
+            apache2-utils \
+            lsof \
+			pyhton3 \
+			php-cgi
+
+      - name: Build webserv
+        run: make
+
+      - name: Start webserv under Valgrind
+        run: |
+          valgrind \
+            --leak-check=full \
+            --show-leak-kinds=all \
+            --track-fds=yes \
+            --error-exitcode=42 \
+            ./webserv &
+          echo $! > webserv.pid
+          sleep 3
+
+      - name: Basic GET test
+        run: |
+          curl -f http://localhost:8080/
+
+      - name: 404 test
+        run: |
+          status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/inexistant)
+          if [ "$status" -ne 404 ]; then
+            echo "Expected 404, got $status"
+            exit 1
+          fi
+
+      - name: POST test
+        run: |
+          curl -X POST -d "hello=world" http://localhost:8080/
+
+      - name: CGI test
+        run: |
+          curl -f http://localhost:8080/cgi-bin/test.cgi || exit 1
+
+      - name: Stress test (basic load)
+        run: |
+          ab -n 200 -c 10 http://localhost:8080/
+
+      - name: Open file descriptor check
+        run: |
+          PID=$(cat webserv.pid)
+          lsof -p $PID
+
+      - name: Stop server
+        run: |
+          kill $(cat webserv.pid)
+          wait || true
+
