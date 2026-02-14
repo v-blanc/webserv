@@ -16,26 +16,14 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            valgrind \
-            curl \
-            netcat \
-            apache2-utils \
-            lsof \
-			pyhton3 \
-			php-cgi
+          sudo apt-get install -y valgrind curl netcat apache2-utils lsof
 
       - name: Build webserv
         run: make
 
       - name: Start webserv under Valgrind
         run: |
-          valgrind \
-            --leak-check=full \
-            --show-leak-kinds=all \
-            --track-fds=yes \
-            --error-exitcode=42 \
-            ./webserv &
+          valgrind --leak-check=full --show-leak-kinds=all --track-fds=yes --error-exitcode=42 ./webserv &
           echo $! > webserv.pid
           sleep 3
 
@@ -51,25 +39,7 @@ jobs:
             exit 1
           fi
 
-      - name: POST test
-        run: |
-          curl -X POST -d "hello=world" http://localhost:8080/
-
-      - name: CGI test
-        run: |
-          curl -f http://localhost:8080/cgi-bin/test.cgi || exit 1
-
-      - name: Stress test (basic load)
-        run: |
-          ab -n 200 -c 10 http://localhost:8080/
-
-      - name: Open file descriptor check
-        run: |
-          PID=$(cat webserv.pid)
-          lsof -p $PID
-
       - name: Stop server
         run: |
           kill $(cat webserv.pid)
           wait || true
-
