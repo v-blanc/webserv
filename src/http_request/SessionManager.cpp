@@ -58,3 +58,25 @@ SessionData	SessionManager::getSessionData(const std::string &sessionId) const
 		return (it->second);
 	return (SessionData());
 }
+
+void	SessionManager::setSessionValue(const std::string &sessionId, const std::string &key, const std::string &value)
+{
+	std::map<std::string, SessionData>::iterator it = _sessions.find(sessionId);
+	if (it != _sessions.end())
+	{
+		it->second.values[key] = value;
+		it->second.lastAccess = std::time(NULL);
+	}
+}
+
+std::string	SessionManager::getSessionValue(const std::string &sessionId, const std::string &key) const
+{
+	std::map<std::string, SessionData>::const_iterator it = _sessions.find(sessionId);
+	if (it != _sessions.end())
+	{
+		std::map<std::string, std::string>::const_iterator vit = it->second.values.find(key);
+		if (vit != it->second.values.end())
+			return (vit->second);
+	}
+	return ("");
+}
