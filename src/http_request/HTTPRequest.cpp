@@ -44,9 +44,19 @@ HTTPRequest::~HTTPRequest()
 std::string HTTPRequest::getPathWithoutQuery() const
 {
     std::size_t q = this->_path.find('?');
+    std::string path;
     if (q == std::string::npos)
-        return (this->_path);
-    return (this->_path.substr(0, q));
+        path = this->_path;
+    else
+        path = this->_path.substr(0, q);
+    std::string normalized;
+    for (std::size_t i = 0; i < path.size(); ++i)
+    {
+        if (path[i] == '/' && !normalized.empty() && normalized[normalized.size() - 1] == '/')
+            continue ;
+        normalized += path[i];
+    }
+    return (normalized);
 }
 
 bool HTTPRequest::isCgiExtension() const

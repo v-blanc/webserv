@@ -35,7 +35,7 @@ class HTTPResponse
 		~HTTPResponse();
 		void handleGetMethod(HTTPRequest &request);
 		void handleBadRequest(const std::string &status, const std::string &message);
-		void handlePostMethod(const HTTPRequest &request);
+		void handlePostMethod(HTTPRequest &request);
 		void handleDeleteMethod(HTTPRequest &request);
 
 		static bool ismethodNotAllowed(std::vector<std::string> methods, std::string myMethod);
@@ -44,5 +44,6 @@ class HTTPResponse
 		void prepareGoodResponse();
 		std::string	handleRequestPath(std::string requestPath, bool isFileName);
 		void handleRessource(HTTPRequest &request);
+		void executeCgi(HTTPRequest &request, const std::string &interpreter);
 };
 #endif
