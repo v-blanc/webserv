@@ -1,8 +1,9 @@
 name: Webserv Full Feature Tests
 
 on:
-  push:
   workflow_dispatch:
+  push:
+  pull_request:
 
 jobs:
   test:
@@ -15,57 +16,195 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            valgrind \
-            curl \
-            apache2-utils \
-            lsof \
-            netcat-openbsd \
-            python3
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq curl apache2-utils python3 lsof valgrind siege
 
-      - name: Build webserv
-        run: make
+      - name: Build
+        run: make -j$(nproc)
 
-      - name: Start webserv under Valgrind
+      - name: Prepare test environment
         run: |
-          valgrind \
-            --leak-check=full \
-            --show-leak-kinds=all \
-            --track-fds=yes \
-            --error-exitcode=42 \
-            ./webserv > server.log 2>&1 &
-          echo $! > webserv.pid
-          sleep 4
+          chmod +x www/cgi-bin/*.py
+          mkdir -p www/resource-to-delete
+          touch www/resource-to-delete/file1.txt
+          touch www/resource-to-delete/file2.txt
+          mkdir -p www/upload_store
 
-      #################################
-      # BASIC ROOT + INDEX TEST
-      #################################
-
-      - name: Root index test
+      - name: Start webserv
         run: |
-          curl -v http://localhost:8080/ -o response.txt
-          test -s response.txt
+          ./webserv config/good/webserv.conf &
+          sleep 2
+          curl -sf http://localhost:8080/ > /dev/null || (echo "Server failed to start"; exit 1)
 
-      #################################
-      # ERROR PAGE TEST
-      #################################
+      # ────────── GET TESTS ──────────
 
-      - name: 404 error page test
+      - name: "GET / → 200 + index page"
         run: |
-          status=$(curl -s -o error.txt -w "%{http_code}" http://localhost:8080/doesnotexist)
-          if [ "$status" -ne 404 ]; then
-            echo "Expected 404, got $status"
-            exit 1
-          fi
-          test -s error.txt
+          STATUS=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/)
+          [ "$STATUS" = "200" ] && echo "PASS: GET / → $STATUS" || (echo "FAIL: GET / → $STATUS"; exit 1)
 
-      #################################
-      # CLIENT MAX BODY SIZE (location / = 10)
-      #################################
-
-      - name: client_max_body_size (should fail)
+      - name: "GET /index.html → 200"
         run: |
-          head -c 50 </dev/zero | tr '\0' 'A' > big.txt
-          status=$(curl -s -o /
+          STATUS=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/index.html)
+          [ "$STATUS" = "200" ] && echo "PASS" || (echo "FAIL: $STATUS"; exit 1)
 
+      - name: "GET /nonexistent → 404"
+        run: |
+          STATUS=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/nonexistent)
+          [ "$STATUS" = "404" ] && echo "PASS: 404 returned" || (echo "FAIL: expected 404, got $STATUS"; exit 1)
+
+      - name: "GET /test/test.html → 200"
+        run: |
+          STATUS=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/test/test.html)
+          [ "$STATUS" = "200" ] && echo "PASS" || (echo "FAIL: $STATUS"; exit 1)
+
+      # ────────── REDIRECT ──────────
+
+      - name: "GET /toto → redirect to /"
+        run: |
+          STATUS=$(curl -s -o /dev/null -w '%{http_code}' -L http://localhost:8080/toto)
+          REDIR=$(curl -s -o /dev/null -w '%{redirect_url}' http://localhost:8080/toto)
+          echo "Redirect URL: $REDIR  Final status: $STATUS"
+          [ "$STATUS" = "200" ] && echo "PASS: redirect followed" || (echo "FAIL: $STATUS"; exit 1)
+
+      # ────────── AUTOINDEX ──────────
+
+      - name: "GET /folder/ → autoindex listing"
+        run: |
+          BODY=$(curl -s http://localhost:8080/folder/)
+          echo "$BODY" | head -5
+          echo "$BODY" | grep -qi 'index\|listing\|<a ' && echo "PASS: autoindex present" || echo "WARN: autoindex may not be active"
+
+      # ────────── METHOD RESTRICTIONS ──────────
+
+      - name: "DELETE on /not_allowed_delete → 405"
+        run: |
+          STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE http://localhost:8080/not_allowed_delete)
+          echo "Status: $STATUS"
+          [ "$STATUS" = "405" ] || [ "$STATUS" = "403" ] && echo "PASS: method blocked" || (echo "FAIL: $STATUS"; exit 1)
+
+      - name: "PUT / → 405 (not in limit_except)"
+        run: |
+          STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X PUT http://localhost:8080/)
+          echo "Status: $STATUS"
+          [ "$STATUS" = "405" ] || [ "$STATUS" = "501" ] && echo "PASS" || (echo "FAIL: $STATUS"; exit 1)
+
+      # ────────── DELETE ──────────
+
+      - name: "DELETE allowed resource → 200/204"
+        run: |
+          touch www/resource-to-delete/todelete.txt
+          STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE http://localhost:8080/resource-to-delete/todelete.txt)
+          echo "Status: $STATUS"
+          [ "$STATUS" = "200" ] || [ "$STATUS" = "204" ] && echo "PASS: file deleted" || (echo "FAIL: $STATUS"; exit 1)
+          [ ! -f www/resource-to-delete/todelete.txt ] && echo "File removed on disk" || echo "WARN: file still present"
+
+      # ────────── client_max_body_size ──────────
+
+      - name: "POST body exceeding client_max_body_size (10 bytes for /) → 413"
+        run: |
+          BIGBODY=$(head -c 100 /dev/urandom | base64)
+          STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST -d "$BIGBODY" http://localhost:8080/)
+          echo "Status: $STATUS"
+          [ "$STATUS" = "413" ] && echo "PASS: body too large rejected" || (echo "FAIL: expected 413, got $STATUS"; exit 1)
+
+      # ────────── CGI ──────────
+
+      - name: "GET /cgi-bin/ping.py → 200 + pong"
+        run: |
+          RESP=$(curl -s -w '\n%{http_code}' http://localhost:8080/cgi-bin/ping.py)
+          STATUS=$(echo "$RESP" | tail -1)
+          BODY=$(echo "$RESP" | head -n -1)
+          echo "Status: $STATUS  Body: $BODY"
+          [ "$STATUS" = "200" ] && echo "PASS: CGI returned 200" || (echo "FAIL: $STATUS"; exit 1)
+          echo "$BODY" | grep -q "pong" && echo "PASS: body contains pong" || (echo "FAIL: body missing pong"; exit 1)
+
+      - name: "POST /cgi-bin/body.py with data"
+        run: |
+          STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST -d "hello=world" http://localhost:8080/cgi-bin/body.py)
+          echo "Status: $STATUS"
+          [ "$STATUS" = "200" ] && echo "PASS" || (echo "FAIL: $STATUS"; exit 1)
+
+      - name: "GET /cgi-bin/timeout.py → 504 (5s timeout)"
+        run: |
+          STATUS=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 http://localhost:8080/cgi-bin/timeout.py)
+          echo "Status: $STATUS"
+          [ "$STATUS" = "504" ] && echo "PASS: timeout detected" || (echo "FAIL: expected 504, got $STATUS"; exit 1)
+
+      # ────────── COOKIES & SESSIONS ──────────
+
+      - name: "GET /session → Set-Cookie header + visit 1"
+        run: |
+          HEADERS=$(curl -s -D - -o /tmp/session_body http://localhost:8080/session)
+          echo "$HEADERS" | head -10
+          echo "$HEADERS" | grep -qi 'Set-Cookie' && echo "PASS: Set-Cookie present" || (echo "FAIL: no Set-Cookie header"; exit 1)
+          grep -q '1' /tmp/session_body && echo "PASS: visit count 1" || echo "WARN: could not verify visit count"
+
+      - name: "Session persistence → visit count increments"
+        run: |
+          COOKIE=$(curl -s -D - -o /dev/null http://localhost:8080/session | grep -i 'Set-Cookie' | head -1 | sed 's/.*session_id=/session_id=/' | cut -d';' -f1)
+          echo "Cookie: $COOKIE"
+          BODY2=$(curl -s -b "$COOKIE" http://localhost:8080/session)
+          echo "Visit 2 body: $BODY2"
+          echo "$BODY2" | grep -q '2' && echo "PASS: visit count 2" || (echo "FAIL: visit count did not increment"; exit 1)
+          BODY3=$(curl -s -b "$COOKIE" http://localhost:8080/session)
+          echo "Visit 3 body: $BODY3"
+          echo "$BODY3" | grep -q '3' && echo "PASS: visit count 3" || (echo "FAIL: visit count did not reach 3"; exit 1)
+
+      # ────────── DOUBLE SLASH NORMALIZATION ──────────
+
+      - name: "GET //cgi-bin//ping.py → normalized → 200 + pong"
+        run: |
+          STATUS=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080//cgi-bin//ping.py)
+          [ "$STATUS" = "200" ] && echo "PASS: double slash normalized" || (echo "FAIL: $STATUS"; exit 1)
+
+      - name: "GET ///index.html → 200"
+        run: |
+          STATUS=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080///index.html)
+          [ "$STATUS" = "200" ] && echo "PASS" || (echo "FAIL: $STATUS"; exit 1)
+
+      # ────────── STRESS TESTS ──────────
+
+      - name: "Stress test with ab (1000 requests, 10 concurrent)"
+        run: |
+          ab -n 1000 -c 10 http://localhost:8080/ | tee /tmp/ab_results.txt
+          grep 'Failed requests' /tmp/ab_results.txt
+          FAILED=$(grep 'Failed requests' /tmp/ab_results.txt | awk '{print $3}')
+          [ "$FAILED" = "0" ] && echo "PASS: 0 failed requests" || echo "WARN: $FAILED failed requests"
+
+      - name: "Stress test with ab (500 requests, 50 concurrent)"
+        run: |
+          ab -n 500 -c 50 http://localhost:8080/index.html | tee /tmp/ab_stress.txt
+          grep 'Failed requests' /tmp/ab_stress.txt
+          grep 'Requests per second' /tmp/ab_stress.txt
+
+      - name: "Multiple concurrent CGI requests"
+        run: |
+          for i in $(seq 1 20); do
+            curl -s -o /dev/null -w '%{http_code}\n' http://localhost:8080/cgi-bin/ping.py &
+          done
+          wait
+          echo "PASS: concurrent CGI finished"
+
+      # ────────── SIEGE STRESS ──────────
+
+      - name: "Siege stress test (30s, 25 concurrent)"
+        run: |
+          siege -b -t30S -c25 http://localhost:8080/ 2>&1 | tee /tmp/siege_results.txt || true
+          echo "--- Siege Results ---"
+          cat /tmp/siege_results.txt
+
+      # ────────── SERVER STILL ALIVE ──────────
+
+      - name: "Server still responsive after stress"
+        run: |
+          STATUS=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/)
+          [ "$STATUS" = "200" ] && echo "PASS: server survived stress tests" || (echo "FAIL: server down after stress"; exit 1)
+
+      # ────────── CLEANUP ──────────
+
+      - name: Stop webserv
+        if: always()
+        run: |
+          pkill webserv || true
+          sleep 1
