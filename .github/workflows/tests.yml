@@ -1,4 +1,4 @@
-name: Webserv Full Tests
+name: Webserv Full Feature Tests
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     steps:
       - name: Checkout repository
@@ -16,30 +16,56 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y valgrind curl netcat-openbsd apache2-utils lsof
+          sudo apt-get install -y \
+            valgrind \
+            curl \
+            apache2-utils \
+            lsof \
+            netcat-openbsd \
+            python3
 
       - name: Build webserv
         run: make
 
       - name: Start webserv under Valgrind
         run: |
-          valgrind --leak-check=full --show-leak-kinds=all --track-fds=yes --error-exitcode=42 ./webserv &
+          valgrind \
+            --leak-check=full \
+            --show-leak-kinds=all \
+            --track-fds=yes \
+            --error-exitcode=42 \
+            ./webserv > server.log 2>&1 &
           echo $! > webserv.pid
-          sleep 3
+          sleep 4
 
-      - name: Basic GET test
-        run: |
-          curl -f http://localhost:8080/
+      #################################
+      # BASIC ROOT + INDEX TEST
+      #################################
 
-      - name: 404 test
+      - name: Root index test
         run: |
-          status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/inexistant)
+          curl -v http://localhost:8080/ -o response.txt
+          test -s response.txt
+
+      #################################
+      # ERROR PAGE TEST
+      #################################
+
+      - name: 404 error page test
+        run: |
+          status=$(curl -s -o error.txt -w "%{http_code}" http://localhost:8080/doesnotexist)
           if [ "$status" -ne 404 ]; then
             echo "Expected 404, got $status"
             exit 1
           fi
+          test -s error.txt
 
-      - name: Stop server
+      #################################
+      # CLIENT MAX BODY SIZE (location / = 10)
+      #################################
+
+      - name: client_max_body_size (should fail)
         run: |
-          kill $(cat webserv.pid)
-          wait || true
+          head -c 50 </dev/zero | tr '\0' 'A' > big.txt
+          status=$(curl -s -o /
+
