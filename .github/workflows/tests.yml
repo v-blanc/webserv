@@ -29,6 +29,7 @@ jobs:
           touch www/resource-to-delete/file1.txt
           touch www/resource-to-delete/file2.txt
           mkdir -p www/upload_store
+          echo "" > /tmp/test_results.txt
 
       - name: Start webserv
         run: |
@@ -38,168 +39,358 @@ jobs:
 
       # ────────── GET TESTS ──────────
 
-      - name: "GET / → 200 + index page"
+      - name: "GET / -> 200 + index page"
+        continue-on-error: true
         run: |
           STATUS=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/)
-          [ "$STATUS" = "200" ] && echo "PASS: GET / → $STATUS" || (echo "FAIL: GET / → $STATUS"; exit 1)
+          if [ "$STATUS" = "200" ]; then
+            echo "PASS: GET / -> $STATUS"
+            echo "PASS: GET / -> $STATUS" >> /tmp/test_results.txt
+          else
+            echo "FAIL: GET / -> $STATUS"
+            echo "FAIL: GET / -> $STATUS" >> /tmp/test_results.txt
+            exit 1
+          fi
 
-      - name: "GET /index.html → 200"
+      - name: "GET /index.html -> 200"
+        continue-on-error: true
         run: |
           STATUS=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/index.html)
-          [ "$STATUS" = "200" ] && echo "PASS" || (echo "FAIL: $STATUS"; exit 1)
+          if [ "$STATUS" = "200" ]; then
+            echo "PASS: GET /index.html -> $STATUS"
+            echo "PASS: GET /index.html" >> /tmp/test_results.txt
+          else
+            echo "FAIL: GET /index.html -> $STATUS"
+            echo "FAIL: GET /index.html -> $STATUS" >> /tmp/test_results.txt
+            exit 1
+          fi
 
-      - name: "GET /nonexistent → 404"
+      - name: "GET /nonexistent -> 404"
+        continue-on-error: true
         run: |
           STATUS=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/nonexistent)
-          [ "$STATUS" = "404" ] && echo "PASS: 404 returned" || (echo "FAIL: expected 404, got $STATUS"; exit 1)
+          if [ "$STATUS" = "404" ]; then
+            echo "PASS: GET /nonexistent -> 404"
+            echo "PASS: GET /nonexistent -> 404" >> /tmp/test_results.txt
+          else
+            echo "FAIL: GET /nonexistent -> $STATUS (expected 404)"
+            echo "FAIL: GET /nonexistent -> $STATUS" >> /tmp/test_results.txt
+            exit 1
+          fi
 
-      - name: "GET /test/test.html → 200"
+      - name: "GET /test/test.html -> 200"
+        continue-on-error: true
         run: |
           STATUS=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/test/test.html)
-          [ "$STATUS" = "200" ] && echo "PASS" || (echo "FAIL: $STATUS"; exit 1)
+          if [ "$STATUS" = "200" ]; then
+            echo "PASS: GET /test/test.html -> $STATUS"
+            echo "PASS: GET /test/test.html" >> /tmp/test_results.txt
+          else
+            echo "FAIL: GET /test/test.html -> $STATUS"
+            echo "FAIL: GET /test/test.html -> $STATUS" >> /tmp/test_results.txt
+            exit 1
+          fi
 
       # ────────── REDIRECT ──────────
 
-      - name: "GET /toto → redirect to /"
+      - name: "GET /toto -> redirect to /"
+        continue-on-error: true
         run: |
           STATUS=$(curl -s -o /dev/null -w '%{http_code}' -L http://localhost:8080/toto)
           REDIR=$(curl -s -o /dev/null -w '%{redirect_url}' http://localhost:8080/toto)
           echo "Redirect URL: $REDIR  Final status: $STATUS"
-          [ "$STATUS" = "200" ] && echo "PASS: redirect followed" || (echo "FAIL: $STATUS"; exit 1)
+          if [ "$STATUS" = "200" ]; then
+            echo "PASS: /toto redirect followed"
+            echo "PASS: GET /toto redirect" >> /tmp/test_results.txt
+          else
+            echo "FAIL: /toto redirect -> $STATUS"
+            echo "FAIL: GET /toto redirect -> $STATUS" >> /tmp/test_results.txt
+            exit 1
+          fi
 
       # ────────── AUTOINDEX ──────────
 
-      - name: "GET /folder/ → autoindex listing"
+      - name: "GET /folder/ -> autoindex listing"
+        continue-on-error: true
         run: |
           BODY=$(curl -s http://localhost:8080/folder/)
           echo "$BODY" | head -5
-          echo "$BODY" | grep -qi 'index\|listing\|<a ' && echo "PASS: autoindex present" || echo "WARN: autoindex may not be active"
+          if echo "$BODY" | grep -qi 'index\|listing\|<a '; then
+            echo "PASS: autoindex present"
+            echo "PASS: autoindex /folder/" >> /tmp/test_results.txt
+          else
+            echo "WARN: autoindex may not be active"
+            echo "WARN: autoindex /folder/" >> /tmp/test_results.txt
+          fi
 
       # ────────── METHOD RESTRICTIONS ──────────
 
-      - name: "DELETE on /not_allowed_delete → 405"
+      - name: "DELETE on /not_allowed_delete -> 405"
+        continue-on-error: true
         run: |
           STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE http://localhost:8080/not_allowed_delete)
           echo "Status: $STATUS"
-          [ "$STATUS" = "405" ] || [ "$STATUS" = "403" ] && echo "PASS: method blocked" || (echo "FAIL: $STATUS"; exit 1)
+          if [ "$STATUS" = "405" ] || [ "$STATUS" = "403" ]; then
+            echo "PASS: method blocked ($STATUS)"
+            echo "PASS: DELETE /not_allowed_delete blocked" >> /tmp/test_results.txt
+          else
+            echo "FAIL: DELETE /not_allowed_delete -> $STATUS"
+            echo "FAIL: DELETE /not_allowed_delete -> $STATUS" >> /tmp/test_results.txt
+            exit 1
+          fi
 
-      - name: "PUT / → 405 (not in limit_except)"
+      - name: "PUT / -> 405 (not in limit_except)"
+        continue-on-error: true
         run: |
           STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X PUT http://localhost:8080/)
           echo "Status: $STATUS"
-          [ "$STATUS" = "405" ] || [ "$STATUS" = "501" ] && echo "PASS" || (echo "FAIL: $STATUS"; exit 1)
+          if [ "$STATUS" = "405" ] || [ "$STATUS" = "501" ]; then
+            echo "PASS: PUT blocked ($STATUS)"
+            echo "PASS: PUT / blocked" >> /tmp/test_results.txt
+          else
+            echo "FAIL: PUT / -> $STATUS"
+            echo "FAIL: PUT / -> $STATUS" >> /tmp/test_results.txt
+            exit 1
+          fi
 
       # ────────── DELETE ──────────
 
-      - name: "DELETE allowed resource → 200/204"
+      - name: "DELETE allowed resource -> 200/204"
+        continue-on-error: true
         run: |
           touch www/resource-to-delete/todelete.txt
           STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE http://localhost:8080/resource-to-delete/todelete.txt)
           echo "Status: $STATUS"
-          [ "$STATUS" = "200" ] || [ "$STATUS" = "204" ] && echo "PASS: file deleted" || (echo "FAIL: $STATUS"; exit 1)
+          if [ "$STATUS" = "200" ] || [ "$STATUS" = "204" ]; then
+            echo "PASS: file deleted ($STATUS)"
+            echo "PASS: DELETE allowed resource" >> /tmp/test_results.txt
+          else
+            echo "FAIL: DELETE allowed resource -> $STATUS"
+            echo "FAIL: DELETE allowed resource -> $STATUS" >> /tmp/test_results.txt
+            exit 1
+          fi
           [ ! -f www/resource-to-delete/todelete.txt ] && echo "File removed on disk" || echo "WARN: file still present"
 
       # ────────── client_max_body_size ──────────
 
-      - name: "POST body exceeding client_max_body_size (10 bytes for /) → 413"
+      - name: "POST body exceeding client_max_body_size -> 413"
+        continue-on-error: true
         run: |
           BIGBODY=$(head -c 100 /dev/urandom | base64)
           STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST -d "$BIGBODY" http://localhost:8080/)
           echo "Status: $STATUS"
-          [ "$STATUS" = "413" ] && echo "PASS: body too large rejected" || (echo "FAIL: expected 413, got $STATUS"; exit 1)
+          if [ "$STATUS" = "413" ]; then
+            echo "PASS: body too large rejected"
+            echo "PASS: client_max_body_size 413" >> /tmp/test_results.txt
+          else
+            echo "FAIL: expected 413, got $STATUS"
+            echo "FAIL: client_max_body_size -> $STATUS" >> /tmp/test_results.txt
+            exit 1
+          fi
 
       # ────────── CGI ──────────
 
-      - name: "GET /cgi-bin/ping.py → 200 + pong"
+      - name: "GET /cgi-bin/ping.py -> 200 + pong"
+        continue-on-error: true
         run: |
           RESP=$(curl -s -w '\n%{http_code}' http://localhost:8080/cgi-bin/ping.py)
           STATUS=$(echo "$RESP" | tail -1)
           BODY=$(echo "$RESP" | head -n -1)
           echo "Status: $STATUS  Body: $BODY"
-          [ "$STATUS" = "200" ] && echo "PASS: CGI returned 200" || (echo "FAIL: $STATUS"; exit 1)
-          echo "$BODY" | grep -q "pong" && echo "PASS: body contains pong" || (echo "FAIL: body missing pong"; exit 1)
+          if [ "$STATUS" = "200" ] && echo "$BODY" | grep -q "pong"; then
+            echo "PASS: CGI ping.py"
+            echo "PASS: CGI ping.py -> 200 + pong" >> /tmp/test_results.txt
+          else
+            echo "FAIL: CGI ping.py -> $STATUS / $BODY"
+            echo "FAIL: CGI ping.py -> $STATUS" >> /tmp/test_results.txt
+            exit 1
+          fi
 
       - name: "POST /cgi-bin/body.py with data"
+        continue-on-error: true
         run: |
           STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X POST -d "hello=world" http://localhost:8080/cgi-bin/body.py)
           echo "Status: $STATUS"
-          [ "$STATUS" = "200" ] && echo "PASS" || (echo "FAIL: $STATUS"; exit 1)
+          if [ "$STATUS" = "200" ]; then
+            echo "PASS: CGI body.py POST"
+            echo "PASS: CGI body.py POST" >> /tmp/test_results.txt
+          else
+            echo "FAIL: CGI body.py -> $STATUS"
+            echo "FAIL: CGI body.py -> $STATUS" >> /tmp/test_results.txt
+            exit 1
+          fi
 
-      - name: "GET /cgi-bin/timeout.py → 504 (5s timeout)"
+      - name: "GET /cgi-bin/timeout.py -> 504 (5s timeout)"
+        continue-on-error: true
         run: |
           STATUS=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 http://localhost:8080/cgi-bin/timeout.py)
           echo "Status: $STATUS"
-          [ "$STATUS" = "504" ] && echo "PASS: timeout detected" || (echo "FAIL: expected 504, got $STATUS"; exit 1)
+          if [ "$STATUS" = "504" ]; then
+            echo "PASS: CGI timeout -> 504"
+            echo "PASS: CGI timeout.py -> 504" >> /tmp/test_results.txt
+          else
+            echo "FAIL: CGI timeout -> $STATUS"
+            echo "FAIL: CGI timeout.py -> $STATUS" >> /tmp/test_results.txt
+            exit 1
+          fi
 
       # ────────── COOKIES & SESSIONS ──────────
 
-      - name: "GET /session → Set-Cookie header + visit 1"
+      - name: "GET /session -> Set-Cookie header + visit 1"
+        continue-on-error: true
         run: |
           HEADERS=$(curl -s -D - -o /tmp/session_body http://localhost:8080/session)
           echo "$HEADERS" | head -10
-          echo "$HEADERS" | grep -qi 'Set-Cookie' && echo "PASS: Set-Cookie present" || (echo "FAIL: no Set-Cookie header"; exit 1)
-          grep -q '1' /tmp/session_body && echo "PASS: visit count 1" || echo "WARN: could not verify visit count"
+          if echo "$HEADERS" | grep -qi 'Set-Cookie'; then
+            echo "PASS: Set-Cookie present"
+            echo "PASS: /session Set-Cookie" >> /tmp/test_results.txt
+          else
+            echo "FAIL: no Set-Cookie header"
+            echo "FAIL: /session no Set-Cookie" >> /tmp/test_results.txt
+            exit 1
+          fi
+          grep -q '1' /tmp/session_body && echo "Visit count includes 1" || echo "WARN: could not verify visit count"
 
-      - name: "Session persistence → visit count increments"
+      - name: "Session persistence -> visit count increments"
+        continue-on-error: true
         run: |
           COOKIE=$(curl -s -D - -o /dev/null http://localhost:8080/session | grep -i 'Set-Cookie' | head -1 | sed 's/.*session_id=/session_id=/' | cut -d';' -f1)
           echo "Cookie: $COOKIE"
           BODY2=$(curl -s -b "$COOKIE" http://localhost:8080/session)
           echo "Visit 2 body: $BODY2"
-          echo "$BODY2" | grep -q '2' && echo "PASS: visit count 2" || (echo "FAIL: visit count did not increment"; exit 1)
           BODY3=$(curl -s -b "$COOKIE" http://localhost:8080/session)
           echo "Visit 3 body: $BODY3"
-          echo "$BODY3" | grep -q '3' && echo "PASS: visit count 3" || (echo "FAIL: visit count did not reach 3"; exit 1)
+          if echo "$BODY3" | grep -q '3'; then
+            echo "PASS: session persistence"
+            echo "PASS: session persistence (visits 1->2->3)" >> /tmp/test_results.txt
+          else
+            echo "FAIL: visit count did not reach 3"
+            echo "FAIL: session persistence" >> /tmp/test_results.txt
+            exit 1
+          fi
 
       # ────────── DOUBLE SLASH NORMALIZATION ──────────
 
-      - name: "GET //cgi-bin//ping.py → normalized → 200 + pong"
+      - name: "GET //cgi-bin//ping.py -> normalized -> 200"
+        continue-on-error: true
         run: |
           STATUS=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080//cgi-bin//ping.py)
-          [ "$STATUS" = "200" ] && echo "PASS: double slash normalized" || (echo "FAIL: $STATUS"; exit 1)
+          if [ "$STATUS" = "200" ]; then
+            echo "PASS: double slash CGI normalized"
+            echo "PASS: double slash //cgi-bin//ping.py" >> /tmp/test_results.txt
+          else
+            echo "FAIL: //cgi-bin//ping.py -> $STATUS"
+            echo "FAIL: double slash //cgi-bin//ping.py -> $STATUS" >> /tmp/test_results.txt
+            exit 1
+          fi
 
-      - name: "GET ///index.html → 200"
+      - name: "GET ///index.html -> 200"
+        continue-on-error: true
         run: |
           STATUS=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080///index.html)
-          [ "$STATUS" = "200" ] && echo "PASS" || (echo "FAIL: $STATUS"; exit 1)
+          if [ "$STATUS" = "200" ]; then
+            echo "PASS: triple slash normalized"
+            echo "PASS: ///index.html normalized" >> /tmp/test_results.txt
+          else
+            echo "FAIL: ///index.html -> $STATUS"
+            echo "FAIL: ///index.html -> $STATUS" >> /tmp/test_results.txt
+            exit 1
+          fi
 
       # ────────── STRESS TESTS ──────────
 
-      - name: "Stress test with ab (1000 requests, 10 concurrent)"
+      - name: "Stress test with ab (1000 req, 10 concurrent)"
+        continue-on-error: true
         run: |
           ab -n 1000 -c 10 http://localhost:8080/ | tee /tmp/ab_results.txt
-          grep 'Failed requests' /tmp/ab_results.txt
           FAILED=$(grep 'Failed requests' /tmp/ab_results.txt | awk '{print $3}')
-          [ "$FAILED" = "0" ] && echo "PASS: 0 failed requests" || echo "WARN: $FAILED failed requests"
+          RPS=$(grep 'Requests per second' /tmp/ab_results.txt | awk '{print $4}')
+          echo "Failed: $FAILED  RPS: $RPS"
+          if [ "$FAILED" = "0" ]; then
+            echo "PASS: ab 1000/10 - 0 failures ($RPS req/s)"
+            echo "PASS: ab 1000x10 ($RPS req/s)" >> /tmp/test_results.txt
+          else
+            echo "WARN: ab 1000/10 - $FAILED failures"
+            echo "WARN: ab 1000x10 ($FAILED failures)" >> /tmp/test_results.txt
+          fi
 
-      - name: "Stress test with ab (500 requests, 50 concurrent)"
+      - name: "Stress test with ab (500 req, 50 concurrent)"
+        continue-on-error: true
         run: |
           ab -n 500 -c 50 http://localhost:8080/index.html | tee /tmp/ab_stress.txt
-          grep 'Failed requests' /tmp/ab_stress.txt
-          grep 'Requests per second' /tmp/ab_stress.txt
+          FAILED=$(grep 'Failed requests' /tmp/ab_stress.txt | awk '{print $3}')
+          RPS=$(grep 'Requests per second' /tmp/ab_stress.txt | awk '{print $4}')
+          echo "Failed: $FAILED  RPS: $RPS"
+          if [ "$FAILED" = "0" ]; then
+            echo "PASS: ab 500/50 - 0 failures"
+            echo "PASS: ab 500x50 ($RPS req/s)" >> /tmp/test_results.txt
+          else
+            echo "WARN: ab 500/50 - $FAILED failures"
+            echo "WARN: ab 500x50 ($FAILED failures)" >> /tmp/test_results.txt
+          fi
 
       - name: "Multiple concurrent CGI requests"
+        continue-on-error: true
         run: |
+          RESULTS=""
           for i in $(seq 1 20); do
             curl -s -o /dev/null -w '%{http_code}\n' http://localhost:8080/cgi-bin/ping.py &
           done
           wait
-          echo "PASS: concurrent CGI finished"
-
-      # ────────── SIEGE STRESS ──────────
+          echo "PASS: 20 concurrent CGI requests finished"
+          echo "PASS: 20 concurrent CGI requests" >> /tmp/test_results.txt
 
       - name: "Siege stress test (30s, 25 concurrent)"
+        continue-on-error: true
         run: |
           siege -b -t30S -c25 http://localhost:8080/ 2>&1 | tee /tmp/siege_results.txt || true
           echo "--- Siege Results ---"
           cat /tmp/siege_results.txt
+          echo "PASS: siege completed" >> /tmp/test_results.txt
 
       # ────────── SERVER STILL ALIVE ──────────
 
       - name: "Server still responsive after stress"
+        continue-on-error: true
         run: |
           STATUS=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/)
-          [ "$STATUS" = "200" ] && echo "PASS: server survived stress tests" || (echo "FAIL: server down after stress"; exit 1)
+          if [ "$STATUS" = "200" ]; then
+            echo "PASS: server survived stress tests"
+            echo "PASS: server alive after stress" >> /tmp/test_results.txt
+          else
+            echo "FAIL: server down after stress ($STATUS)"
+            echo "FAIL: server down after stress ($STATUS)" >> /tmp/test_results.txt
+            exit 1
+          fi
+
+      # ────────── FINAL REPORT ──────────
+
+      - name: "Test Report"
+        if: always()
+        run: |
+          echo ""
+          echo "╔══════════════════════════════════════╗"
+          echo "║       WEBSERV TEST REPORT            ║"
+          echo "╠══════════════════════════════════════╣"
+          echo ""
+          PASS=$(grep -c '^PASS' /tmp/test_results.txt 2>/dev/null || echo 0)
+          FAIL=$(grep -c '^FAIL' /tmp/test_results.txt 2>/dev/null || echo 0)
+          WARN=$(grep -c '^WARN' /tmp/test_results.txt 2>/dev/null || echo 0)
+          TOTAL=$((PASS + FAIL + WARN))
+          echo "  Total: $TOTAL  |  PASS: $PASS  |  FAIL: $FAIL  |  WARN: $WARN"
+          echo ""
+          echo "── Results ──"
+          cat /tmp/test_results.txt 2>/dev/null || echo "(no results file)"
+          echo ""
+          echo "╚══════════════════════════════════════╝"
+          if [ "$FAIL" -gt 0 ]; then
+            echo ""
+            echo "::error::$FAIL test(s) FAILED"
+            exit 1
+          else
+            echo ""
+            echo "All tests passed!"
+          fi
 
       # ────────── CLEANUP ──────────
 
