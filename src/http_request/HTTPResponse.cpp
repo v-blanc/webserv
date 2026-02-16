@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HTTPResponse.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
+/*   By: yafahfou <yafahfou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 14:04:09 by yassinefahf       #+#    #+#             */
-/*   Updated: 2026/02/12 13:14:26 by yabokhar         ###   ########lyon.fr   */
+/*   Updated: 2026/02/16 12:51:26 by yafahfou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -124,7 +124,9 @@ std::string	HTTPResponse::handleRequestPath(std::string requestPath, bool isFile
 
 void	HTTPResponse::handlePostMethod(HTTPRequest &request)
 {
+	std::cout<<"i'm herrre"<<std::endl;
 	std::string path =  handleRequestPath(request.getPathWithoutQuery(), false);
+	std::cout<<"boddyy: "<<request.getBody()<<std::endl;
 	if (this->_serverConfig.isValidLocationPath(path))
 	{
 		LocationConfig myLocation = this->_serverConfig.getLocationConfigByPath(path);
@@ -135,7 +137,6 @@ void	HTTPResponse::handlePostMethod(HTTPRequest &request)
 			executeCgi(request, interpreter);
 			return ;
 		}
-
 		std::string fileName;
 		if (!myLocation.getUploadStore().empty())
 			fileName = myLocation.getUploadStore() + handleRequestPath(request.getPathWithoutQuery(), true);
@@ -148,7 +149,10 @@ void	HTTPResponse::handlePostMethod(HTTPRequest &request)
 		file.close();
 	}
 	else
+	{
+		std::cout<<"how am i heeere"<<std::endl;
 		throw HTTPRequest::StatusException("404", "Page Not Found");
+	}
 }
 
 bool	HTTPResponse::ismethodNotAllowed(std::vector<std::string> methods, std::string myMethod)

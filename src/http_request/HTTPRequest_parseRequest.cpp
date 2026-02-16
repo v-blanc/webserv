@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HTTPRequest_parseRequest.cpp                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
+/*   By: yafahfou <yafahfou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/19 16:19:40 by vblanc            #+#    #+#             */
-/*   Updated: 2026/02/13 18:11:36 by yabokhar         ###   ########lyon.fr   */
+/*   Updated: 2026/02/16 12:49:29 by yafahfou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,6 +26,8 @@ static std::vector<std::string> getHTTPLines(std::string &request)
                 if (!currLine.empty())
                     lines.push_back(currLine);
                 currLine.clear();
+                if (i + 3 < request.size() && request.at(i + 2) == '\r' && request.at(i + 3) == '\n')
+                    lines.push_back("\r\n\r\n");
                 i++;
                 continue;
             }
@@ -80,7 +82,10 @@ bool HTTPRequest::parseHeader(std::string &line, bool checkedHost, bool isLastLi
 {
     std::size_t pos = line.find(':');
     if (pos == std::string::npos)
+    {
+        std::cout<<"my line: "<<line<<std::endl;
         throw StatusException("400", "HTTP Request wrong format");
+    }
     std::string headerName = line.substr(0, pos);
     if (line.at(pos + 1) == ' ')
         pos++;
@@ -164,16 +169,20 @@ void HTTPRequest::parseRequest(std::string &request)
         {
             std::cerr << e.what() << '\n';
         }
-        
     }
     else
         throw StatusException("400", "HTTP Request wrong format");
     // Header
     std::size_t i = 1;
     // std::cout<<"bool test: "<<test<<std::endl;
+    // std::cout<<"line size: "<<lines.size()<<std::endl;
+    // if (lines.size() > 18)
+    //     std::cout<<"line 18: "<<lines.at(18)<<std::endl;
     while (i < lines.size() && !lines.at(i).empty())
     {
         isLastLine = (i + 1  == lines.size());
+        if (lines.at(i) == "\r\n\r\n")
+            break;
         if (!parseHeader(lines.at(i), this->_host != "", isLastLine))
             throw StatusException("400", "Bad Request");
         i++;
