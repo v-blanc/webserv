@@ -397,6 +397,7 @@ jobs:
           cat /tmp/test_results.txt 2>/dev/null || echo "(no results file)"
           echo ""
           echo "╚══════════════════════════════════════╝"
+          cat valgrind.log
           if [ "$FAIL" -gt 0 ]; then
             echo ""
             echo "::error::$FAIL test(s) FAILED"
@@ -405,7 +406,6 @@ jobs:
             echo ""
             echo "All tests passed!"
           fi
-          cat valgrind.log
 
       # ────────── CLEANUP ──────────
 
