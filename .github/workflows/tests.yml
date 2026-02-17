@@ -391,7 +391,7 @@ jobs:
             echo ""
             echo "All tests passed!"
           fi
-		  cat valgrind.log
+          cat valgrind.log
 
       # ────────── CLEANUP ──────────
 
