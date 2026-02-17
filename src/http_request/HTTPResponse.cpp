@@ -257,6 +257,9 @@ void HTTPResponse::executeCgi(HTTPRequest &request, const std::string &interpret
 		envp[envVec.size()] = NULL;
 
 		execve(argv[0], argv, envp);
+		for (unsigned long i = 0; envp[i] != NULL; ++i)
+			delete[] (envp[i]);
+		delete[] (envp);
 		_exit(1);
 	}
 

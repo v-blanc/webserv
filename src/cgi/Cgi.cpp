@@ -157,7 +157,9 @@ CgiContext* launchCgi(
 		dup2(inPipe[0], STDIN_FILENO);
 		dup2(outPipe[1], STDOUT_FILENO);
 		dup2(outPipe[1], STDERR_FILENO);
+		close(inPipe[0]);
 		close(inPipe[1]);
+		close(outPipe[1]);
 		close(outPipe[0]);
 		chdir(scriptDir.c_str());
 
@@ -166,6 +168,7 @@ CgiContext* launchCgi(
 		argv[1] = const_cast<char *>(scriptBase.c_str());
 		argv[2] = NULL;
 		execve(argv[0], argv, envp);
+		freeEnvp(envp);
 		_exit(1);
 	}
 

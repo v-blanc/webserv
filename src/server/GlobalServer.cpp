@@ -12,6 +12,7 @@
 
 #include "GlobalServer.hpp"
 #include "Cgi.hpp"
+#include "HTTPStatusException.hpp"
 
 bool keepRunningServer = true;
 
@@ -146,13 +147,13 @@ static void resetClientContext(ClientContext *clientContext)
 {
     clientContext->state = READING_HEADERS;
 
-    clientContext->recvBuffer.empty();
+    clientContext->recvBuffer.clear();
     clientContext->isChunkedRequest = false;
     clientContext->currentUnchunkedIndex = 0;
     clientContext->expectedBodySize = 0;
     clientContext->bodyStartIndex = 0;
 
-    clientContext->sendBuffer.empty();
+    clientContext->sendBuffer.clear();
     clientContext->sendBufferIndex = 0;
 }
 
@@ -229,7 +230,7 @@ static void enableEPOLLOUT(int &epfd, ClientContext *clientContext)
     ev.data.ptr = clientContext;
 
     if (epoll_ctl(epfd, EPOLL_CTL_MOD, clientContext->fd, &ev))
-        throw std::runtime_error(RED "epoll_ctl() error" DEFAULT); // TODO: handle proprely
+        throw std::runtime_error(RED "epoll_ctl() error" DEFAULT);
 }
 
 static void disableEPOLLOUT(int &epfd, ClientContext *clientContext)
@@ -239,7 +240,31 @@ static void disableEPOLLOUT(int &epfd, ClientContext *clientContext)
     ev.data.ptr = clientContext;
 
     if (epoll_ctl(epfd, EPOLL_CTL_MOD, clientContext->fd, &ev))
-        throw std::runtime_error(RED "epoll_ctl() error" DEFAULT); // TODO: handle proprely
+        throw std::runtime_error(RED "epoll_ctl() error" DEFAULT);
+}
+
+static std::string	buildSimpleErrorResponse(const std::string &status, const std::string &message)
+
+{
+	const std::string	body = message + '\n';
+    std::string			response;
+
+	response += "HTTP/1.1 " + status + " " + message + "\r\n";
+	response += "Content-Type: text/plain\r\n";
+	response += "Content-Length: " + toString(body.size()) + "\r\n";
+	response += "Connection: close\r\n";
+	response += "\r\n";
+	response += body;
+	return (response);
+}
+
+static void	setClientErrorResponse(ClientContext *clientContext, const std::string &status, const std::string &message)
+
+{
+	clientContext->sendBuffer = buildSimpleErrorResponse(status, message);
+	clientContext->sendBufferIndex = 0;
+	clientContext->keepAlive = false;
+	clientContext->state = READY_TO_SEND;
 }
 
 static void handleHeaders(ClientContext *clientContext)
@@ -269,10 +294,10 @@ static void handleHeaders(ClientContext *clientContext)
                 ss >> clientContext->expectedBodySize;
 
                 if (!ss.eof() || ss.fail())
-                    throw std::runtime_error(RED "Error 400 (to handle proprely) due to Content-Length format" DEFAULT);
+					throw (HttpStatusException("400", "Bad Request"));
 
                 if (clientContext->expectedBodySize > MAX_HEADER_SIZE)
-                    throw std::runtime_error(RED "Error 431 (to handle proprely) due to Request Header Fields Too Large" DEFAULT);
+					throw (HttpStatusException("431", "Request Header Fields Too Large"));
             }
         }
 
@@ -294,30 +319,31 @@ static void handleBody(ClientContext *clientContext, std::string &pathRequest, S
         if (clientContext->recvBuffer.size() - clientContext->bodyStartIndex == clientContext->expectedBodySize)
             clientContext->state = READY_TO_SEND;
         else if (clientContext->recvBuffer.size() - clientContext->bodyStartIndex > clientContext->expectedBodySize)
-            throw std::runtime_error(RED "Error 413 (to handle proprely) due to request body size > client_max_body_size" DEFAULT);
+			throw (HttpStatusException("413", "Payload Too Large"));
     }
-    else
-        throw std::runtime_error(RED "Unknowned error during recv()" DEFAULT);
+	else
+		throw (HttpStatusException("400", "Bad Request"));
 
-    if (!pathRequest.empty())
+    if (pathRequest.empty())
     {
         std::string firstLine = clientContext->recvBuffer.substr(0, clientContext->recvBuffer.find("\r\n"));
-        std::size_t posPath = firstLine.find(" ") + 1;
-
-        if (posPath == std::string::npos)
-            throw std::runtime_error(RED "Error 400(?) (to handle proprely) due to first line format" DEFAULT);
-
-        pathRequest = clientContext->recvBuffer.substr(posPath, firstLine.find(" ", posPath) - posPath);
+        std::size_t methodEnd = firstLine.find(' ');
+        if (methodEnd == std::string::npos)
+			throw (HttpStatusException("400", "Bad Request"));
+        std::size_t pathEnd = firstLine.find(' ', methodEnd + 1);
+        if (pathEnd == std::string::npos)
+			throw (HttpStatusException("400", "Bad Request"));
+        pathRequest = firstLine.substr(methodEnd + 1, pathEnd - (methodEnd + 1));
     }
 
     if (serverConfig.isValidLocationPath(pathRequest))
     {
         long long locationClientMaxBodySize = serverConfig.getLocationConfigByPath(pathRequest).getClientMaxBodySize();
         if (clientContext->recvBuffer.size() - clientContext->bodyStartIndex > static_cast<std::size_t>(locationClientMaxBodySize))
-            throw std::runtime_error(RED "Error 413(?) (to handle proprely) due to request body size > client_max_body_size" DEFAULT);
+			throw (HttpStatusException("413", "Payload Too Large"));
     }
     else if (clientContext->recvBuffer.size() - clientContext->bodyStartIndex > static_cast<std::size_t>(serverConfig.getClientMaxBodySize()))
-        throw std::runtime_error(RED "Error 413(?) (to handle proprely) due to request body size > client_max_body_size" DEFAULT);
+		throw (HttpStatusException("413", "Payload Too Large"));
 }
 
 void GlobalServer::handleReading(ClientContext *clientContext)
@@ -342,12 +368,28 @@ void GlobalServer::handleReading(ClientContext *clientContext)
             for (ssize_t i = 0; i < r; i++)
                 clientContext->recvBuffer.push_back(buf[i]);
 
-            if (clientContext->state == READING_HEADERS)
-                handleHeaders(clientContext);
-            else if (clientContext->state == READING_BODY)
-                handleBody(clientContext, pathRequest, this->_serversConfig.at(clientContext->serverFd));
-            else
-                throw std::runtime_error(RED "Error 414 (to handle proprely) due to too much data sent" DEFAULT);
+			try
+			{
+    			if (clientContext->state == READING_HEADERS)
+        			handleHeaders(clientContext);
+				else if (clientContext->state == READING_BODY)
+					handleBody(clientContext, pathRequest, this->_serversConfig.at(clientContext->serverFd));
+				else
+					throw (HttpStatusException("400", "Bad Request"));
+			}
+			catch (const HttpStatusException &e)
+			{
+				setClientErrorResponse(clientContext, e.getStatus(), e.getMessage());
+				try
+				{
+	       			enableEPOLLOUT(this->_epfd, clientContext);
+				}
+				catch (const std::exception &)
+				{
+					this->handleCloseConnexion(clientContext);
+				}
+				return ;
+			}
         }
         // else if (r == 0)
         // {
@@ -359,6 +401,8 @@ void GlobalServer::handleReading(ClientContext *clientContext)
             throw std::runtime_error(RED "error ? r=" + toString(r) + " errno = " + toString(errno) + DEFAULT);
     }
     std::cout << "\"" << clientContext->recvBuffer << "\"" << std::endl; // TODO: for debug (to delete)
+
+    clientContext->lastActive = time(NULL);
 
     if (clientContext->state == READY_TO_SEND)
     {
