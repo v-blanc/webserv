@@ -72,8 +72,14 @@ CgiContext* launchCgi(
 	int inPipe[2];
 	int outPipe[2];
 
-	if (pipe(inPipe) < 0 || pipe(outPipe) < 0)
+	if (pipe(inPipe) < 0)
 		return (NULL);
+	if (pipe(outPipe) < 0)
+	{
+		close(inPipe[0]);
+		close(inPipe[1]);
+		return (NULL);
+	}
 
 	setNonBlocking(outPipe[0]);
 
@@ -168,6 +174,7 @@ CgiContext* launchCgi(
 		argv[1] = const_cast<char *>(scriptBase.c_str());
 		argv[2] = NULL;
 		execve(argv[0], argv, envp);
+		std::cout << "=================== here";
 		freeEnvp(envp);
 		_exit(1);
 	}
@@ -180,7 +187,15 @@ CgiContext* launchCgi(
 	close(inPipe[1]);
 	close(outPipe[1]);
 
-	CgiContext *cgiCtx = new CgiContext;
+	CgiContext*	cgiCtx;
+	try
+	{
+		cgiCtx = new CgiContext;
+	}
+	catch (...)
+	{
+		throw (HttpStatusException("500", "Internal Server Error"));
+	}
 	cgiCtx->fd = outPipe[0];
 	cgiCtx->client = clientContext;
 	cgiCtx->pid = pid;
@@ -198,7 +213,6 @@ CgiContext* launchCgi(
 		delete cgiCtx;
 		return (NULL);
 	}
-
 	return (cgiCtx);
 }
 

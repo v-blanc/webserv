@@ -212,15 +212,20 @@ void HTTPResponse::executeCgi(HTTPRequest &request, const std::string &interpret
 
 	int inPipe[2];
 	int outPipe[2];
-	if (pipe(inPipe) < 0 || pipe(outPipe) < 0)
-		throw HTTPRequest::StatusException("500", "Internal Server Error");
-
+	if (pipe(inPipe) < 0)
+		throw (HTTPRequest::StatusException("500", "Internal Server Error"));
+	if (pipe(outPipe) < 0)
+	{
+		close(inPipe[0]);
+		close(inPipe[1]);
+		throw (HTTPRequest::StatusException("500", "Internal Server Error"));
+	}
 	pid_t pid = fork();
 	if (pid < 0)
 	{
 		close(inPipe[0]); close(inPipe[1]);
 		close(outPipe[0]); close(outPipe[1]);
-		throw HTTPRequest::StatusException("500", "Internal Server Error");
+		throw (HTTPRequest::StatusException("500", "Internal Server Error"));
 	}
 
 	if (pid == 0)
