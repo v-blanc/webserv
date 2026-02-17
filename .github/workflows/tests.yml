@@ -235,7 +235,7 @@ jobs:
           fi
 
       - name: "GET /cgi-bin/hello.perl -> 200"
-	    continue-on-error: true
+        continue-on-error: true
         run: |
           STATUS=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 http://localhost:8080/cgi-bin/hello.pl)
           echo "Status: $STATUS"
