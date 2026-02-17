@@ -596,11 +596,10 @@ void GlobalServer::closeTimedOutCgi()
 
 {
 	std::vector<int>	cgiContextsToClose;
-	int const 			cgiTimeout = 5;
 
 	for (std::map<int, CgiContext *>::iterator it = this->_cgiContexts.begin(); it != this->_cgiContexts.end(); it++)
     {
-		if ((time(NULL) - it->second->startTime) > cgiTimeout)
+		if ((time(NULL) - it->second->startTime) > CGI_TIMEOUT)
 			cgiContextsToClose.push_back(it->first);
     }
     for (unsigned long i = 0; i < cgiContextsToClose.size(); i++)
