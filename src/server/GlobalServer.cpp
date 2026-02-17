@@ -501,6 +501,17 @@ void GlobalServer::handleCloseConnexion(ClientContext *clientContext)
         return;
     }
 
+    std::vector<int> cgiToClean;
+    for (std::map<int, CgiContext *>::iterator it = this->_cgiContexts.begin(); it != this->_cgiContexts.end(); ++it)
+        if (it->second->client == clientContext)
+            cgiToClean.push_back(it->first);
+    for (std::size_t i = 0; i < cgiToClean.size(); ++i)
+    {
+        std::map<int, CgiContext *>::iterator found = this->_cgiContexts.find(cgiToClean.at(i));
+        if (found != this->_cgiContexts.end())
+            cleanupCgi(found->second);
+    }
+
     std::cout << MAGENTA + getTimeOfDay() + " [debug] : Close connexion fd " << clientContext->fd << DEFAULT << std::endl;
 
     if (epoll_ctl(this->_epfd, EPOLL_CTL_DEL, clientContext->fd, NULL))
@@ -524,13 +535,7 @@ void GlobalServer::closeOldClientConnexions()
     for (std::size_t i = 0; i < clientContextsToClose.size(); i++)
     {
         std::cout << MAGENTA + getTimeOfDay() + " [debug] : Closing old client fd " << clientContextsToClose.at(i) << DEFAULT << std::endl;
-
-        if (epoll_ctl(this->_epfd, EPOLL_CTL_DEL, clientContextsToClose.at(i), NULL))
-            throw std::runtime_error(RED "epoll_ctl() error" DEFAULT);
-
-        close(clientContextsToClose.at(i));
-        delete (this->_clientContexts.at(clientContextsToClose.at(i)));
-        this->_clientContexts.erase(clientContextsToClose.at(i));
+        this->handleCloseConnexion(this->_clientContexts.at(clientContextsToClose.at(i)));
     }
 }
 
@@ -607,8 +612,13 @@ void GlobalServer::closeTimedOutCgi()
 		std::cout << MAGENTA + getTimeOfDay() + " [debug] : CGI timeout for fd " << cgiContextsToClose.at(i) << DEFAULT << std::endl;
 		
 		CgiContext *cgiContext = this->_cgiContexts.at(cgiContextsToClose.at(i));
-		
-		ClientContext *client = cgiContext->client;
+
+        ClientContext *client = cgiContext->client;
+        if (!client || this->_clientContexts.count(client->fd) == 0)
+        {
+            cleanupCgi(cgiContext);
+            continue;
+        }
 		client->sendBuffer = buildSimpleErrorResponse("504", "Gateway Timeout");
 		client->sendBufferIndex = 0;
 		client->state = READY_TO_SEND;
