@@ -12,6 +12,7 @@
 
 #include "GlobalServer.hpp"
 #include "Cgi.hpp"
+#include "HTTPStatusException.hpp"
 
 bool keepRunningServer = true;
 
@@ -55,6 +56,16 @@ GlobalServer::~GlobalServer()
     }
     std::cout << std::endl;
 
+    for (std::map<int, CgiContext *>::iterator it = this->_cgiContexts.begin(); it != this->_cgiContexts.end(); it++)
+    {
+        std::cout << pad << MAGENTA "Closing CGI fd " << it->first << " (killing pid " << it->second->pid << ")" DEFAULT << std::endl;
+        close(it->first);
+        kill(it->second->pid, SIGKILL);
+        waitpid(it->second->pid, NULL, 0);
+        delete it->second;
+    }
+    std::cout << std::endl;
+
     for (std::size_t i = 0; i < this->_servers.size(); i++)
     {
         std::cout << pad << MAGENTA "For server \'" << this->_globalConfig.getServerConfig().at(i).getServerName().at(0) << "\' [" << i << "]:" DEFAULT << std::endl;
@@ -72,7 +83,7 @@ void GlobalServer::setupGlobalServer()
 {
     this->_epfd = epoll_create(1);
     if (this->_epfd < 0)
-        throw std::runtime_error(RED "epoll_create() error" DEFAULT);
+        throw (std::runtime_error(RED "epoll_create1() error" DEFAULT));
 
     std::vector<ServerConfig> serverConfig = this->_globalConfig.getServerConfig();
     for (std::size_t i = 0; i < serverConfig.size(); i++)
@@ -102,6 +113,7 @@ void GlobalServer::loopServer()
         int n = epoll_wait(this->_epfd, events, MAX_EPOLL_WAIT_EVENTS, 100);
 
         this->closeOldClientConnexions();
+        this->closeTimedOutCgi();
 
         if (n < 0)
             continue;
@@ -116,6 +128,11 @@ void GlobalServer::loopServer()
                     this->handleNewClientConnexion(serverContext->fd);
                     break;
                 }
+            }
+            else if (CgiContext *cgiContext = dynamic_cast<CgiContext *>(context))
+            {
+                this->handleCgiEvent(cgiContext);
+                break ;
             }
             else if (ClientContext *clientContext = dynamic_cast<ClientContext *>(context))
             {
@@ -146,13 +163,13 @@ static void resetClientContext(ClientContext *clientContext)
 {
     clientContext->state = READING_HEADERS;
 
-    clientContext->recvBuffer.empty();
+    clientContext->recvBuffer.clear();
     clientContext->isChunkedRequest = false;
     clientContext->currentUnchunkedIndex = 0;
     clientContext->expectedBodySize = 0;
     clientContext->bodyStartIndex = 0;
 
-    clientContext->sendBuffer.empty();
+    clientContext->sendBuffer.clear();
     clientContext->sendBufferIndex = 0;
 }
 
@@ -191,12 +208,11 @@ void GlobalServer::handleNewClientConnexion(int &serverFd)
 
     while ((clientSocket = accept(serverFd, (struct sockaddr *)&clientAddr, &clientAddrSize)) != -1)
     {
-        if (fcntl(clientSocket, F_SETFL, O_NONBLOCK) == -1)
-        {
-            close(clientSocket);
-            return;
-        }
-
+		if (fcntl(clientSocket, F_SETFL, O_NONBLOCK) < 0)
+		{
+			close(clientSocket);
+			return ;
+		}
         ClientContext *clientContext = newClientContext(clientSocket, serverFd);
         if (clientContext == NULL)
         {
@@ -229,7 +245,7 @@ static void enableEPOLLOUT(int &epfd, ClientContext *clientContext)
     ev.data.ptr = clientContext;
 
     if (epoll_ctl(epfd, EPOLL_CTL_MOD, clientContext->fd, &ev))
-        throw std::runtime_error(RED "epoll_ctl() error" DEFAULT); // TODO: handle proprely
+        throw std::runtime_error(RED "epoll_ctl() error" DEFAULT);
 }
 
 static void disableEPOLLOUT(int &epfd, ClientContext *clientContext)
@@ -239,7 +255,31 @@ static void disableEPOLLOUT(int &epfd, ClientContext *clientContext)
     ev.data.ptr = clientContext;
 
     if (epoll_ctl(epfd, EPOLL_CTL_MOD, clientContext->fd, &ev))
-        throw std::runtime_error(RED "epoll_ctl() error" DEFAULT); // TODO: handle proprely
+        throw std::runtime_error(RED "epoll_ctl() error" DEFAULT);
+}
+
+static std::string	buildSimpleErrorResponse(const std::string &status, const std::string &message)
+
+{
+	const std::string	body = message + '\n';
+    std::string			response;
+
+	response += "HTTP/1.1 " + status + " " + message + "\r\n";
+	response += "Content-Type: text/plain\r\n";
+	response += "Content-Length: " + toString(body.size()) + "\r\n";
+	response += "Connection: close\r\n";
+	response += "\r\n";
+	response += body;
+	return (response);
+}
+
+static void	setClientErrorResponse(ClientContext *clientContext, const std::string &status, const std::string &message)
+
+{
+	clientContext->sendBuffer = buildSimpleErrorResponse(status, message);
+	clientContext->sendBufferIndex = 0;
+	clientContext->keepAlive = false;
+	clientContext->state = READY_TO_SEND;
 }
 
 static void handleHeaders(ClientContext *clientContext)
@@ -269,10 +309,10 @@ static void handleHeaders(ClientContext *clientContext)
                 ss >> clientContext->expectedBodySize;
 
                 if (!ss.eof() || ss.fail())
-                    throw std::runtime_error(RED "Error 400 (to handle proprely) due to Content-Length format" DEFAULT);
+					throw (HttpStatusException("400", "Bad Request"));
 
                 if (clientContext->expectedBodySize > MAX_HEADER_SIZE)
-                    throw std::runtime_error(RED "Error 431 (to handle proprely) due to Request Header Fields Too Large" DEFAULT);
+					throw (HttpStatusException("431", "Request Header Fields Too Large"));
             }
         }
 
@@ -294,30 +334,31 @@ static void handleBody(ClientContext *clientContext, std::string &pathRequest, S
         if (clientContext->recvBuffer.size() - clientContext->bodyStartIndex == clientContext->expectedBodySize)
             clientContext->state = READY_TO_SEND;
         else if (clientContext->recvBuffer.size() - clientContext->bodyStartIndex > clientContext->expectedBodySize)
-            throw std::runtime_error(RED "Error 413 (to handle proprely) due to request body size > client_max_body_size" DEFAULT);
+			throw (HttpStatusException("413", "Payload Too Large"));
     }
-    else
-        throw std::runtime_error(RED "Unknowned error during recv()" DEFAULT);
+	else
+		throw (HttpStatusException("400", "Bad Request"));
 
-    if (!pathRequest.empty())
+    if (pathRequest.empty())
     {
         std::string firstLine = clientContext->recvBuffer.substr(0, clientContext->recvBuffer.find("\r\n"));
-        std::size_t posPath = firstLine.find(" ") + 1;
-
-        if (posPath == std::string::npos)
-            throw std::runtime_error(RED "Error 400(?) (to handle proprely) due to first line format" DEFAULT);
-
-        pathRequest = clientContext->recvBuffer.substr(posPath, firstLine.find(" ", posPath) - posPath);
+        std::size_t methodEnd = firstLine.find(' ');
+        if (methodEnd == std::string::npos)
+			throw (HttpStatusException("400", "Bad Request"));
+        std::size_t pathEnd = firstLine.find(' ', methodEnd + 1);
+        if (pathEnd == std::string::npos)
+			throw (HttpStatusException("400", "Bad Request"));
+        pathRequest = firstLine.substr(methodEnd + 1, pathEnd - (methodEnd + 1));
     }
 
     if (serverConfig.isValidLocationPath(pathRequest))
     {
         long long locationClientMaxBodySize = serverConfig.getLocationConfigByPath(pathRequest).getClientMaxBodySize();
         if (clientContext->recvBuffer.size() - clientContext->bodyStartIndex > static_cast<std::size_t>(locationClientMaxBodySize))
-            throw std::runtime_error(RED "Error 413(?) (to handle proprely) due to request body size > client_max_body_size" DEFAULT);
+			throw (HttpStatusException("413", "Payload Too Large"));
     }
     else if (clientContext->recvBuffer.size() - clientContext->bodyStartIndex > static_cast<std::size_t>(serverConfig.getClientMaxBodySize()))
-        throw std::runtime_error(RED "Error 413(?) (to handle proprely) due to request body size > client_max_body_size" DEFAULT);
+		throw (HttpStatusException("413", "Payload Too Large"));
 }
 
 void GlobalServer::handleReading(ClientContext *clientContext)
@@ -342,12 +383,28 @@ void GlobalServer::handleReading(ClientContext *clientContext)
             for (ssize_t i = 0; i < r; i++)
                 clientContext->recvBuffer.push_back(buf[i]);
 
-            if (clientContext->state == READING_HEADERS)
-                handleHeaders(clientContext);
-            else if (clientContext->state == READING_BODY)
-                handleBody(clientContext, pathRequest, this->_serversConfig.at(clientContext->serverFd));
-            else
-                throw std::runtime_error(RED "Error 414 (to handle proprely) due to too much data sent" DEFAULT);
+			try
+			{
+    			if (clientContext->state == READING_HEADERS)
+        			handleHeaders(clientContext);
+				else if (clientContext->state == READING_BODY)
+					handleBody(clientContext, pathRequest, this->_serversConfig.at(clientContext->serverFd));
+				else
+					throw (HttpStatusException("400", "Bad Request"));
+			}
+			catch (const HttpStatusException &e)
+			{
+				setClientErrorResponse(clientContext, e.getStatus(), e.getMessage());
+				try
+				{
+	       			enableEPOLLOUT(this->_epfd, clientContext);
+				}
+				catch (const std::exception &)
+				{
+					this->handleCloseConnexion(clientContext);
+				}
+				return ;
+			}
         }
         // else if (r == 0)
         // {
@@ -360,6 +417,8 @@ void GlobalServer::handleReading(ClientContext *clientContext)
     }
     std::cout << "\"" << clientContext->recvBuffer << "\"" << std::endl; // TODO: for debug (to delete)
 
+    clientContext->lastActive = time(NULL);
+
     if (clientContext->state == READY_TO_SEND)
     {
         try
@@ -369,6 +428,19 @@ void GlobalServer::handleReading(ClientContext *clientContext)
             std::cout << YELLOW "Response generated by HTTPRequest()" DEFAULT << std::endl; // TODO: debug (to delete)
 
             enableEPOLLOUT(this->_epfd, clientContext);
+        }
+        catch (const CgiRequiredException &e)
+        {
+            CgiRequestInfo const&	cgiInfo = e.getCgiInfo();
+            CgiContext				*cgiCtx = executeCgi(cgiInfo, clientContext, this->_epfd);
+
+            if (!cgiCtx)
+            {
+                setClientErrorResponse(clientContext, "502", "Bad Gateway");
+                enableEPOLLOUT(this->_epfd, clientContext);
+            }
+            else
+                this->_cgiContexts[cgiCtx->fd] = cgiCtx;
         }
         catch (const std::exception &e)
         {
@@ -429,6 +501,17 @@ void GlobalServer::handleCloseConnexion(ClientContext *clientContext)
         return;
     }
 
+    std::vector<int> cgiToClean;
+    for (std::map<int, CgiContext *>::iterator it = this->_cgiContexts.begin(); it != this->_cgiContexts.end(); ++it)
+        if (it->second->client == clientContext)
+            cgiToClean.push_back(it->first);
+    for (std::size_t i = 0; i < cgiToClean.size(); ++i)
+    {
+        std::map<int, CgiContext *>::iterator found = this->_cgiContexts.find(cgiToClean.at(i));
+        if (found != this->_cgiContexts.end())
+            cleanupCgi(found->second);
+    }
+
     std::cout << MAGENTA + getTimeOfDay() + " [debug] : Close connexion fd " << clientContext->fd << DEFAULT << std::endl;
 
     if (epoll_ctl(this->_epfd, EPOLL_CTL_DEL, clientContext->fd, NULL))
@@ -452,12 +535,95 @@ void GlobalServer::closeOldClientConnexions()
     for (std::size_t i = 0; i < clientContextsToClose.size(); i++)
     {
         std::cout << MAGENTA + getTimeOfDay() + " [debug] : Closing old client fd " << clientContextsToClose.at(i) << DEFAULT << std::endl;
-
-        if (epoll_ctl(this->_epfd, EPOLL_CTL_DEL, clientContextsToClose.at(i), NULL))
-            throw std::runtime_error(RED "epoll_ctl() error" DEFAULT);
-
-        close(clientContextsToClose.at(i));
-        delete (this->_clientContexts.at(clientContextsToClose.at(i)));
-        this->_clientContexts.erase(clientContextsToClose.at(i));
+        this->handleCloseConnexion(this->_clientContexts.at(clientContextsToClose.at(i)));
     }
+}
+
+void	GlobalServer::cleanupCgi(CgiContext *cgiContext)
+
+{
+	if (!this->_cgiContexts.count(cgiContext->fd))
+    	return ;
+	if (epoll_ctl(this->_epfd, EPOLL_CTL_DEL, cgiContext->fd, NULL) ^ 0)
+		std::cerr << RED "epoll_ctl() error during CGI cleanup" DEFAULT << std::endl;
+	close(cgiContext->fd);
+	kill(cgiContext->pid, SIGKILL);
+	waitpid(cgiContext->pid, NULL, 0);
+	this->_cgiContexts.erase(cgiContext->fd);
+	delete (cgiContext);
+}
+
+void GlobalServer::handleCgiEvent(CgiContext *cgiContext)
+
+{
+    char buf[4096];
+
+    unsigned long r = read(cgiContext->fd, buf, sizeof(buf));
+    if (r > 0)
+    {
+        cgiContext->output.append(buf, r);
+    }
+    else if (!r)
+    {
+		std::cout << GREEN + getTimeOfDay() + " [ok] : CGI finished normally for fd " << cgiContext->fd << DEFAULT << std::endl;
+		
+		std::string response;
+		response += "HTTP/1.1 200 OK\r\n";
+		response += "Content-Type: text/plain\r\n";
+		response += "Content-Length: " + toString(cgiContext->output.size()) + "\r\n";
+		response += "Connection: close\r\n";
+		response += "\r\n";
+		response += cgiContext->output;
+		
+		ClientContext *client = cgiContext->client;
+		client->sendBuffer = response;
+		client->sendBufferIndex = 0;
+		client->state = READY_TO_SEND;
+		enableEPOLLOUT(this->_epfd, client);
+		cleanupCgi(cgiContext);
+	}
+	else if (errno == EAGAIN || errno == EWOULDBLOCK)
+		return ;
+    else
+	{
+		std::cerr << RED + getTimeOfDay() + " [error] : Error reading from CGI fd " << cgiContext->fd << DEFAULT << std::endl;
+
+		ClientContext *client = cgiContext->client;
+		client->sendBuffer = buildSimpleErrorResponse("502", "Bad Gateway");
+		client->sendBufferIndex = 0;
+		client->state = READY_TO_SEND;
+		enableEPOLLOUT(this->_epfd, client);
+		cleanupCgi(cgiContext);
+	}
+}
+
+void GlobalServer::closeTimedOutCgi()
+
+{
+	std::vector<int>	cgiContextsToClose;
+
+	for (std::map<int, CgiContext *>::iterator it = this->_cgiContexts.begin(); it != this->_cgiContexts.end(); it++)
+    {
+		if ((time(NULL) - it->second->startTime) > CGI_TIMEOUT)
+			cgiContextsToClose.push_back(it->first);
+    }
+    for (unsigned long i = 0; i < cgiContextsToClose.size(); i++)
+    {
+		std::cout << MAGENTA + getTimeOfDay() + " [debug] : CGI timeout for fd " << cgiContextsToClose.at(i) << DEFAULT << std::endl;
+		
+		CgiContext *cgiContext = this->_cgiContexts.at(cgiContextsToClose.at(i));
+
+        ClientContext *client = cgiContext->client;
+        if (!client || this->_clientContexts.count(client->fd) == 0)
+        {
+            cleanupCgi(cgiContext);
+            continue;
+        }
+		client->sendBuffer = buildSimpleErrorResponse("504", "Gateway Timeout");
+		client->sendBufferIndex = 0;
+		client->state = READY_TO_SEND;
+		enableEPOLLOUT(this->_epfd, client);
+		
+		cleanupCgi(cgiContext);
+	}
 }

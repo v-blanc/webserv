@@ -16,6 +16,7 @@
 #include "ServerConfig.hpp"
 #include "utils.hpp"
 #include "HTTPResponse.hpp"
+#include "HTTPStatusException.hpp"
 
 class SessionManager;
 
@@ -41,18 +42,12 @@ public:
 	std::string	getCookie(const std::string& name) const;
 	void		pushBackCookies(const std::string key, const std::string value);
 
-
-
-    class StatusException: public std::exception {
-        private:
-            std::string _status;
-            std::string _message;
-        public:
-            StatusException(std::string status, std::string message):_status(status), _message(message) {}
-            virtual ~StatusException() throw() {}
-            virtual const char *what() const throw() {return _message.c_str();}
-            const std::string &getStatus() const  {return _status;}
-            const std::string &getMessage() const {return _message;}
+    class StatusException : public HttpStatusException
+    {
+    public:
+        StatusException(const std::string &status, const std::string &message)
+            : HttpStatusException(status, message) {}
+        virtual ~StatusException() throw() {}
     };
     // Execute
     // virtual void generateResponse() = 0;

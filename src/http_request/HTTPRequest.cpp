@@ -71,6 +71,8 @@ bool HTTPRequest::isCgiExtension() const
         return (true);
     if (lowerPath.size() >= 4 && lowerPath.rfind(".cgi") == lowerPath.size() - 4)
         return (true);
+    if (lowerPath.size() >= 3 && lowerPath.rfind(".pl") == lowerPath.size() - 3)
+        return (true);
     return (false);
 }
 
@@ -121,7 +123,7 @@ bool HTTPRequest::resolveCgiInterpreter(const std::vector<stringPair> &cgiHandle
 
     if (ext.empty())
         return (false);
-    if (ext != ".php" && ext != ".py" && ext != ".cgi")
+    if (ext != ".php" && ext != ".py" && ext != ".cgi" && ext != ".pl")
         return (false);
     for (size_t i = 0; i < cgiHandlers.size(); ++i)
     {

@@ -134,8 +134,15 @@ void	HTTPResponse::handlePostMethod(HTTPRequest &request)
 		std::string interpreter;
 		if (request.resolveCgiInterpreter(myLocation.getCgiHandler(), interpreter))
 		{
-			executeCgi(request, interpreter);
-			return ;
+			CgiRequestInfo cgiInfo;
+			cgiInfo.interpreter = interpreter;
+			cgiInfo.method = request.getMethod();
+			cgiInfo.queryString = request.getQueryString();
+			cgiInfo.pathWithoutQuery = request.getPathWithoutQuery();
+			cgiInfo.contentLength = request.getContentLength();
+			cgiInfo.contentType = request.getContentType();
+			cgiInfo.body = request.getBody();
+			throw CgiRequiredException(cgiInfo);
 		}
 		std::string fileName;
 		if (!myLocation.getUploadStore().empty())
@@ -192,119 +199,6 @@ void HTTPResponse::handleIndexFile(const LocationConfig &myLocation)
 	}
 }
 
-void HTTPResponse::executeCgi(HTTPRequest &request, const std::string &interpreter)
-{
-	std::string scriptPath = request.getPathWithoutQuery();
-	if (!scriptPath.empty() && scriptPath[0] == '/')
-		scriptPath.erase(0, 1);
-
-	std::string fullPath = "www/" + scriptPath;
-	struct stat fileStat;
-	if (stat(fullPath.c_str(), &fileStat) != 0 || !S_ISREG(fileStat.st_mode))
-		throw HTTPRequest::StatusException("404", "Page Not Found");
-	if (!(fileStat.st_mode & S_IXUSR))
-		throw HTTPRequest::StatusException("403", "Forbidden");
-
-	std::string scriptDir = "www";
-	std::string scriptBase = scriptPath;
-	std::size_t slashPos = scriptPath.rfind('/');
-	if (slashPos != std::string::npos)
-	{
-		scriptDir += "/" + scriptPath.substr(0, slashPos);
-		scriptBase = scriptPath.substr(slashPos + 1);
-	}
-
-	int inPipe[2];
-	int outPipe[2];
-	if (pipe(inPipe) < 0 || pipe(outPipe) < 0)
-		throw HTTPRequest::StatusException("500", "Internal Server Error");
-
-	pid_t pid = fork();
-	if (pid < 0)
-	{
-		close(inPipe[0]); close(inPipe[1]);
-		close(outPipe[0]); close(outPipe[1]);
-		throw HTTPRequest::StatusException("500", "Internal Server Error");
-	}
-
-	if (pid == 0)
-	{
-		dup2(inPipe[0], STDIN_FILENO);
-		dup2(outPipe[1], STDOUT_FILENO);
-		dup2(outPipe[1], STDERR_FILENO);
-		close(inPipe[1]);
-		close(outPipe[0]);
-		close(inPipe[0]);
-		close(outPipe[1]);
-		chdir(scriptDir.c_str());
-		char *argv[3];
-		argv[0] = const_cast<char *>(interpreter.c_str());
-		argv[1] = const_cast<char *>(scriptBase.c_str());
-		argv[2] = NULL;
-
-		std::vector<std::string> envVec;
-		envVec.push_back("GATEWAY_INTERFACE=CGI/1.1");
-		envVec.push_back("SERVER_PROTOCOL=HTTP/1.1");
-		envVec.push_back("REQUEST_METHOD=" + request.getMethod());
-		envVec.push_back("QUERY_STRING=" + request.getQueryString());
-		envVec.push_back("SCRIPT_FILENAME=" + scriptPath);
-		envVec.push_back("SCRIPT_NAME=" + request.getPathWithoutQuery());
-		envVec.push_back("CONTENT_LENGTH=" + toString(request.getContentLength()));
-		envVec.push_back("CONTENT_TYPE=" + request.getContentType());
-
-		char **envp = new char *[envVec.size() + 1];
-		for (std::size_t i = 0; i < envVec.size(); ++i)
-		{
-			envp[i] = new char[envVec[i].size() + 1];
-			std::strcpy(envp[i], envVec[i].c_str());
-		}
-		envp[envVec.size()] = NULL;
-
-		execve(argv[0], argv, envp);
-		_exit(1);
-	}
-
-	close(inPipe[0]);
-	std::string body = request.getBody();
-	if (!body.empty())
-		write(inPipe[1], body.c_str(), body.size());
-	close(inPipe[1]);
-	close(outPipe[1]);
-
-	std::string cgiOutput;
-	char buf[4096];
-	time_t startTime = time(NULL);
-	int const cgiTimeout = 5;
-
-	while (true)
-	{
-		if (time(NULL) - startTime > cgiTimeout)
-		{
-			kill(pid, SIGKILL);
-			waitpid(pid, NULL, 0);
-			close(outPipe[0]);
-			throw HTTPRequest::StatusException("504", "Gateway Timeout");
-		}
-		ssize_t r = read(outPipe[0], buf, sizeof(buf));
-		if (r > 0)
-			cgiOutput.append(buf, r);
-		else if (r == 0)
-			break ;
-		else if (errno == EAGAIN || errno == EINTR)
-			continue ;
-		else
-			break ;
-	}
-	close(outPipe[0]);
-
-	int wstatus;
-	waitpid(pid, &wstatus, 0);
-
-	this->_body = cgiOutput;
-	this->_status = "200";
-	this->_message = "OK";
-}
-
 void HTTPResponse::handleRessource(HTTPRequest &request)
 {
 	std::string ressource =  handleRequestPath(request.getPathWithoutQuery(), true);
@@ -320,6 +214,57 @@ void HTTPResponse::handleRessource(HTTPRequest &request)
 
 void HTTPResponse::handleGetMethod(HTTPRequest &request)
 {
+	if (request.getPathWithoutQuery() == "/session")
+	{
+		std::string visits = this->_sessionManager.getSessionValue(this->_sessionId, "visits");
+		int count = 0;
+		if (!visits.empty())
+		{
+			std::istringstream iss(visits);
+			iss >> count;
+		}
+		++count;
+		std::ostringstream countStr;
+		countStr << count;
+		this->_sessionManager.setSessionValue(this->_sessionId, "visits", countStr.str());
+
+		std::ostringstream html;
+		html << "<!DOCTYPE html>\n"
+			<< "<html lang=\"fr\">\n<head>\n"
+			<< "<meta charset=\"UTF-8\">\n"
+			<< "<title>Cookie Demo - Compteur de visites</title>\n"
+			<< "<style>\n"
+			<< "body { font-family: Arial, sans-serif; background: #1a1a2e; color: #e0e0e0; "
+			<< "display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }\n"
+			<< ".card { background: #16213e; border-radius: 16px; padding: 40px 60px; text-align: center; "
+			<< "box-shadow: 0 8px 32px rgba(0,0,0,0.3); }\n"
+			<< "h1 { color: #e94560; margin-bottom: 10px; }\n"
+			<< ".count { font-size: 72px; font-weight: bold; color: #0f3460; "
+			<< "background: #e94560; border-radius: 50%; width: 120px; height: 120px; "
+			<< "display: flex; align-items: center; justify-content: center; margin: 20px auto; }\n"
+			<< ".info { background: #0f3460; padding: 15px 20px; border-radius: 8px; margin-top: 20px; "
+			<< "font-size: 14px; word-break: break-all; }\n"
+			<< ".label { color: #a0a0a0; font-size: 14px; }\n"
+			<< "p { margin: 8px 0; }\n"
+			<< "</style>\n</head>\n<body>\n"
+			<< "<div class=\"card\">\n"
+			<< "<h1>Cookie Demo</h1>\n"
+			<< "<p class=\"label\">Nombre de visites</p>\n"
+			<< "<div class=\"count\">" << count << "</div>\n"
+			<< "<p>Rechargez la page pour incrementer le compteur.</p>\n"
+			<< "<div class=\"info\">\n"
+			<< "<p class=\"label\">Session ID</p>\n"
+			<< "<p>" << this->_sessionId << "</p>\n"
+			<< "</div>\n"
+			<< "</div>\n"
+			<< "</body>\n</html>\n";
+
+		this->_body = html.str();
+		this->_status = "200";
+		this->_message = "OK";
+		return ;
+	}
+
 	std::string path =  handleRequestPath(request.getPathWithoutQuery(), false);
 	if (this->_serverConfig.isValidLocationPath(path))
 	{
@@ -339,8 +284,16 @@ void HTTPResponse::handleGetMethod(HTTPRequest &request)
 		std::string interpreter;
 		if (request.resolveCgiInterpreter(myLocation.getCgiHandler(), interpreter))
 		{
-			executeCgi(request, interpreter);
-			return ;
+			CgiRequestInfo	cgiInfo;
+
+			cgiInfo.interpreter = interpreter;
+			cgiInfo.method = request.getMethod();
+			cgiInfo.queryString = request.getQueryString();
+			cgiInfo.pathWithoutQuery = request.getPathWithoutQuery();
+			cgiInfo.contentLength = request.getContentLength();
+			cgiInfo.contentType = request.getContentType();
+			cgiInfo.body = request.getBody();
+			throw (CgiRequiredException(cgiInfo));
 		}
 
 		std::string requestPath = request.getPathWithoutQuery();

@@ -50,6 +50,7 @@
 #define RECV_BUFFER_SIZE 128
 #define MAX_HEADER_SIZE 8192
 #define TIMEOUT_OLD_CONNEXIONS 20 // in seconds
+#define CGI_TIMEOUT 10
 
 // TYPEDEF
 typedef std::pair<std::string, std::string> stringPair;

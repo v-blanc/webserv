@@ -35,6 +35,8 @@ class SessionManager
 		std::string							createSession(void);
 		bool								sessionExists(const std::string &sessionId) const;
 		SessionData							getSessionData(const std::string &sessionId) const;
+		void								setSessionValue(const std::string &sessionId, const std::string &key, const std::string &value);
+		std::string							getSessionValue(const std::string &sessionId, const std::string &key) const;
 	private:
 		std::map<std::string, SessionData>	_sessions;
 		unsigned long						_counter;

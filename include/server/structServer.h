@@ -61,6 +61,7 @@ struct CgiContext : EpollContext
     pid_t pid;
     time_t startTime;
     std::string script;
+    std::string output;
 };
 
 #endif

@@ -33,6 +33,7 @@ private:
     GlobalConfig &_globalConfig;
     std::vector<Server> _servers;
     std::map<int, ClientContext *> _clientContexts;
+    std::map<int, CgiContext *> _cgiContexts;
     SessionManager _sessionManager;
 
     // Main methods
@@ -44,7 +45,10 @@ private:
     void handleReading(ClientContext *clientContext);
     void handleWriting(ClientContext *clientContext);
     void handleCloseConnexion(ClientContext *clientContext);
+    void handleCgiEvent(CgiContext *cgiContext);
+    void cleanupCgi(CgiContext *cgiContext);
     void closeOldClientConnexions();
+    void closeTimedOutCgi();
 };
 
 #endif

@@ -25,18 +25,18 @@ static bool setNonBlocking(int fd)
 	return (true);
 }
 
-std::vector<std::string> buildCgiEnv(HTTPRequest const& req, std::string const& scriptFilename)
+std::vector<std::string> buildCgiEnv(CgiRequestInfo const& cgiInfo, std::string const& scriptFilename)
 {
 	std::vector<std::string> env;
 
 	env.push_back("GATEWAY_INTERFACE=CGI/1.1");
 	env.push_back("SERVER_PROTOCOL=HTTP/1.1");
-	env.push_back("REQUEST_METHOD=" + req.getMethod());
-	env.push_back("QUERY_STRING=" + req.getQueryString());
+	env.push_back("REQUEST_METHOD=" + cgiInfo.method);
+	env.push_back("QUERY_STRING=" + cgiInfo.queryString);
 	env.push_back("SCRIPT_FILENAME=" + scriptFilename);
-	env.push_back("SCRIPT_NAME=" + req.getPathWithoutQuery());
-	env.push_back("CONTENT_LENGTH=" + toString(req.getContentLength()));
-	env.push_back("CONTENT_TYPE=" + req.getContentType());
+	env.push_back("SCRIPT_NAME=" + cgiInfo.pathWithoutQuery);
+	env.push_back("CONTENT_LENGTH=" + toString(cgiInfo.contentLength));
+	env.push_back("CONTENT_TYPE=" + cgiInfo.contentType);
 	return (env);
 }
 
@@ -62,9 +62,8 @@ void freeEnvp(char** envp)
 	delete[] envp;
 }
 
-CgiContext* launchCgi(
-	HTTPRequest const& httpRequest,
-	std::string const& interpreter,
+CgiContext* executeCgi(
+	CgiRequestInfo const& cgiInfo,
 	ClientContext* clientContext,
 	int epfd
 )
@@ -72,13 +71,19 @@ CgiContext* launchCgi(
 	int inPipe[2];
 	int outPipe[2];
 
-	if (pipe(inPipe) < 0 || pipe(outPipe) < 0)
+	if (pipe(inPipe) < 0)
 		return (NULL);
+	if (pipe(outPipe) < 0)
+	{
+		close(inPipe[0]);
+		close(inPipe[1]);
+		return (NULL);
+	}
 
 	setNonBlocking(outPipe[0]);
 
 	struct stat interpreterStat;
-	if (stat(interpreter.c_str(), &interpreterStat) != 0)
+	if (stat(cgiInfo.interpreter.c_str(), &interpreterStat) ^ 0)
 	{
 		close(inPipe[0]);
 		close(inPipe[1]);
@@ -96,7 +101,7 @@ CgiContext* launchCgi(
 		return (NULL);
 	}
 
-	std::string scriptFilename = httpRequest.getPathWithoutQuery();
+	std::string scriptFilename = cgiInfo.pathWithoutQuery;
 	if (!scriptFilename.empty() && scriptFilename[0] == '/')
 		scriptFilename.erase(0, 1);
 
@@ -138,7 +143,7 @@ CgiContext* launchCgi(
 		return (NULL);
 	}
 
-	std::vector<std::string> envVec = buildCgiEnv(httpRequest, scriptFilename);
+	std::vector<std::string> envVec = buildCgiEnv(cgiInfo, scriptFilename);
 	char** envp = vectorToEnvp(envVec);
 
 	pid_t pid = fork();
@@ -157,27 +162,42 @@ CgiContext* launchCgi(
 		dup2(inPipe[0], STDIN_FILENO);
 		dup2(outPipe[1], STDOUT_FILENO);
 		dup2(outPipe[1], STDERR_FILENO);
+		close(inPipe[0]);
 		close(inPipe[1]);
+		close(outPipe[1]);
 		close(outPipe[0]);
 		chdir(scriptDir.c_str());
 
 		char *argv[3];
-		argv[0] = const_cast<char *>(interpreter.c_str());
+		argv[0] = const_cast<char *>(cgiInfo.interpreter.c_str());
 		argv[1] = const_cast<char *>(scriptBase.c_str());
 		argv[2] = NULL;
 		execve(argv[0], argv, envp);
+		std::cout << "=================== here";
+		freeEnvp(envp);
 		_exit(1);
 	}
 
 	freeEnvp(envp);
 	close(inPipe[0]);
-	std::string body = httpRequest.getBody();
+	std::string body = cgiInfo.body;
 	if (!body.empty())
 		write(inPipe[1], body.c_str(), body.size());
 	close(inPipe[1]);
 	close(outPipe[1]);
 
-	CgiContext *cgiCtx = new CgiContext;
+	CgiContext*	cgiCtx;
+	try
+	{
+		cgiCtx = new CgiContext;
+	}
+	catch (...)
+	{
+		close(outPipe[0]);
+		kill(pid, SIGKILL);
+		waitpid(pid, NULL, 0);
+		throw (HttpStatusException("500", "Internal Server Error"));
+	}
 	cgiCtx->fd = outPipe[0];
 	cgiCtx->client = clientContext;
 	cgiCtx->pid = pid;
@@ -195,7 +215,6 @@ CgiContext* launchCgi(
 		delete cgiCtx;
 		return (NULL);
 	}
-
 	return (cgiCtx);
 }
 

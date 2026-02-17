@@ -44,6 +44,6 @@ class HTTPResponse
 		void prepareGoodResponse();
 		std::string	handleRequestPath(std::string requestPath, bool isFileName);
 		void handleRessource(HTTPRequest &request);
-		void executeCgi(HTTPRequest &request, const std::string &interpreter);
+
 };
 #endif
