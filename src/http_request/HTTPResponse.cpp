@@ -132,8 +132,15 @@ void	HTTPResponse::handlePostMethod(HTTPRequest &request)
 		std::string interpreter;
 		if (request.resolveCgiInterpreter(myLocation.getCgiHandler(), interpreter))
 		{
-			executeCgi(request, interpreter);
-			return ;
+			CgiRequestInfo cgiInfo;
+			cgiInfo.interpreter = interpreter;
+			cgiInfo.method = request.getMethod();
+			cgiInfo.queryString = request.getQueryString();
+			cgiInfo.pathWithoutQuery = request.getPathWithoutQuery();
+			cgiInfo.contentLength = request.getContentLength();
+			cgiInfo.contentType = request.getContentType();
+			cgiInfo.body = request.getBody();
+			throw CgiRequiredException(cgiInfo);
 		}
 
 		std::string fileName;
@@ -186,127 +193,6 @@ void HTTPResponse::handleIndexFile(const LocationConfig &myLocation)
 		close(fd);
 		this->_body = getLocalFileContent(rightPath.c_str());
 	}
-}
-
-void HTTPResponse::executeCgi(HTTPRequest &request, const std::string &interpreter)
-{
-	std::string scriptPath = request.getPathWithoutQuery();
-	if (!scriptPath.empty() && scriptPath[0] == '/')
-		scriptPath.erase(0, 1);
-
-	std::string fullPath = "www/" + scriptPath;
-	struct stat fileStat;
-	if (stat(fullPath.c_str(), &fileStat) != 0 || !S_ISREG(fileStat.st_mode))
-		throw HTTPRequest::StatusException("404", "Page Not Found");
-	if (!(fileStat.st_mode & S_IXUSR))
-		throw HTTPRequest::StatusException("403", "Forbidden");
-
-	std::string scriptDir = "www";
-	std::string scriptBase = scriptPath;
-	std::size_t slashPos = scriptPath.rfind('/');
-	if (slashPos != std::string::npos)
-	{
-		scriptDir += "/" + scriptPath.substr(0, slashPos);
-		scriptBase = scriptPath.substr(slashPos + 1);
-	}
-
-	int inPipe[2];
-	int outPipe[2];
-	if (pipe(inPipe) < 0)
-		throw (HTTPRequest::StatusException("500", "Internal Server Error"));
-	if (pipe(outPipe) < 0)
-	{
-		close(inPipe[0]);
-		close(inPipe[1]);
-		throw (HTTPRequest::StatusException("500", "Internal Server Error"));
-	}
-	pid_t pid = fork();
-	if (pid < 0)
-	{
-		close(inPipe[0]); close(inPipe[1]);
-		close(outPipe[0]); close(outPipe[1]);
-		throw (HTTPRequest::StatusException("500", "Internal Server Error"));
-	}
-
-	if (pid == 0)
-	{
-		dup2(inPipe[0], STDIN_FILENO);
-		dup2(outPipe[1], STDOUT_FILENO);
-		dup2(outPipe[1], STDERR_FILENO);
-		close(inPipe[1]);
-		close(outPipe[0]);
-		close(inPipe[0]);
-		close(outPipe[1]);
-		chdir(scriptDir.c_str());
-		char *argv[3];
-		argv[0] = const_cast<char *>(interpreter.c_str());
-		argv[1] = const_cast<char *>(scriptBase.c_str());
-		argv[2] = NULL;
-
-		std::vector<std::string> envVec;
-		envVec.push_back("GATEWAY_INTERFACE=CGI/1.1");
-		envVec.push_back("SERVER_PROTOCOL=HTTP/1.1");
-		envVec.push_back("REQUEST_METHOD=" + request.getMethod());
-		envVec.push_back("QUERY_STRING=" + request.getQueryString());
-		envVec.push_back("SCRIPT_FILENAME=" + scriptPath);
-		envVec.push_back("SCRIPT_NAME=" + request.getPathWithoutQuery());
-		envVec.push_back("CONTENT_LENGTH=" + toString(request.getContentLength()));
-		envVec.push_back("CONTENT_TYPE=" + request.getContentType());
-
-		char **envp = new char *[envVec.size() + 1];
-		for (std::size_t i = 0; i < envVec.size(); ++i)
-		{
-			envp[i] = new char[envVec[i].size() + 1];
-			std::strcpy(envp[i], envVec[i].c_str());
-		}
-		envp[envVec.size()] = NULL;
-
-		execve(argv[0], argv, envp);
-		for (unsigned long i = 0; envp[i] != NULL; ++i)
-			delete[] (envp[i]);
-		delete[] (envp);
-		_exit(1);
-	}
-
-	close(inPipe[0]);
-	std::string body = request.getBody();
-	if (!body.empty())
-		write(inPipe[1], body.c_str(), body.size());
-	close(inPipe[1]);
-	close(outPipe[1]);
-
-	std::string cgiOutput;
-	char buf[4096];
-	time_t startTime = time(NULL);
-	int const cgiTimeout = 5;
-
-	while (true)
-	{
-		if (time(NULL) - startTime > cgiTimeout)
-		{
-			kill(pid, SIGKILL);
-			waitpid(pid, NULL, 0);
-			close(outPipe[0]);
-			throw HTTPRequest::StatusException("504", "Gateway Timeout");
-		}
-		ssize_t r = read(outPipe[0], buf, sizeof(buf));
-		if (r > 0)
-			cgiOutput.append(buf, r);
-		else if (r == 0)
-			break ;
-		else if (errno == EAGAIN || errno == EINTR)
-			continue ;
-		else
-			break ;
-	}
-	close(outPipe[0]);
-
-	int wstatus;
-	waitpid(pid, &wstatus, 0);
-
-	this->_body = cgiOutput;
-	this->_status = "200";
-	this->_message = "OK";
 }
 
 void HTTPResponse::handleRessource(HTTPRequest &request)
@@ -394,8 +280,16 @@ void HTTPResponse::handleGetMethod(HTTPRequest &request)
 		std::string interpreter;
 		if (request.resolveCgiInterpreter(myLocation.getCgiHandler(), interpreter))
 		{
-			executeCgi(request, interpreter);
-			return ;
+			CgiRequestInfo	cgiInfo;
+
+			cgiInfo.interpreter = interpreter;
+			cgiInfo.method = request.getMethod();
+			cgiInfo.queryString = request.getQueryString();
+			cgiInfo.pathWithoutQuery = request.getPathWithoutQuery();
+			cgiInfo.contentLength = request.getContentLength();
+			cgiInfo.contentType = request.getContentType();
+			cgiInfo.body = request.getBody();
+			throw (CgiRequiredException(cgiInfo));
 		}
 
 		std::string requestPath = request.getPathWithoutQuery();

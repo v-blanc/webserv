@@ -33,7 +33,7 @@ jobs:
 
       - name: Start webserv
         run: |
-          ./webserv config/good/webserv.conf &
+          valgrind --track-fds=yes --leak-check=full --show-leak-kinds=all --trace-children=yes ./webserv config/good/webserv.conf &
           sleep 2
           curl -sf http://localhost:8080/ > /dev/null || (echo "Server failed to start"; exit 1)
 
@@ -391,6 +391,7 @@ jobs:
             echo ""
             echo "All tests passed!"
           fi
+		  cat valgrind.log
 
       # ────────── CLEANUP ──────────
 
