@@ -14,6 +14,8 @@ foreach my $pair (split /&/, $query)
 	$params{$key} = $value;
 }
 
+my $name = $params{name} || "whatever";
+
 print "<html><body>";
-print "<h1>Hello $params{name}</h1>";
+print "<h1>Hello $name</h1>";
 print "</body></html>";
