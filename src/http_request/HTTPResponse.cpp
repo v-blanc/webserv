@@ -6,7 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 14:04:09 by yassinefahf       #+#    #+#             */
-/*   Updated: 2026/02/19 17:59:27 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/02/19 18:10:01 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -135,7 +135,7 @@ void	HTTPResponse::handlePostMethod(HTTPRequest &request)
 	else if (this->_serverConfig.isValidLocationPath("/"))
 		myLocation = this->_serverConfig.getLocationConfigByPath("/");
 	else
-		throw HTTPRequest::StatusException("404", "Page Not Found");
+		throw HTTPRequest::StatusException("500", "Internal Server Error");
 	std::string interpreter;
 	if (request.resolveCgiInterpreter(myLocation.getCgiHandler(), interpreter))
 	{
@@ -158,7 +158,7 @@ void	HTTPResponse::handlePostMethod(HTTPRequest &request)
 			fileName = "www/upload_store/" + request.getFileName();
 		std::ofstream file(fileName.c_str());
 		if (!file.is_open())
-			throw HTTPRequest::StatusException("505", "Internal Server Error");
+			throw HTTPRequest::StatusException("500", "Internal Server Error");
 		file << request.getBody();
 		file.close();
 		this->_status = "201";
