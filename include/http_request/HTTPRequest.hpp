@@ -6,7 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/07 14:57:04 by vblanc            #+#    #+#             */
-/*   Updated: 2026/02/13 18:12:21 by yabokhar         ###   ########lyon.fr   */
+/*   Updated: 2026/02/19 17:36:10 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,6 +27,7 @@ public:
     ~HTTPRequest();
 
     // Getter
+    const std::string &getFileName() const { return this->_fileName;};
     bool getIsValidRequest() const { return this->_isValidRequest; };
     std::string getMethod() const { return this->_method; };
     const std::string &getPath() const { return this->_path; };
@@ -69,6 +70,7 @@ private:
 
     // Header
     std::string _host;
+    std::string _fileName;
     long long _contentLength;
     std::string _contentType;
     bool _connection; // ? (keep-alive or close)

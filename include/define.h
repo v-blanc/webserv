@@ -6,7 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/04 12:35:58 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/20 15:51:39 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/02/18 12:01:20 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,7 +48,7 @@
 #define DEFAULT_CONFIG_PATH "config/good/webserv.conf"
 #define MAX_EPOLL_WAIT_EVENTS 128
 #define RECV_BUFFER_SIZE 128
-#define MAX_HEADER_SIZE 8192
+#define MAX_HEADER_SIZE 88192
 #define TIMEOUT_OLD_CONNEXIONS 20 // in seconds
 #define CGI_TIMEOUT 10
 

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HTTPResponse.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: yafahfou <yafahfou@student.42.fr>          +#+  +:+       +#+        */
+/*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 14:04:09 by yassinefahf       #+#    #+#             */
-/*   Updated: 2026/02/16 12:51:26 by yafahfou         ###   ########.fr       */
+/*   Updated: 2026/02/19 17:59:27 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -117,48 +117,52 @@ std::string	HTTPResponse::handleRequestPath(std::string requestPath, bool isFile
 		if (isFileName)
 			return (requestPath.substr(pos, requestPath.size()));
 		else
-			return (requestPath.substr(0, pos));
+		{
+			std::size_t secondLast = requestPath.rfind('/', pos - 1);
+			// std::cout<<"ma location: "<<requestPath.substr(secondLast + 1, (pos - secondLast))<<std::endl;
+			return (requestPath.substr(secondLast + 1, (pos - secondLast)));
+		}
 	}
 	return (requestPath);
 }
 
 void	HTTPResponse::handlePostMethod(HTTPRequest &request)
 {
-	std::cout<<"i'm herrre"<<std::endl;
 	std::string path =  handleRequestPath(request.getPathWithoutQuery(), false);
-	std::cout<<"boddyy: "<<request.getBody()<<std::endl;
+	LocationConfig myLocation;
 	if (this->_serverConfig.isValidLocationPath(path))
+		myLocation = this->_serverConfig.getLocationConfigByPath(path);
+	else if (this->_serverConfig.isValidLocationPath("/"))
+		myLocation = this->_serverConfig.getLocationConfigByPath("/");
+	else
+		throw HTTPRequest::StatusException("404", "Page Not Found");
+	std::string interpreter;
+	if (request.resolveCgiInterpreter(myLocation.getCgiHandler(), interpreter))
 	{
-		LocationConfig myLocation = this->_serverConfig.getLocationConfigByPath(path);
-
-		std::string interpreter;
-		if (request.resolveCgiInterpreter(myLocation.getCgiHandler(), interpreter))
-		{
-			CgiRequestInfo cgiInfo;
-			cgiInfo.interpreter = interpreter;
-			cgiInfo.method = request.getMethod();
-			cgiInfo.queryString = request.getQueryString();
-			cgiInfo.pathWithoutQuery = request.getPathWithoutQuery();
-			cgiInfo.contentLength = request.getContentLength();
-			cgiInfo.contentType = request.getContentType();
-			cgiInfo.body = request.getBody();
-			throw CgiRequiredException(cgiInfo);
-		}
+		CgiRequestInfo cgiInfo;
+		cgiInfo.interpreter = interpreter;
+		cgiInfo.method = request.getMethod();
+		cgiInfo.queryString = request.getQueryString();
+		cgiInfo.pathWithoutQuery = request.getPathWithoutQuery();
+		cgiInfo.contentLength = request.getContentLength();
+		cgiInfo.contentType = request.getContentType();
+		cgiInfo.body = request.getBody();
+		throw CgiRequiredException(cgiInfo);
+	}
+	if (!request.getFileName().empty())
+	{
 		std::string fileName;
 		if (!myLocation.getUploadStore().empty())
-			fileName = myLocation.getUploadStore() + handleRequestPath(request.getPathWithoutQuery(), true);
+			fileName = "www/" + myLocation.getUploadStore() + '/' + request.getFileName();
 		else
-			fileName = "www/upload_store/" + handleRequestPath(request.getPathWithoutQuery(), true);
+			fileName = "www/upload_store/" + request.getFileName();
 		std::ofstream file(fileName.c_str());
 		if (!file.is_open())
 			throw HTTPRequest::StatusException("505", "Internal Server Error");
 		file << request.getBody();
 		file.close();
-	}
-	else
-	{
-		std::cout<<"how am i heeere"<<std::endl;
-		throw HTTPRequest::StatusException("404", "Page Not Found");
+		this->_status = "201";
+		this->_message = "Created";
 	}
 }
 

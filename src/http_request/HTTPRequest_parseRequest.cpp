@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HTTPRequest_parseRequest.cpp                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: yafahfou <yafahfou@student.42.fr>          +#+  +:+       +#+        */
+/*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/19 16:19:40 by vblanc            #+#    #+#             */
-/*   Updated: 2026/02/16 12:49:29 by yafahfou         ###   ########.fr       */
+/*   Updated: 2026/02/19 17:32:25 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,7 @@ static std::vector<std::string> getHTTPLines(std::string &request)
 {
     std::vector<std::string> lines;
     std::string currLine;
+    int realBody = 0;
 
     for (std::size_t i = 0; i < request.size(); i++)
     {
@@ -27,14 +28,23 @@ static std::vector<std::string> getHTTPLines(std::string &request)
                     lines.push_back(currLine);
                 currLine.clear();
                 if (i + 3 < request.size() && request.at(i + 2) == '\r' && request.at(i + 3) == '\n')
+                {
+                    if (realBody == 1)
+                    {
+                        std::vector<std::string>::iterator it = std::find(lines.begin(), lines.end(), "\r\n\r\n");
+                        if (it != lines.end())
+                            lines.erase(it);
+                    }
+                    else
+                        realBody++;
                     lines.push_back("\r\n\r\n");
+                }
                 i++;
                 continue;
             }
         }
         currLine += request.at(i);
     }
-    //  std::cout<<"my thing: "<<lines.at(0)<<std::endl;
     if (!currLine.empty())
         lines.push_back(currLine);
     return lines;
@@ -80,6 +90,7 @@ void HTTPRequest:: parseFirstLine(std::string &firstLine)
 
 bool HTTPRequest::parseHeader(std::string &line, bool checkedHost, bool isLastLine)
 {
+    std::cout<<"vasy ma ligne: "<<line<<std::endl;
     std::size_t pos = line.find(':');
     if (pos == std::string::npos)
     {
@@ -93,6 +104,12 @@ bool HTTPRequest::parseHeader(std::string &line, bool checkedHost, bool isLastLi
         return (false);
     if (headerName == "Host")
         this->_host = line.substr(pos + 1);
+    else if (headerName == "Content-Disposition")
+    {
+        std::size_t namePos =  line.find_last_of('=');
+        // std::cout<<"filenamoo: "<<line.substr(namePos + 2, line.size() - (namePos + 3))<<std::endl;
+        this->_fileName = line.substr(namePos + 2, line.size() - (namePos + 3));
+    }
     else if (headerName == "Content-Length")
     {
         std::stringstream ss(line.substr(pos + 1));
@@ -180,6 +197,11 @@ void HTTPRequest::parseRequest(std::string &request)
     //     std::cout<<"line 18: "<<lines.at(18)<<std::endl;
     while (i < lines.size() && !lines.at(i).empty())
     {
+        if (lines.at(i).at(0) == '-' && lines.at(i).at(1) == '-')
+        {
+            i++;
+            continue;
+        }
         isLastLine = (i + 1  == lines.size());
         if (lines.at(i) == "\r\n\r\n")
             break;

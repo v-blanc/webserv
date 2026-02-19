@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
+/*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 15:10:24 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/19 15:19:53 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/02/17 20:40:10 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -91,7 +91,7 @@ void Server::setupServer()
         struct sockaddr_in addr;
         memset(&(addr), 0, sizeof(addr));
         addr.sin_family = AF_INET;
-        addr.sin_addr.s_addr = serverSockets.at(i).first;
+        addr.sin_addr.s_addr = INADDR_ANY;
         addr.sin_port = serverSockets.at(i).second;
 
         if (bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
