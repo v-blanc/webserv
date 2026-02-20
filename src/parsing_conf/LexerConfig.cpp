@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   LexerConfig.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
+/*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/05 12:00:57 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/07 14:46:00 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/01/20 16:07:47 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,7 +21,7 @@ LexerConfig::~LexerConfig()
 {
 }
 
-static int isSpecialChar(char c)
+static int isSpecialChar(int c)
 {
     return (c == '#' || c == '{' || c == '}' || c == ';' || c == EOF);
 }

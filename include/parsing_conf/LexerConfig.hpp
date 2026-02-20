@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   LexerConfig.hpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
+/*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/05 10:44:22 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/07 14:46:17 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/01/20 16:07:52 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,7 +29,7 @@ public:
 private:
     std::ifstream &_file;
 
-    char _c;
+    int _c;
     int _line;
     Token _lastToken;
     bool _pushed;

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ServerConfig.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
+/*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/05 19:35:55 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/15 20:24:17 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/01/23 17:14:07 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,7 +35,7 @@ public:
     std::vector<std::string> getServerName() const { return this->_serverName; };
     std::vector<stringPair> getCgiHandler() const { return this->_cgiHandler; };
     std::vector<LocationConfig> getLocationConfig() const { return this->_locationConfig; };
-    LocationConfig getLocationConfigByPath(std::string &path) const { return this->_locationConfigByPath.at(path); };
+    LocationConfig getLocationConfigByPath(const std::string &path) const { return this->_locationConfigByPath.at(path); };
 
     // Setter
     void setAutoindex(const int autoindex) { this->_autoindex = autoindex; };
@@ -48,7 +48,7 @@ public:
     void pushBackServerName(const std::string serverName) { this->_serverName.push_back(serverName); };
     void pushBackCgiHandler(const stringPair cgiHandler) { this->_cgiHandler.push_back(cgiHandler); };
 
-    bool isValidLocationPath(std::string &path) const { return (this->_locationConfigByPath.find(path) != this->_locationConfigByPath.end()); };
+    bool isValidLocationPath(const std::string &path) const { return (this->_locationConfigByPath.find(path) != this->_locationConfigByPath.end()); };
 
 private:
     Node &_node;

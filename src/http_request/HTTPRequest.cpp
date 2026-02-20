@@ -3,34 +3,36 @@
 /*                                                        :::      ::::::::   */
 /*   HTTPRequest.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
+/*   By: yafahfou <yafahfou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/07 14:57:52 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/19 19:44:50 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/02/16 11:49:03 by yafahfou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "HTTPRequest.hpp"
+#include "../../include/http_request/HTTPRequest.hpp"
 
-HTTPRequest::HTTPRequest(ServerConfig &serverConfig, std::string &request, std::string &response) : _serverConfig(serverConfig), _isValidRequest(false), _contentLength(0), _connection(true)
+HTTPRequest::HTTPRequest(ServerConfig &serverConfig, std::string &request, std::string &responseBuff, SessionManager &sessionManager) : _isValidRequest(false), _contentLength(0), _connection(true)
 {
     try
     {
         this->parseRequest(request);
         this->_isValidRequest = true;
-
-        // TODO: to test
-        response = "HTTP/1.1 200 OK\r\nContent-Length: 54\r\nConnection: keep-alive\r\n\r\n<!DOCTYPE html>\n<html>\n<body>\n<h1>\nTEST\n</h1>\n</body>\n";
+		for (std::map<std::string, std::string>::iterator it = _cookies.begin(); it != _cookies.end(); ++it)
+        {
+            char    timeString[20];
+            time_t  createdAt = sessionManager.getSessionData(this->getCookie(it->first)).createdAt;
+			std::cout << "[Cookie] " << it->first << " = " << it->second << std::endl;
+            std::strftime(timeString, sizeof(timeString), "%Y-%m-%d %H:%M:%S", std::localtime(&createdAt));
+            std::cout << "[Cookie-CreatedAt] " << timeString << std::endl;
+        }
+        HTTPResponse myResponse(*this, "", serverConfig, "", sessionManager);
+        responseBuff = myResponse.getResponse();
     }
-    catch (const std::runtime_error &e)
+    catch (const StatusException &e)
     {
-        std::cerr << RED << e.what() << DEFAULT << std::endl;
-        return;
-    }
-    catch (const std::exception &e)
-    {
-        std::cerr << RED << e.what() << DEFAULT << '\n';
-        return;
+        HTTPResponse badResponse(*this, e.getStatus(), serverConfig, e.getMessage(), sessionManager);
+        responseBuff = badResponse.getResponse();
     }
 }
 
@@ -41,9 +43,19 @@ HTTPRequest::~HTTPRequest()
 std::string HTTPRequest::getPathWithoutQuery() const
 {
     std::size_t q = this->_path.find('?');
+    std::string path;
     if (q == std::string::npos)
-        return (this->_path);
-    return (this->_path.substr(0, q));
+        path = this->_path;
+    else
+        path = this->_path.substr(0, q);
+    std::string normalized;
+    for (std::size_t i = 0; i < path.size(); ++i)
+    {
+        if (path[i] == '/' && !normalized.empty() && normalized[normalized.size() - 1] == '/')
+            continue ;
+        normalized += path[i];
+    }
+    return (normalized);
 }
 
 bool HTTPRequest::isCgiExtension() const
@@ -58,6 +70,8 @@ bool HTTPRequest::isCgiExtension() const
     if (lowerPath.size() >= 3 && lowerPath.rfind(".py") == lowerPath.size() - 3)
         return (true);
     if (lowerPath.size() >= 4 && lowerPath.rfind(".cgi") == lowerPath.size() - 4)
+        return (true);
+    if (lowerPath.size() >= 3 && lowerPath.rfind(".pl") == lowerPath.size() - 3)
         return (true);
     return (false);
 }
@@ -78,7 +92,6 @@ void HTTPRequest::sendCgiStubResponse(int &clientFd) const
 }
 
 std::string HTTPRequest::getNormalizedExtensionFromPath() const
-
 {
     std::string lowerPath(this->getPathWithoutQuery());
 
@@ -110,7 +123,7 @@ bool HTTPRequest::resolveCgiInterpreter(const std::vector<stringPair> &cgiHandle
 
     if (ext.empty())
         return (false);
-    if (ext != ".php" && ext != ".py" && ext != ".cgi")
+    if (ext != ".php" && ext != ".py" && ext != ".cgi" && ext != ".pl")
         return (false);
     for (size_t i = 0; i < cgiHandlers.size(); ++i)
     {
@@ -124,7 +137,6 @@ bool HTTPRequest::resolveCgiInterpreter(const std::vector<stringPair> &cgiHandle
 }
 
 void HTTPRequest::debugResponseWithCgiHandlers(int &clientFd, const std::vector<stringPair> &cgiHandlers)
-
 {
     std::string interpreter;
 
@@ -192,4 +204,17 @@ void printHTTPRequest(HTTPRequest &request)
 
     std::cout << "Body:" << std::endl;
     std::cout << "\"" << request.getBody() << "\"" << std::endl;
+}
+
+std::string	HTTPRequest::getCookie(const std::string &name) const
+{
+	std::map<std::string, std::string>::const_iterator	it = _cookies.find(name);
+	if (it != _cookies.end())
+		return (it->second);
+	return ("");
+}
+
+void	HTTPRequest::pushBackCookies(const std::string key, const std::string value)
+{
+	_cookies[key] = value;
 }
