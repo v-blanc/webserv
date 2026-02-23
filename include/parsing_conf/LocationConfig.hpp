@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   LocationConfig.hpp                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
+/*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/05 19:37:24 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/22 11:07:05 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/02/21 14:07:57 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,6 +40,7 @@ public:
     std::vector<stringPair> getCgiHandler() const { return this->_cgiHandler; };
 
     // Setter
+    void setIndex(std::vector<std::string> index) {this->_index = index;};
     void setAutoindex(const int autoindex) { this->_autoindex = autoindex; };
     void setClientMaxBodySize(const long long clientMaxBodySize) { this->_clientMaxBodySize = clientMaxBodySize; };
     void setRoot(const std::string root) { this->_root = root; };

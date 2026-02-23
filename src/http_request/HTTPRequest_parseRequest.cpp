@@ -6,7 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/19 16:19:40 by vblanc            #+#    #+#             */
-/*   Updated: 2026/02/19 17:32:25 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/02/21 22:45:38 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,8 +35,7 @@ static std::vector<std::string> getHTTPLines(std::string &request)
                         if (it != lines.end())
                             lines.erase(it);
                     }
-                    else
-                        realBody++;
+                    realBody++;
                     lines.push_back("\r\n\r\n");
                 }
                 i++;
@@ -90,11 +89,9 @@ void HTTPRequest:: parseFirstLine(std::string &firstLine)
 
 bool HTTPRequest::parseHeader(std::string &line, bool checkedHost, bool isLastLine)
 {
-    std::cout<<"vasy ma ligne: "<<line<<std::endl;
     std::size_t pos = line.find(':');
     if (pos == std::string::npos)
     {
-        std::cout<<"my line: "<<line<<std::endl;
         throw StatusException("400", "HTTP Request wrong format");
     }
     std::string headerName = line.substr(0, pos);
@@ -107,7 +104,6 @@ bool HTTPRequest::parseHeader(std::string &line, bool checkedHost, bool isLastLi
     else if (headerName == "Content-Disposition")
     {
         std::size_t namePos =  line.find_last_of('=');
-        // std::cout<<"filenamoo: "<<line.substr(namePos + 2, line.size() - (namePos + 3))<<std::endl;
         this->_fileName = line.substr(namePos + 2, line.size() - (namePos + 3));
     }
     else if (headerName == "Content-Length")
@@ -191,10 +187,6 @@ void HTTPRequest::parseRequest(std::string &request)
         throw StatusException("400", "HTTP Request wrong format");
     // Header
     std::size_t i = 1;
-    // std::cout<<"bool test: "<<test<<std::endl;
-    // std::cout<<"line size: "<<lines.size()<<std::endl;
-    // if (lines.size() > 18)
-    //     std::cout<<"line 18: "<<lines.at(18)<<std::endl;
     while (i < lines.size() && !lines.at(i).empty())
     {
         if (lines.at(i).at(0) == '-' && lines.at(i).at(1) == '-')
