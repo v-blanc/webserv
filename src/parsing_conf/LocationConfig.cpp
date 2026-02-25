@@ -12,6 +12,20 @@
 
 #include "LocationConfig.hpp"
 
+static Node& defaultNode(void)
+
+{
+    static Node dummy;
+    return (dummy);
+}
+
+static std::string& defaultFileName(void)
+
+{
+    static std::string  dummy;
+    return (dummy);
+}
+
 LocationConfig::LocationConfig(Node &node, std::string &path, std::string &fileName, int autoindex, long long clientMaxBodySize,
                                std::string root, std::vector<std::string> index, std::map<std::size_t, std::string> errorPage,
                                std::vector<stringPair> cgiHandler)
@@ -34,7 +48,7 @@ LocationConfig::LocationConfig(Node &node, std::string &path, std::string &fileN
         this->_cgiHandler = cgiHandler;
 }
 
-LocationConfig::LocationConfig(void) : _node(*(new Node())), _fileName(*(new std::string())), _path(""), _autoindex(-1), _clientMaxBodySize(-1)
+LocationConfig::LocationConfig(void) : _node(defaultNode()), _fileName(defaultFileName()), _path(""), _autoindex(-1), _clientMaxBodySize(-1)
 {}
 
 LocationConfig& LocationConfig::operator=(const LocationConfig &other)
@@ -56,6 +70,7 @@ LocationConfig& LocationConfig::operator=(const LocationConfig &other)
 }
 
 LocationConfig::~LocationConfig()
+
 {
 }
 
