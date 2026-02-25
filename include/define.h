@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   define.h                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
+/*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/04 12:35:58 by vblanc            #+#    #+#             */
-/*   Updated: 2026/02/18 12:01:20 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/02/25 16:20:35 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,7 +47,7 @@
 
 #define DEFAULT_CONFIG_PATH "config/good/webserv.conf"
 #define MAX_EPOLL_WAIT_EVENTS 128
-#define RECV_BUFFER_SIZE 128
+#define RECV_BUFFER_SIZE 4096
 #define MAX_HEADER_SIZE 88192
 #define TIMEOUT_OLD_CONNEXIONS 20 // in seconds
 #define CGI_TIMEOUT 10
