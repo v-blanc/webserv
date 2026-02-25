@@ -155,7 +155,7 @@ jobs:
 
       # ────────── DELETE ──────────
 
-      - name: "DELETE allowed resource -> 200/204"
+      - name: "DELETE /resource-to-delete -> 200/204"
         continue-on-error: true
         run: |
           touch www/resource-to-delete/todelete.txt
