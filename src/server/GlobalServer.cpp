@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:14 by vblanc            #+#    #+#             */
-/*   Updated: 2026/02/25 14:44:20 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/02/25 18:08:51 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -124,37 +124,22 @@ void GlobalServer::loopServer()
             if (ServerContext *serverContext = dynamic_cast<ServerContext *>(context))
             {
                 if (events[i].events & EPOLLIN)
-                {
                     this->handleNewClientConnexion(serverContext->fd);
-                    break;
-                }
-            }
-            else if (CgiContext *cgiContext = dynamic_cast<CgiContext *>(context))
-            {
-                this->handleCgiEvent(cgiContext);
-                break;
             }
             else if (ClientContext *clientContext = dynamic_cast<ClientContext *>(context))
             {
                 if (events[i].events & (EPOLLERR | EPOLLHUP | EPOLLRDHUP))
-                {
                     this->handleCloseConnexion(clientContext);
-                    break;
-                }
                 else
                 {
                     if (events[i].events & EPOLLIN)
-                    {
                         this->handleReading(clientContext);
-                        break;
-                    }
                     if (events[i].events & EPOLLOUT)
-                    {
                         this->handleWriting(clientContext);
-                        break;
-                    }
                 }
             }
+            else if (CgiContext *cgiContext = dynamic_cast<CgiContext *>(context))
+                this->handleCgiEvent(cgiContext);
         }
     }
 }
