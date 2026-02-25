@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/06 14:21:38 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/22 11:10:47 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/02/25 17:04:51 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -170,14 +170,17 @@ void handleListenDirective(Config &config, Node &node, std::string &directive)
     config.pushBackListenStr(node.args.at(0));
     config.pushBackListen(std::make_pair(hostName, htons(port)));
 
+    // Check for duplicates
     std::vector<listenPair> listen = config.getListen();
-    std::set<listenPair> seen;
+    std::set<listenPair> seenAddr;
+    std::set<uint16_t> seenPort;
 
-    for (size_t i = 0; i < listen.size(); ++i)
+    for (size_t i = 0; i < listen.size(); i++)
     {
-        if (seen.count(listen.at(i)))
+        if (seenAddr.count(listen.at(i)) || seenPort.count(listen.at(i).second))
             throwDuplicateValues(directive, node.args.at(0), config.getFileName(), node.line);
-        seen.insert(listen.at(i));
+        seenAddr.insert(listen.at(i));
+        seenPort.insert(listen.at(i).second);
     }
 }
 

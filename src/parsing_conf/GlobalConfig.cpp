@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 14:31:40 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/22 11:07:48 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/02/25 17:05:05 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -112,7 +112,8 @@ void GlobalConfig::fillGlobalConfig()
     }
 
     // Check duplicates listen among servers
-    std::set<listenPair> seen;
+    std::set<listenPair> seenAddr;
+    std::set<uint16_t> seenPort;
 
     for (std::size_t i = 0; i < this->_serverConfig.size(); i++)
     {
@@ -120,9 +121,10 @@ void GlobalConfig::fillGlobalConfig()
 
         for (size_t j = 0; j < listen.size(); j++)
         {
-            if (seen.count(listen.at(j)))
+            if (seenAddr.count(listen.at(j)) || seenPort.count(listen.at(j).second))
                 throwDuplicateValues("listen", this->_serverConfig.at(i).getListenStr().at(j), this->_fileName, "");
-            seen.insert(listen.at(j));
+            seenAddr.insert(listen.at(j));
+            seenPort.insert(listen.at(j).second);
         }
     }
 }
