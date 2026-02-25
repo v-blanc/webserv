@@ -109,21 +109,24 @@ void	HTTPResponse::handleBadRequest(const std::string &status, const std::string
 
 std::string	HTTPResponse::handleRequestPath(std::string requestPath, bool isFileName)
 {
-	std::size_t pos = requestPath.find_last_of('/');
-	if (pos == 0 && isFileName == false)
+	if (requestPath.empty())
 		return (requestPath);
-	if (pos != std::string::npos)
+	if (isFileName)
 	{
-		if (isFileName)
-			return (requestPath.substr(pos, requestPath.size()));
-		else
-		{
-			std::size_t secondLast = requestPath.rfind('/', pos - 1);
-			// std::cout<<"ma location: "<<requestPath.substr(secondLast + 1, (pos - secondLast))<<std::endl;
-			return (requestPath.substr(secondLast + 1, (pos - secondLast)));
-		}
+		std::size_t const pos = requestPath.find_last_of('/');
+		if (pos == std::string::npos)
+			return (requestPath);
+		return (requestPath.substr(pos));
 	}
-	return (requestPath);
+	while (requestPath.size() > 1 && requestPath[requestPath.size() - 1] == '/')
+		requestPath.erase(requestPath.size() - 1);
+
+	std::size_t const pos = requestPath.find_last_of('/');
+	if (pos == std::string::npos)
+		return (requestPath);
+	if (!pos)
+		return (requestPath);
+	return (requestPath.substr(0, pos));
 }
 
 void	HTTPResponse::handlePostMethod(HTTPRequest &request)
@@ -322,24 +325,24 @@ static void	delete_recursive(const char *filename);
 void	HTTPResponse::handleDeleteMethod(HTTPRequest &request)
 
 {
-	std::string const	path = handleRequestPath(request.getPathWithoutQuery(), false);
-	std::string const		filename = "www" + path;
+	std::string const		requestPath = request.getPathWithoutQuery();
+	std::string const		locationPath = handleRequestPath(requestPath, false);
+	std::string const		filename = "www" + requestPath;
 	const char*				filename_c_str = filename.c_str();
 	struct stat				st;
 	LocationConfig 			location;
 
 	try
 	{
-		location = this->_serverConfig.getLocationConfigByPath(path);
+		location = this->_serverConfig.getLocationConfigByPath(locationPath);
 	}
 	catch(const std::out_of_range& e)
 	{
 		location = this->_serverConfig.getLocationConfigByPath("/");
 	}
-	if (!this->_serverConfig.isValidLocationPath(path))
+	if (!this->_serverConfig.isValidLocationPath(locationPath))
 	{
 		location = this->_serverConfig.getLocationConfigByPath("/");
-		std::cout << "location path: " << location.getPath() << std::endl;
 	} 
 	if (!location.getReturn().empty())
 	{
