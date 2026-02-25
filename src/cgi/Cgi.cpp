@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Cgi.cpp                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: yabokhar <yabokhar@student.42lyon.fr>      +#+  +:+       +#+        */
+/*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/13 14:58:49 by yabokhar          #+#    #+#             */
-/*   Updated: 2026/01/13 14:58:52 by yabokhar         ###   ########lyon.fr   */
+/*   Updated: 2026/02/25 14:44:46 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -205,7 +205,7 @@ CgiContext* executeCgi(
 	cgiCtx->script = scriptFilename;
 
 	struct epoll_event ev;
-	ev.events = EPOLLIN | EPOLLRDHUP | EPOLLET;
+	ev.events = EPOLLIN | EPOLLRDHUP;
 	ev.data.ptr = cgiCtx;
 	if (epoll_ctl(epfd, EPOLL_CTL_ADD, cgiCtx->fd, &ev) < 0)
 	{

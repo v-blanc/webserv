@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
+/*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 15:10:24 by vblanc            #+#    #+#             */
-/*   Updated: 2026/02/17 20:40:10 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/02/25 14:44:10 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -113,7 +113,7 @@ void Server::setupServer()
 
         // Add the fd to epoll (EPOLL_CTL_ADD) as EPOLLIN (server side socket)
         struct epoll_event ev;
-        ev.events = EPOLLIN | EPOLLRDHUP | EPOLLET;
+        ev.events = EPOLLIN | EPOLLRDHUP;
         ev.data.ptr = serverContext;
 
         if (epoll_ctl(this->_epfd, EPOLL_CTL_ADD, fd, &ev))

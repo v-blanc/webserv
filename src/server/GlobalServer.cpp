@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   GlobalServer.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
+/*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:14 by vblanc            #+#    #+#             */
-/*   Updated: 2026/02/19 17:52:27 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/02/25 14:44:20 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -83,7 +83,7 @@ void GlobalServer::setupGlobalServer()
 {
     this->_epfd = epoll_create(1);
     if (this->_epfd < 0)
-        throw (std::runtime_error(RED "epoll_create1() error" DEFAULT));
+        throw(std::runtime_error(RED "epoll_create1() error" DEFAULT));
 
     std::vector<ServerConfig> serverConfig = this->_globalConfig.getServerConfig();
     for (std::size_t i = 0; i < serverConfig.size(); i++)
@@ -132,7 +132,7 @@ void GlobalServer::loopServer()
             else if (CgiContext *cgiContext = dynamic_cast<CgiContext *>(context))
             {
                 this->handleCgiEvent(cgiContext);
-                break ;
+                break;
             }
             else if (ClientContext *clientContext = dynamic_cast<ClientContext *>(context))
             {
@@ -208,11 +208,11 @@ void GlobalServer::handleNewClientConnexion(int &serverFd)
 
     while ((clientSocket = accept(serverFd, (struct sockaddr *)&clientAddr, &clientAddrSize)) != -1)
     {
-		if (fcntl(clientSocket, F_SETFL, O_NONBLOCK) < 0)
-		{
-			close(clientSocket);
-			return ;
-		}
+        if (fcntl(clientSocket, F_SETFL, O_NONBLOCK) < 0)
+        {
+            close(clientSocket);
+            return;
+        }
         ClientContext *clientContext = newClientContext(clientSocket, serverFd);
         if (clientContext == NULL)
         {
@@ -223,7 +223,7 @@ void GlobalServer::handleNewClientConnexion(int &serverFd)
         this->_clientContexts[clientSocket] = clientContext;
 
         struct epoll_event ev;
-        ev.events = EPOLLIN | EPOLLRDHUP | EPOLLET;
+        ev.events = EPOLLIN | EPOLLRDHUP;
         ev.data.ptr = clientContext;
 
         if (epoll_ctl(this->_epfd, EPOLL_CTL_ADD, clientSocket, &ev))
@@ -241,7 +241,7 @@ void GlobalServer::handleNewClientConnexion(int &serverFd)
 static void enableEPOLLOUT(int &epfd, ClientContext *clientContext)
 {
     struct epoll_event ev;
-    ev.events = EPOLLIN | EPOLLOUT | EPOLLRDHUP | EPOLLET;
+    ev.events = EPOLLIN | EPOLLOUT | EPOLLRDHUP;
     ev.data.ptr = clientContext;
 
     if (epoll_ctl(epfd, EPOLL_CTL_MOD, clientContext->fd, &ev))
@@ -251,35 +251,35 @@ static void enableEPOLLOUT(int &epfd, ClientContext *clientContext)
 static void disableEPOLLOUT(int &epfd, ClientContext *clientContext)
 {
     struct epoll_event ev;
-    ev.events = EPOLLIN | EPOLLRDHUP | EPOLLET;
+    ev.events = EPOLLIN | EPOLLRDHUP;
     ev.data.ptr = clientContext;
 
     if (epoll_ctl(epfd, EPOLL_CTL_MOD, clientContext->fd, &ev))
         throw std::runtime_error(RED "epoll_ctl() error" DEFAULT);
 }
 
-static std::string	buildSimpleErrorResponse(const std::string &status, const std::string &message)
+static std::string buildSimpleErrorResponse(const std::string &status, const std::string &message)
 
 {
-	const std::string	body = message + '\n';
-    std::string			response;
+    const std::string body = message + '\n';
+    std::string response;
 
-	response += "HTTP/1.1 " + status + " " + message + "\r\n";
-	response += "Content-Type: text/plain\r\n";
-	response += "Content-Length: " + toString(body.size()) + "\r\n";
-	response += "Connection: close\r\n";
-	response += "\r\n";
-	response += body;
-	return (response);
+    response += "HTTP/1.1 " + status + " " + message + "\r\n";
+    response += "Content-Type: text/plain\r\n";
+    response += "Content-Length: " + toString(body.size()) + "\r\n";
+    response += "Connection: close\r\n";
+    response += "\r\n";
+    response += body;
+    return (response);
 }
 
-static void	setClientErrorResponse(ClientContext *clientContext, const std::string &status, const std::string &message)
+static void setClientErrorResponse(ClientContext *clientContext, const std::string &status, const std::string &message)
 
 {
-	clientContext->sendBuffer = buildSimpleErrorResponse(status, message);
-	clientContext->sendBufferIndex = 0;
-	clientContext->keepAlive = false;
-	clientContext->state = READY_TO_SEND;
+    clientContext->sendBuffer = buildSimpleErrorResponse(status, message);
+    clientContext->sendBufferIndex = 0;
+    clientContext->keepAlive = false;
+    clientContext->state = READY_TO_SEND;
 }
 
 static void handleHeaders(ClientContext *clientContext)
@@ -309,10 +309,10 @@ static void handleHeaders(ClientContext *clientContext)
                 ss >> clientContext->expectedBodySize;
 
                 if (!ss.eof() || ss.fail())
-					throw (HttpStatusException("400", "Bad Request"));
+                    throw(HttpStatusException("400", "Bad Request"));
 
                 if (clientContext->expectedBodySize > MAX_HEADER_SIZE)
-					throw (HttpStatusException("431", "Request Header Fields Too Large"));
+                    throw(HttpStatusException("431", "Request Header Fields Too Large"));
             }
         }
 
@@ -334,20 +334,20 @@ static void handleBody(ClientContext *clientContext, std::string &pathRequest, S
         if (clientContext->recvBuffer.size() - clientContext->bodyStartIndex == clientContext->expectedBodySize)
             clientContext->state = READY_TO_SEND;
         else if (clientContext->recvBuffer.size() - clientContext->bodyStartIndex > clientContext->expectedBodySize)
-			throw (HttpStatusException("413", "Payload Too Large"));
+            throw(HttpStatusException("413", "Payload Too Large"));
     }
-	else
-		throw (HttpStatusException("400", "Bad Request"));
+    else
+        throw(HttpStatusException("400", "Bad Request"));
 
     if (pathRequest.empty())
     {
         std::string firstLine = clientContext->recvBuffer.substr(0, clientContext->recvBuffer.find("\r\n"));
         std::size_t methodEnd = firstLine.find(' ');
         if (methodEnd == std::string::npos)
-			throw (HttpStatusException("400", "Bad Request"));
+            throw(HttpStatusException("400", "Bad Request"));
         std::size_t pathEnd = firstLine.find(' ', methodEnd + 1);
         if (pathEnd == std::string::npos)
-			throw (HttpStatusException("400", "Bad Request"));
+            throw(HttpStatusException("400", "Bad Request"));
         pathRequest = firstLine.substr(methodEnd + 1, pathEnd - (methodEnd + 1));
     }
 
@@ -355,10 +355,10 @@ static void handleBody(ClientContext *clientContext, std::string &pathRequest, S
     {
         long long locationClientMaxBodySize = serverConfig.getLocationConfigByPath(pathRequest).getClientMaxBodySize();
         if (clientContext->recvBuffer.size() - clientContext->bodyStartIndex > static_cast<std::size_t>(locationClientMaxBodySize))
-			throw (HttpStatusException("413", "Payload Too Large"));
+            throw(HttpStatusException("413", "Payload Too Large"));
     }
     else if (clientContext->recvBuffer.size() - clientContext->bodyStartIndex > static_cast<std::size_t>(serverConfig.getClientMaxBodySize()))
-		throw (HttpStatusException("413", "Payload Too Large"));
+        throw(HttpStatusException("413", "Payload Too Large"));
 }
 
 void GlobalServer::handleReading(ClientContext *clientContext)
@@ -375,46 +375,38 @@ void GlobalServer::handleReading(ClientContext *clientContext)
     char buf[RECV_BUFFER_SIZE];
     std::string pathRequest;
 
-    while (true)
+    r = recv(clientContext->fd, buf, RECV_BUFFER_SIZE, 0);
+    if (r > 0)
     {
-        r = recv(clientContext->fd, buf, RECV_BUFFER_SIZE, 0);
-        if (r > 0)
-        {
-            for (ssize_t i = 0; i < r; i++)
-                clientContext->recvBuffer.push_back(buf[i]);
+        for (ssize_t i = 0; i < r; i++)
+            clientContext->recvBuffer.push_back(buf[i]);
 
-			try
-			{
-    			if (clientContext->state == READING_HEADERS)
-        			handleHeaders(clientContext);
-				else if (clientContext->state == READING_BODY)
-					handleBody(clientContext, pathRequest, this->_serversConfig.at(clientContext->serverFd));
-				else
-					throw (HttpStatusException("400", "Bad Request"));
-			}
-			catch (const HttpStatusException &e)
-			{
-				setClientErrorResponse(clientContext, e.getStatus(), e.getMessage());
-				try
-				{
-	       			enableEPOLLOUT(this->_epfd, clientContext);
-				}
-				catch (const std::exception &)
-				{
-					this->handleCloseConnexion(clientContext);
-				}
-				return ;
-			}
+        try
+        {
+            if (clientContext->state == READING_HEADERS)
+                handleHeaders(clientContext);
+            else if (clientContext->state == READING_BODY)
+                handleBody(clientContext, pathRequest, this->_serversConfig.at(clientContext->serverFd));
+            else
+                throw(HttpStatusException("400", "Bad Request"));
         }
-        // else if (r == 0)
-        // {
-        //     // TODO ?
-        // }
-        else if (r == -1 && errno == EAGAIN)
-            break;
-        else
-            throw std::runtime_error(RED "error ? r=" + toString(r) + " errno = " + toString(errno) + DEFAULT);
+        catch (const HttpStatusException &e)
+        {
+            setClientErrorResponse(clientContext, e.getStatus(), e.getMessage());
+            try
+            {
+                enableEPOLLOUT(this->_epfd, clientContext);
+            }
+            catch (const std::exception &)
+            {
+                this->handleCloseConnexion(clientContext);
+            }
+            return;
+        }
     }
+    else
+        throw std::runtime_error(RED "error ? r=" + toString(r) + " errno = " + toString(errno) + DEFAULT);
+
     std::cout << "\"" << clientContext->recvBuffer << "\"" << std::endl; // TODO: for debug (to delete)
 
     clientContext->lastActive = time(NULL);
@@ -431,8 +423,8 @@ void GlobalServer::handleReading(ClientContext *clientContext)
         }
         catch (const CgiRequiredException &e)
         {
-            CgiRequestInfo const&	cgiInfo = e.getCgiInfo();
-            CgiContext				*cgiCtx = executeCgi(cgiInfo, clientContext, this->_epfd);
+            CgiRequestInfo const &cgiInfo = e.getCgiInfo();
+            CgiContext *cgiCtx = executeCgi(cgiInfo, clientContext, this->_epfd);
 
             if (!cgiCtx)
             {
@@ -539,18 +531,18 @@ void GlobalServer::closeOldClientConnexions()
     }
 }
 
-void	GlobalServer::cleanupCgi(CgiContext *cgiContext)
+void GlobalServer::cleanupCgi(CgiContext *cgiContext)
 
 {
-	if (!this->_cgiContexts.count(cgiContext->fd))
-    	return ;
-	if (epoll_ctl(this->_epfd, EPOLL_CTL_DEL, cgiContext->fd, NULL) ^ 0)
-		std::cerr << RED "epoll_ctl() error during CGI cleanup" DEFAULT << std::endl;
-	close(cgiContext->fd);
-	kill(cgiContext->pid, SIGKILL);
-	waitpid(cgiContext->pid, NULL, 0);
-	this->_cgiContexts.erase(cgiContext->fd);
-	delete (cgiContext);
+    if (!this->_cgiContexts.count(cgiContext->fd))
+        return;
+    if (epoll_ctl(this->_epfd, EPOLL_CTL_DEL, cgiContext->fd, NULL) ^ 0)
+        std::cerr << RED "epoll_ctl() error during CGI cleanup" DEFAULT << std::endl;
+    close(cgiContext->fd);
+    kill(cgiContext->pid, SIGKILL);
+    waitpid(cgiContext->pid, NULL, 0);
+    this->_cgiContexts.erase(cgiContext->fd);
+    delete (cgiContext);
 }
 
 void GlobalServer::handleCgiEvent(CgiContext *cgiContext)
@@ -565,53 +557,53 @@ void GlobalServer::handleCgiEvent(CgiContext *cgiContext)
     }
     else if (!r)
     {
-		std::cout << GREEN + getTimeOfDay() + " [ok] : CGI finished normally for fd " << cgiContext->fd << DEFAULT << std::endl;
-		
-		std::string response;
-		response += "HTTP/1.1 200 OK\r\n";
-		response += "Content-Type: text/plain\r\n";
-		response += "Content-Length: " + toString(cgiContext->output.size()) + "\r\n";
-		response += "Connection: close\r\n";
-		response += "\r\n";
-		response += cgiContext->output;
-		
-		ClientContext *client = cgiContext->client;
-		client->sendBuffer = response;
-		client->sendBufferIndex = 0;
-		client->state = READY_TO_SEND;
-		enableEPOLLOUT(this->_epfd, client);
-		cleanupCgi(cgiContext);
-	}
-	else if (errno == EAGAIN || errno == EWOULDBLOCK)
-		return ;
-    else
-	{
-		std::cerr << RED + getTimeOfDay() + " [error] : Error reading from CGI fd " << cgiContext->fd << DEFAULT << std::endl;
+        std::cout << GREEN + getTimeOfDay() + " [ok] : CGI finished normally for fd " << cgiContext->fd << DEFAULT << std::endl;
 
-		ClientContext *client = cgiContext->client;
-		client->sendBuffer = buildSimpleErrorResponse("502", "Bad Gateway");
-		client->sendBufferIndex = 0;
-		client->state = READY_TO_SEND;
-		enableEPOLLOUT(this->_epfd, client);
-		cleanupCgi(cgiContext);
-	}
+        std::string response;
+        response += "HTTP/1.1 200 OK\r\n";
+        response += "Content-Type: text/plain\r\n";
+        response += "Content-Length: " + toString(cgiContext->output.size()) + "\r\n";
+        response += "Connection: close\r\n";
+        response += "\r\n";
+        response += cgiContext->output;
+
+        ClientContext *client = cgiContext->client;
+        client->sendBuffer = response;
+        client->sendBufferIndex = 0;
+        client->state = READY_TO_SEND;
+        enableEPOLLOUT(this->_epfd, client);
+        cleanupCgi(cgiContext);
+    }
+    else if (errno == EAGAIN || errno == EWOULDBLOCK)
+        return;
+    else
+    {
+        std::cerr << RED + getTimeOfDay() + " [error] : Error reading from CGI fd " << cgiContext->fd << DEFAULT << std::endl;
+
+        ClientContext *client = cgiContext->client;
+        client->sendBuffer = buildSimpleErrorResponse("502", "Bad Gateway");
+        client->sendBufferIndex = 0;
+        client->state = READY_TO_SEND;
+        enableEPOLLOUT(this->_epfd, client);
+        cleanupCgi(cgiContext);
+    }
 }
 
 void GlobalServer::closeTimedOutCgi()
 
 {
-	std::vector<int>	cgiContextsToClose;
+    std::vector<int> cgiContextsToClose;
 
-	for (std::map<int, CgiContext *>::iterator it = this->_cgiContexts.begin(); it != this->_cgiContexts.end(); it++)
+    for (std::map<int, CgiContext *>::iterator it = this->_cgiContexts.begin(); it != this->_cgiContexts.end(); it++)
     {
-		if ((time(NULL) - it->second->startTime) > CGI_TIMEOUT)
-			cgiContextsToClose.push_back(it->first);
+        if ((time(NULL) - it->second->startTime) > CGI_TIMEOUT)
+            cgiContextsToClose.push_back(it->first);
     }
     for (unsigned long i = 0; i < cgiContextsToClose.size(); i++)
     {
-		std::cout << MAGENTA + getTimeOfDay() + " [debug] : CGI timeout for fd " << cgiContextsToClose.at(i) << DEFAULT << std::endl;
-		
-		CgiContext *cgiContext = this->_cgiContexts.at(cgiContextsToClose.at(i));
+        std::cout << MAGENTA + getTimeOfDay() + " [debug] : CGI timeout for fd " << cgiContextsToClose.at(i) << DEFAULT << std::endl;
+
+        CgiContext *cgiContext = this->_cgiContexts.at(cgiContextsToClose.at(i));
 
         ClientContext *client = cgiContext->client;
         if (!client || this->_clientContexts.count(client->fd) == 0)
@@ -619,11 +611,11 @@ void GlobalServer::closeTimedOutCgi()
             cleanupCgi(cgiContext);
             continue;
         }
-		client->sendBuffer = buildSimpleErrorResponse("504", "Gateway Timeout");
-		client->sendBufferIndex = 0;
-		client->state = READY_TO_SEND;
-		enableEPOLLOUT(this->_epfd, client);
-		
-		cleanupCgi(cgiContext);
-	}
+        client->sendBuffer = buildSimpleErrorResponse("504", "Gateway Timeout");
+        client->sendBufferIndex = 0;
+        client->state = READY_TO_SEND;
+        enableEPOLLOUT(this->_epfd, client);
+
+        cleanupCgi(cgiContext);
+    }
 }
