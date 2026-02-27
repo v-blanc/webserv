@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   LocationConfig.hpp                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
+/*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/05 19:37:24 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/22 11:07:05 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/02/27 17:53:04 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,6 +45,7 @@ public:
     void setRoot(const std::string root) { this->_root = root; };
     void setUploadStore(const std::string uploadStore) { this->_uploadStore = uploadStore; };
     void setReturn(const std::string returnStr) { this->_return = returnStr; };
+    void setIndex(std::vector<std::string> index){ this->_index = index;};
     void pushBackIndex(const std::string index) { this->_index.push_back(index); };
     void pushBackErrorPage(const std::size_t errorCode, const std::string file) { this->_errorPage[errorCode] = file; };
     void pushBackLimitExcept(const std::string limitExcept) { this->_limitExcept.push_back(limitExcept); };
