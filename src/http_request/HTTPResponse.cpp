@@ -6,7 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 14:04:09 by yassinefahf       #+#    #+#             */
-/*   Updated: 2026/02/27 18:01:29 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/02/28 23:32:06 by yabokhar         ###   ########lyon.fr   */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 
-HTTPResponse::HTTPResponse(HTTPRequest &request, const std::string &status, ServerConfig &serverConfig, std::string message, SessionManager &sessionManager): _serverConfig(serverConfig), _sessionManager(sessionManager), _body(""), _contentLength(0), _response("")
+HTTPResponse::HTTPResponse(HTTPRequest &request, const std::string &status, ServerConfig &serverConfig, std::string message, SessionManager &sessionManager): _serverConfig(serverConfig), _sessionManager(sessionManager), _body(""), _contentLength(0), _response(""), _redirectCount(0)
 {
 	std::string existingId = request.getCookie("session_id");
 	if (!existingId.empty() && _sessionManager.sessionExists(existingId))
@@ -152,6 +152,8 @@ void	HTTPResponse::handlePostMethod(HTTPRequest &request)
 		fillLocationWithServerRules(myLocation);
 	if (!myLocation.getReturn().empty())
 	{
+		if (++this->_redirectCount > 10)
+			throw (HTTPRequest::StatusException("508", "Loop Detected"));
 		std::string	newPath = myLocation.getReturn();
 		request.setPath(newPath);
 		this->_status = "301";
@@ -332,6 +334,8 @@ void HTTPResponse::handleGetMethod(HTTPRequest &request)
 		fillLocationWithServerRules(myLocation);
 	if (!myLocation.getReturn().empty())
 	{
+		if (++this->_redirectCount > 10)
+			throw (HTTPRequest::StatusException("508", "Loop Detected"));
 		std::string	newPath = myLocation.getReturn();
 		request.setPath(newPath);
 		this->_status = "301";
@@ -389,6 +393,8 @@ void	HTTPResponse::handleDeleteMethod(HTTPRequest &request)
 	} 
 	if (!location.getReturn().empty())
 	{
+		if (++this->_redirectCount > 10)
+			throw (HTTPRequest::StatusException("508", "Loop Detected"));
 		std::string	newPath = location.getReturn();
 		request.setPath(newPath);
 		this->_status = "301";

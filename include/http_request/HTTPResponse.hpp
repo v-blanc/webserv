@@ -6,7 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 13:49:54 by yassinefahf       #+#    #+#             */
-/*   Updated: 2026/02/27 17:54:50 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/02/28 23:29:15 by yabokhar         ###   ########lyon.fr   */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,7 @@ class HTTPResponse
 		std::string	_message;
 		std::string	_newLocation;
 		std::string	_sessionId;
+		int			_redirectCount;
 
 	public:
 		HTTPResponse(HTTPRequest &request, const std::string &status, ServerConfig &serverConfig, std::string message, SessionManager &sessionManager);
@@ -45,6 +46,5 @@ class HTTPResponse
 		std::string	handleRequestPath(std::string requestPath, bool isFileName);
 		void handleRessource(HTTPRequest &request);
 		void fillLocationWithServerRules(LocationConfig &location);
-
 };
 #endif
