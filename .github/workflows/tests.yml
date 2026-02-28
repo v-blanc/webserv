@@ -674,7 +674,7 @@ jobs:
       - name: Stop webserv (for valgrind)
         if: always()
         run: |
-          kill $(pgrep -f 'valgrind.*webserv') 2>/dev/null || pkill webserv || true
+          kill -INT $(pgrep -f 'valgrind.*webserv') 2>/dev/null || kill -INT $(pgrep webserv) 2>/dev/null || true
           sleep 5
 
       - name: "Valgrind Report"
