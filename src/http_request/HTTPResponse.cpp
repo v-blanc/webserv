@@ -6,7 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 14:04:09 by yassinefahf       #+#    #+#             */
-/*   Updated: 2026/02/28 23:32:06 by yabokhar         ###   ########lyon.fr   */
+/*   Updated: 2026/03/01 00:07:47 by yabokhar         ###   ########lyon.fr   */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -208,7 +208,7 @@ bool	HTTPResponse::ismethodNotAllowed(std::vector<std::string> methods, std::str
 void HTTPResponse::handleIndexFile(const LocationConfig &myLocation, std::string &path)
 {
 	std::vector<std::string> indices = myLocation.getIndex();
-	int fd;
+	int fd = -1;
 	std::string rightPath;
 	for (std::vector<std::string>::iterator it = indices.begin(); it != indices.end(); ++it)
 	{
