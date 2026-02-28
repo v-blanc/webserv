@@ -33,8 +33,8 @@ jobs:
 
       - name: Start webserv
         run: |
-          valgrind --track-fds=yes --leak-check=full --show-leak-kinds=all ./webserv config/good/webserv.conf &
-          sleep 2
+          valgrind --track-fds=yes --leak-check=full --show-leak-kinds=all --log-file=valgrind.log ./webserv config/good/webserv.conf &
+          sleep 3
           curl -sf http://localhost:8080/ > /dev/null || (echo "Server failed to start"; exit 1)
 
       # ────────── GET TESTS ──────────
@@ -377,7 +377,338 @@ jobs:
             exit 1
           fi
 
+      # ────────── MALFORMED HTTP REQUESTS ──────────
+
+      - name: "Unknown HTTP method -> 400 or 405"
+        continue-on-error: true
+        run: |
+          STATUS=$(curl -s -o /dev/null -w '%{http_code}' -X FOOBAR http://localhost:8080/)
+          echo "Status: $STATUS"
+          if [ "$STATUS" = "400" ] || [ "$STATUS" = "405" ] || [ "$STATUS" = "501" ]; then
+            echo "PASS: unknown method rejected ($STATUS)"
+            echo "PASS: unknown method FOOBAR -> $STATUS" >> /tmp/test_results.txt
+          else
+            echo "FAIL: unknown method -> $STATUS"
+            echo "FAIL: unknown method FOOBAR -> $STATUS" >> /tmp/test_results.txt
+            exit 1
+          fi
+
+      - name: "HTTP/9.9 bad version -> 505 or 400"
+        continue-on-error: true
+        run: |
+          RESP=$(printf 'GET / HTTP/9.9\r\nHost: localhost\r\n\r\n' | nc -w 3 localhost 8080 2>/dev/null)
+          STATUS=$(echo "$RESP" | head -1 | awk '{print $2}')
+          echo "Response line: $(echo "$RESP" | head -1)"
+          if [ "$STATUS" = "505" ] || [ "$STATUS" = "400" ]; then
+            echo "PASS: bad HTTP version rejected ($STATUS)"
+            echo "PASS: HTTP/9.9 -> $STATUS" >> /tmp/test_results.txt
+          else
+            echo "FAIL: HTTP/9.9 -> $STATUS"
+            echo "FAIL: HTTP/9.9 -> $STATUS" >> /tmp/test_results.txt
+            exit 1
+          fi
+
+      - name: "Content-Length: abc -> 400"
+        continue-on-error: true
+        run: |
+          RESP=$(printf 'POST / HTTP/1.1\r\nHost: localhost\r\nContent-Length: abc\r\n\r\nhello' | nc -w 3 localhost 8080 2>/dev/null)
+          STATUS=$(echo "$RESP" | head -1 | awk '{print $2}')
+          echo "Response: $(echo "$RESP" | head -1)"
+          if [ "$STATUS" = "400" ]; then
+            echo "PASS: non-numeric Content-Length rejected"
+            echo "PASS: Content-Length: abc -> 400" >> /tmp/test_results.txt
+          else
+            echo "FAIL: Content-Length: abc -> $STATUS"
+            echo "FAIL: Content-Length: abc -> $STATUS" >> /tmp/test_results.txt
+            exit 1
+          fi
+
+      - name: "Content-Length: -42 -> 400"
+        continue-on-error: true
+        run: |
+          RESP=$(printf 'POST / HTTP/1.1\r\nHost: localhost\r\nContent-Length: -42\r\n\r\nhello' | nc -w 3 localhost 8080 2>/dev/null)
+          STATUS=$(echo "$RESP" | head -1 | awk '{print $2}')
+          echo "Response: $(echo "$RESP" | head -1)"
+          if [ "$STATUS" = "400" ]; then
+            echo "PASS: negative Content-Length rejected"
+            echo "PASS: Content-Length: -42 -> 400" >> /tmp/test_results.txt
+          else
+            echo "FAIL: Content-Length: -42 -> $STATUS"
+            echo "FAIL: Content-Length: -42 -> $STATUS" >> /tmp/test_results.txt
+            exit 1
+          fi
+
+      - name: "Incomplete request (no CRLFCRLF) -> no crash"
+        continue-on-error: true
+        run: |
+          printf 'GET / HTTP/1.1\r\nHost: localhost' | nc -w 3 localhost 8080 2>/dev/null || true
+          sleep 1
+          STATUS=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/)
+          if [ "$STATUS" = "200" ]; then
+            echo "PASS: server survived incomplete request"
+            echo "PASS: incomplete request (no CRLFCRLF) survived" >> /tmp/test_results.txt
+          else
+            echo "FAIL: server died after incomplete request ($STATUS)"
+            echo "FAIL: incomplete request -> server down ($STATUS)" >> /tmp/test_results.txt
+            exit 1
+          fi
+
+      - name: "Empty request -> no crash"
+        continue-on-error: true
+        run: |
+          printf '' | nc -w 2 localhost 8080 2>/dev/null || true
+          sleep 1
+          STATUS=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/)
+          if [ "$STATUS" = "200" ]; then
+            echo "PASS: server survived empty request"
+            echo "PASS: empty request survived" >> /tmp/test_results.txt
+          else
+            echo "FAIL: server died after empty request ($STATUS)"
+            echo "FAIL: empty request -> server down ($STATUS)" >> /tmp/test_results.txt
+            exit 1
+          fi
+
+      - name: "Request with only CRLF -> no crash"
+        continue-on-error: true
+        run: |
+          printf '\r\n\r\n' | nc -w 2 localhost 8080 2>/dev/null || true
+          sleep 1
+          STATUS=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/)
+          if [ "$STATUS" = "200" ]; then
+            echo "PASS: server survived bare CRLF"
+            echo "PASS: bare CRLF survived" >> /tmp/test_results.txt
+          else
+            echo "FAIL: server died after bare CRLF ($STATUS)"
+            echo "FAIL: bare CRLF -> server down ($STATUS)" >> /tmp/test_results.txt
+            exit 1
+          fi
+
+      - name: "Path traversal /../../../etc/passwd -> 400 or 403"
+        continue-on-error: true
+        run: |
+          RESP=$(printf 'GET /../../../etc/passwd HTTP/1.1\r\nHost: localhost\r\n\r\n' | nc -w 3 localhost 8080 2>/dev/null)
+          STATUS=$(echo "$RESP" | head -1 | awk '{print $2}')
+          BODY=$(echo "$RESP" | tail -1)
+          echo "Status: $STATUS"
+          if [ "$STATUS" = "400" ] || [ "$STATUS" = "403" ] || [ "$STATUS" = "404" ]; then
+            echo "PASS: path traversal blocked ($STATUS)"
+            echo "PASS: path traversal -> $STATUS" >> /tmp/test_results.txt
+          else
+            echo "FAIL: path traversal -> $STATUS"
+            echo "FAIL: path traversal -> $STATUS" >> /tmp/test_results.txt
+            exit 1
+          fi
+          if echo "$BODY" | grep -q 'root:'; then
+            echo "CRITICAL FAIL: /etc/passwd content leaked!"
+            echo "FAIL: path traversal LEAKED /etc/passwd" >> /tmp/test_results.txt
+            exit 1
+          fi
+
+      - name: "Giant header (8KB+) -> 431 or 400"
+        continue-on-error: true
+        run: |
+          BIGHEADER=$(python3 -c "print('X-Spam: ' + 'A' * 16000)")
+          RESP=$(printf "GET / HTTP/1.1\r\nHost: localhost\r\n${BIGHEADER}\r\n\r\n" | nc -w 3 localhost 8080 2>/dev/null)
+          STATUS=$(echo "$RESP" | head -1 | awk '{print $2}')
+          echo "Status: $STATUS"
+          if [ "$STATUS" = "431" ] || [ "$STATUS" = "400" ] || [ "$STATUS" = "413" ]; then
+            echo "PASS: giant header rejected ($STATUS)"
+            echo "PASS: giant header -> $STATUS" >> /tmp/test_results.txt
+          else
+            echo "WARN: giant header -> $STATUS"
+            echo "WARN: giant header -> $STATUS" >> /tmp/test_results.txt
+          fi
+          sleep 1
+          ALIVE=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/)
+          if [ "$ALIVE" != "200" ]; then
+            echo "FAIL: server crashed after giant header"
+            echo "FAIL: server crashed after giant header" >> /tmp/test_results.txt
+            exit 1
+          fi
+
+      - name: "Request with no Host header -> 400"
+        continue-on-error: true
+        run: |
+          RESP=$(printf 'GET / HTTP/1.1\r\n\r\n' | nc -w 3 localhost 8080 2>/dev/null)
+          STATUS=$(echo "$RESP" | head -1 | awk '{print $2}')
+          echo "Status: $STATUS"
+          if [ "$STATUS" = "400" ]; then
+            echo "PASS: missing Host rejected"
+            echo "PASS: no Host header -> 400" >> /tmp/test_results.txt
+          else
+            echo "WARN: no Host header -> $STATUS (expected 400)"
+            echo "WARN: no Host header -> $STATUS" >> /tmp/test_results.txt
+          fi
+
+      - name: "Connection closed mid-request -> no crash"
+        continue-on-error: true
+        run: |
+          (printf 'POST / HTTP/1.1\r\nHost: localhost\r\nContent-Length: 1000\r\n\r\npartial'; sleep 0.1) | nc -w 1 localhost 8080 2>/dev/null || true
+          sleep 1
+          STATUS=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/)
+          if [ "$STATUS" = "200" ]; then
+            echo "PASS: server survived premature close"
+            echo "PASS: premature close survived" >> /tmp/test_results.txt
+          else
+            echo "FAIL: server died after premature close ($STATUS)"
+            echo "FAIL: premature close -> server down" >> /tmp/test_results.txt
+            exit 1
+          fi
+
+      - name: "100 rapid connect/disconnect -> no crash"
+        continue-on-error: true
+        run: |
+          for i in $(seq 1 100); do
+            (echo "" | nc -w 0 localhost 8080 2>/dev/null) &
+          done
+          wait
+          sleep 2
+          STATUS=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/)
+          if [ "$STATUS" = "200" ]; then
+            echo "PASS: server survived 100 rapid connect/disconnect"
+            echo "PASS: 100 rapid connect/disconnect survived" >> /tmp/test_results.txt
+          else
+            echo "FAIL: server down after rapid connect/disconnect ($STATUS)"
+            echo "FAIL: 100 rapid connect/disconnect -> server down" >> /tmp/test_results.txt
+            exit 1
+          fi
+
+      # ────────── CONFIG PARSING TESTS ──────────
+
+      - name: "Bad config - unknown directive"
+        continue-on-error: true
+        run: |
+          echo 'foobar baz;' > /tmp/bad1.conf
+          if ./webserv /tmp/bad1.conf 2>/dev/null; then
+            echo "FAIL: server started with unknown directive"
+            echo "FAIL: bad config (unknown directive) accepted" >> /tmp/test_results.txt
+            pkill -f '/tmp/bad1.conf' 2>/dev/null || true
+            exit 1
+          else
+            echo "PASS: unknown directive rejected"
+            echo "PASS: bad config (unknown directive) rejected" >> /tmp/test_results.txt
+          fi
+
+      - name: "Bad config - missing closing brace"
+        continue-on-error: true
+        run: |
+          printf 'server {\n  listen 127.0.0.1:9999;\n' > /tmp/bad2.conf
+          if ./webserv /tmp/bad2.conf 2>/dev/null; then
+            echo "FAIL: server started with missing brace"
+            echo "FAIL: bad config (missing brace) accepted" >> /tmp/test_results.txt
+            pkill -f '/tmp/bad2.conf' 2>/dev/null || true
+            exit 1
+          else
+            echo "PASS: missing brace rejected"
+            echo "PASS: bad config (missing brace) rejected" >> /tmp/test_results.txt
+          fi
+
+      - name: "Bad config - invalid listen directive"
+        continue-on-error: true
+        run: |
+          printf 'server {\n  listen not_an_address;\n}\n' > /tmp/bad3.conf
+          if ./webserv /tmp/bad3.conf 2>/dev/null; then
+            echo "FAIL: server started with invalid listen"
+            echo "FAIL: bad config (invalid listen) accepted" >> /tmp/test_results.txt
+            pkill -f '/tmp/bad3.conf' 2>/dev/null || true
+            exit 1
+          else
+            echo "PASS: invalid listen rejected"
+            echo "PASS: bad config (invalid listen) rejected" >> /tmp/test_results.txt
+          fi
+
+      - name: "Bad config - negative client_max_body_size"
+        continue-on-error: true
+        run: |
+          printf 'server {\n  listen 127.0.0.1:9999;\n  client_max_body_size -1;\n}\n' > /tmp/bad4.conf
+          if ./webserv /tmp/bad4.conf 2>/dev/null; then
+            echo "FAIL: server started with negative body size"
+            echo "FAIL: bad config (negative body size) accepted" >> /tmp/test_results.txt
+            pkill -f '/tmp/bad4.conf' 2>/dev/null || true
+            exit 1
+          else
+            echo "PASS: negative body size rejected"
+            echo "PASS: bad config (negative body size) rejected" >> /tmp/test_results.txt
+          fi
+
+      - name: "Bad config - nonexistent file"
+        continue-on-error: true
+        run: |
+          if ./webserv /tmp/this_does_not_exist.conf 2>/dev/null; then
+            echo "FAIL: server started with nonexistent config"
+            echo "FAIL: bad config (nonexistent file) accepted" >> /tmp/test_results.txt
+            exit 1
+          else
+            echo "PASS: nonexistent config rejected"
+            echo "PASS: bad config (nonexistent file) rejected" >> /tmp/test_results.txt
+          fi
+
+      - name: "Bad config - empty file"
+        continue-on-error: true
+        run: |
+          touch /tmp/bad_empty.conf
+          if ./webserv /tmp/bad_empty.conf 2>/dev/null; then
+            echo "FAIL: server started with empty config"
+            echo "FAIL: bad config (empty) accepted" >> /tmp/test_results.txt
+            pkill -f '/tmp/bad_empty.conf' 2>/dev/null || true
+            exit 1
+          else
+            echo "PASS: empty config rejected"
+            echo "PASS: bad config (empty) rejected" >> /tmp/test_results.txt
+          fi
+
+      - name: "Bad config - duplicate server on same port"
+        continue-on-error: true
+        run: |
+          printf 'server {\n  listen 127.0.0.1:9999;\n}\nserver {\n  listen 127.0.0.1:9999;\n}\n' > /tmp/bad5.conf
+          if timeout 3 ./webserv /tmp/bad5.conf 2>/dev/null; then
+            echo "WARN: server started with duplicate port (may be allowed)"
+            echo "WARN: bad config (duplicate port) accepted" >> /tmp/test_results.txt
+            pkill -f '/tmp/bad5.conf' 2>/dev/null || true
+          else
+            echo "PASS: duplicate port rejected"
+            echo "PASS: bad config (duplicate port) rejected" >> /tmp/test_results.txt
+          fi
+
       # ────────── FINAL REPORT ──────────
+
+      - name: Stop webserv (for valgrind)
+        if: always()
+        run: |
+          kill $(pgrep -f 'valgrind.*webserv') 2>/dev/null || pkill webserv || true
+          sleep 5
+
+      - name: "Valgrind Report"
+        if: always()
+        run: |
+          echo ""
+          echo "╔══════════════════════════════════════╗"
+          echo "║       VALGRIND REPORT                ║"
+          echo "╠══════════════════════════════════════╣"
+          echo ""
+          if [ -f valgrind.log ]; then
+            cat valgrind.log
+            echo ""
+            DEFINITELY=$(grep 'definitely lost:' valgrind.log | tail -1 | grep -oP 'definitely lost: \K[0-9,]+' | tr -d ',')
+            INDIRECTLY=$(grep 'indirectly lost:' valgrind.log | tail -1 | grep -oP 'indirectly lost: \K[0-9,]+' | tr -d ',')
+            STILL_REACHABLE=$(grep 'still reachable:' valgrind.log | tail -1 | grep -oP 'still reachable: \K[0-9,]+' | tr -d ',')
+            OPEN_FDS=$(grep -c 'Open file descriptor' valgrind.log || echo 0)
+            echo "Definitely lost: ${DEFINITELY:-0} bytes"
+            echo "Indirectly lost: ${INDIRECTLY:-0} bytes"
+            echo "Still reachable: ${STILL_REACHABLE:-0} bytes"
+            echo "Open file descriptors at exit: ${OPEN_FDS}"
+            if [ "${DEFINITELY:-0}" != "0" ] && [ "${DEFINITELY:-0}" != "" ]; then
+              echo "FAIL: valgrind definitely lost ${DEFINITELY} bytes"
+              echo "FAIL: valgrind definitely lost ${DEFINITELY} bytes" >> /tmp/test_results.txt
+            else
+              echo "PASS: valgrind no definite leaks"
+              echo "PASS: valgrind no definite leaks" >> /tmp/test_results.txt
+            fi
+          else
+            echo "WARN: valgrind.log not found"
+            echo "WARN: valgrind.log not found" >> /tmp/test_results.txt
+          fi
+          echo "╚══════════════════════════════════════╝"
 
       - name: "Test Report"
         if: always()
@@ -397,7 +728,6 @@ jobs:
           cat /tmp/test_results.txt 2>/dev/null || echo "(no results file)"
           echo ""
           echo "╚══════════════════════════════════════╝"
-          cat valgrind.log
           if [ "$FAIL" -gt 0 ]; then
             echo ""
             echo "::error::$FAIL test(s) FAILED"
@@ -409,8 +739,7 @@ jobs:
 
       # ────────── CLEANUP ──────────
 
-      - name: Stop webserv
+      - name: Cleanup temp files
         if: always()
         run: |
-          pkill webserv || true
-          sleep 1
+          rm -f /tmp/bad*.conf /tmp/ab_*.txt /tmp/siege_*.txt /tmp/session_body
