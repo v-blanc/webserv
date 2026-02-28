@@ -6,7 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 14:04:09 by yassinefahf       #+#    #+#             */
-/*   Updated: 2026/02/19 18:10:01 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/02/28 23:32:06 by yabokhar         ###   ########lyon.fr   */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 
-HTTPResponse::HTTPResponse(HTTPRequest &request, const std::string &status, ServerConfig &serverConfig, std::string message, SessionManager &sessionManager): _serverConfig(serverConfig), _sessionManager(sessionManager), _body(""), _contentLength(0), _response("")
+HTTPResponse::HTTPResponse(HTTPRequest &request, const std::string &status, ServerConfig &serverConfig, std::string message, SessionManager &sessionManager): _serverConfig(serverConfig), _sessionManager(sessionManager), _body(""), _contentLength(0), _response(""), _redirectCount(0)
 {
 	std::string existingId = request.getCookie("session_id");
 	if (!existingId.empty() && _sessionManager.sessionExists(existingId))
@@ -93,7 +93,7 @@ HTTPResponse::~HTTPResponse(){}
 
 void	HTTPResponse::handleBadRequest(const std::string &status, const std::string &message)
 {
-	if (message == "Page not found")
+	if (message == "Page Not Found")
 	{
 		this->_body = getLocalFileContent("www/error/404.html");
 		this->_contentLength = this->_body.size();
@@ -118,13 +118,27 @@ std::string	HTTPResponse::handleRequestPath(std::string requestPath, bool isFile
 			return (requestPath.substr(pos, requestPath.size()));
 		else
 		{
+			int count = std::count(requestPath.begin(), requestPath.end(), '/');
 			std::size_t secondLast = requestPath.rfind('/', pos - 1);
-			// std::cout<<"ma location: "<<requestPath.substr(secondLast + 1, (pos - secondLast))<<std::endl;
-			return (requestPath.substr(secondLast + 1, (pos - secondLast)));
+			std::size_t pred = pos;
+			while (count > 2)
+			{
+				if (this->_serverConfig.isValidLocationPath(requestPath.substr(secondLast, (pred - secondLast))))
+					break;
+				else
+				{
+					pred = secondLast;
+					secondLast = requestPath.rfind('/', secondLast - 1);
+					count--;
+				}
+			}
+			return (requestPath.substr(secondLast, (pred - secondLast)));
+
 		}
 	}
 	return (requestPath);
 }
+
 
 void	HTTPResponse::handlePostMethod(HTTPRequest &request)
 {
@@ -135,7 +149,20 @@ void	HTTPResponse::handlePostMethod(HTTPRequest &request)
 	else if (this->_serverConfig.isValidLocationPath("/"))
 		myLocation = this->_serverConfig.getLocationConfigByPath("/");
 	else
-		throw HTTPRequest::StatusException("500", "Internal Server Error");
+		fillLocationWithServerRules(myLocation);
+	if (!myLocation.getReturn().empty())
+	{
+		if (++this->_redirectCount > 10)
+			throw (HTTPRequest::StatusException("508", "Loop Detected"));
+		std::string	newPath = myLocation.getReturn();
+		request.setPath(newPath);
+		this->_status = "301";
+		this->_message = "Moved Permanently";
+		this->_newLocation = newPath;
+		return (handlePostMethod(request));
+	}
+	if (this->ismethodNotAllowed(myLocation.getLimitExcept(), request.getMethod()))
+		throw HTTPRequest::StatusException("405", "Method Not Allowed");
 	std::string interpreter;
 	if (request.resolveCgiInterpreter(myLocation.getCgiHandler(), interpreter))
 	{
@@ -158,12 +185,16 @@ void	HTTPResponse::handlePostMethod(HTTPRequest &request)
 			fileName = "www/upload_store/" + request.getFileName();
 		std::ofstream file(fileName.c_str());
 		if (!file.is_open())
-			throw HTTPRequest::StatusException("500", "Internal Server Error");
+			throw HTTPRequest::StatusException("404", "Page Not Found");
 		file << request.getBody();
 		file.close();
 		this->_status = "201";
 		this->_message = "Created";
+		this->_body = getLocalFileContent("www/upload.html");
+		std::cout<<"ana hna"<<std::endl;
 	}
+	if (this->_body.empty())
+		this->_body = getLocalFileContent("www/submit.html");
 }
 
 bool	HTTPResponse::ismethodNotAllowed(std::vector<std::string> methods, std::string myMethod)
@@ -174,7 +205,7 @@ bool	HTTPResponse::ismethodNotAllowed(std::vector<std::string> methods, std::str
 	return (false);
 }
 
-void HTTPResponse::handleIndexFile(const LocationConfig &myLocation)
+void HTTPResponse::handleIndexFile(const LocationConfig &myLocation, std::string &path)
 {
 	std::vector<std::string> indices = myLocation.getIndex();
 	int fd;
@@ -184,7 +215,7 @@ void HTTPResponse::handleIndexFile(const LocationConfig &myLocation)
 		std::string	rightIndex = *it;
 		rightPath = myLocation.getRoot();
 		rightPath = rightPath.substr(1, rightPath.size());
-		rightPath += '/' + rightIndex;
+		rightPath += path + rightIndex;
 		fd = open(rightPath.c_str(), O_RDONLY);
 		if (fd != -1)
 			break;
@@ -192,7 +223,22 @@ void HTTPResponse::handleIndexFile(const LocationConfig &myLocation)
 	if (fd == -1)
 	{
 		if (myLocation.getAutoindex())
-			this->_response = generateAutoindexHTML("./www");
+		{
+			try
+			{
+				if (path == "/")
+					this->_body = generateAutoindexHTML("./www");
+				else
+				{
+					path.erase(path.size() - 1);
+					this->_body = generateAutoindexHTML("./www/" + path);
+				}
+			}
+			catch (std::runtime_error &e)
+			{
+				throw (HTTPRequest::StatusException("404", "Page Not Found"));
+			}
+		}
 		else
 			throw (HTTPRequest::StatusException("404", "Page Not Found"));
 	}
@@ -201,6 +247,14 @@ void HTTPResponse::handleIndexFile(const LocationConfig &myLocation)
 		close(fd);
 		this->_body = getLocalFileContent(rightPath.c_str());
 	}
+}
+
+void HTTPResponse::fillLocationWithServerRules(LocationConfig &location)
+{
+	location.setAutoindex(this->_serverConfig.getAutoindex());
+	location.setClientMaxBodySize(this->_serverConfig.getClientMaxBodySize());
+	location.setRoot(this->_serverConfig.getRoot());
+	location.setIndex(this->_serverConfig.getIndex());
 }
 
 void HTTPResponse::handleRessource(HTTPRequest &request)
@@ -268,51 +322,47 @@ void HTTPResponse::handleGetMethod(HTTPRequest &request)
 		this->_message = "OK";
 		return ;
 	}
-
 	std::string path =  handleRequestPath(request.getPathWithoutQuery(), false);
+	LocationConfig	myLocation;
 	if (this->_serverConfig.isValidLocationPath(path))
 	{
-		LocationConfig	myLocation = this->_serverConfig.getLocationConfigByPath(path);
-		if (!myLocation.getReturn().empty())
-		{
-			std::string	newPath = myLocation.getReturn();
-			request.setPath(newPath);
-			this->_status = "301";
-			this->_message = "Moved Permanently";
-			this->_newLocation = newPath;
-			return (handleGetMethod(request));
-		}
-		if (this->ismethodNotAllowed(myLocation.getLimitExcept(), request.getMethod()))
-			throw HTTPRequest::StatusException("405", "Method Not Allowed");
-
-		std::string interpreter;
-		if (request.resolveCgiInterpreter(myLocation.getCgiHandler(), interpreter))
-		{
-			CgiRequestInfo	cgiInfo;
-
-			cgiInfo.interpreter = interpreter;
-			cgiInfo.method = request.getMethod();
-			cgiInfo.queryString = request.getQueryString();
-			cgiInfo.pathWithoutQuery = request.getPathWithoutQuery();
-			cgiInfo.contentLength = request.getContentLength();
-			cgiInfo.contentType = request.getContentType();
-			cgiInfo.body = request.getBody();
-			throw (CgiRequiredException(cgiInfo));
-		}
-
-		std::string requestPath = request.getPathWithoutQuery();
-		if (path == "/")
-			handleIndexFile(myLocation);
-		else if (request.getPathWithoutQuery().at(request.getPathWithoutQuery().size() - 1) == '/')
-		{
-			if (myLocation.getAutoindex())
-				this->_response = generateAutoindexHTML(request.getPathWithoutQuery());
-			else
-				throw HTTPRequest::StatusException("404", "Page not found");
-		}
-		else
-			handleRessource(request);
+		myLocation = this->_serverConfig.getLocationConfigByPath(path);
 	}
+	else if (this->_serverConfig.isValidLocationPath("/"))
+		myLocation = this->_serverConfig.getLocationConfigByPath("/");
+	else
+		fillLocationWithServerRules(myLocation);
+	if (!myLocation.getReturn().empty())
+	{
+		if (++this->_redirectCount > 10)
+			throw (HTTPRequest::StatusException("508", "Loop Detected"));
+		std::string	newPath = myLocation.getReturn();
+		request.setPath(newPath);
+		this->_status = "301";
+		this->_message = "Moved Permanently";
+		this->_newLocation = newPath;
+		return (handleGetMethod(request));
+	}
+	if (this->ismethodNotAllowed(myLocation.getLimitExcept(), request.getMethod()))
+		throw HTTPRequest::StatusException("405", "Method Not Allowed");
+
+	std::string interpreter;
+	if (request.resolveCgiInterpreter(myLocation.getCgiHandler(), interpreter))
+	{
+		CgiRequestInfo	cgiInfo;
+
+		cgiInfo.interpreter = interpreter;
+		cgiInfo.method = request.getMethod();
+		cgiInfo.queryString = request.getQueryString();
+		cgiInfo.pathWithoutQuery = request.getPathWithoutQuery();
+		cgiInfo.contentLength = request.getContentLength();
+		cgiInfo.contentType = request.getContentType();
+		cgiInfo.body = request.getBody();
+		throw (CgiRequiredException(cgiInfo));
+	}
+	std::string requestPath = request.getPathWithoutQuery();
+	if (path == "/" || requestPath.at(requestPath.size() - 1) == '/')
+		handleIndexFile(myLocation, requestPath);
 	else
 		handleRessource(request);
 }
@@ -322,27 +372,29 @@ static void	delete_recursive(const char *filename);
 void	HTTPResponse::handleDeleteMethod(HTTPRequest &request)
 
 {
-	std::string const	path = handleRequestPath(request.getPathWithoutQuery(), false);
-	std::string const		filename = "www" + path;
+	std::string const		requestPath = request.getPathWithoutQuery();
+	std::string const		locationPath = handleRequestPath(requestPath, false);
+	std::string const		filename = "www" + requestPath;
 	const char*				filename_c_str = filename.c_str();
 	struct stat				st;
 	LocationConfig 			location;
 
 	try
 	{
-		location = this->_serverConfig.getLocationConfigByPath(path);
+		location = this->_serverConfig.getLocationConfigByPath(locationPath);
 	}
 	catch(const std::out_of_range& e)
 	{
 		location = this->_serverConfig.getLocationConfigByPath("/");
 	}
-	if (!this->_serverConfig.isValidLocationPath(path))
+	if (!this->_serverConfig.isValidLocationPath(locationPath))
 	{
 		location = this->_serverConfig.getLocationConfigByPath("/");
-		std::cout << "location path: " << location.getPath() << std::endl;
 	} 
 	if (!location.getReturn().empty())
 	{
+		if (++this->_redirectCount > 10)
+			throw (HTTPRequest::StatusException("508", "Loop Detected"));
 		std::string	newPath = location.getReturn();
 		request.setPath(newPath);
 		this->_status = "301";
