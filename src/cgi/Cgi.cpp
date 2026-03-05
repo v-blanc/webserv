@@ -173,7 +173,6 @@ CgiContext* executeCgi(
 		argv[1] = const_cast<char *>(scriptBase.c_str());
 		argv[2] = NULL;
 		execve(argv[0], argv, envp);
-		std::cout << "=================== here";
 		freeEnvp(envp);
 		_exit(1);
 	}
