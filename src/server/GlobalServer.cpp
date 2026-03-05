@@ -273,6 +273,7 @@ static void handleHeaders(ClientContext *clientContext)
     if (pos != std::string::npos)
     {
         clientContext->bodyStartIndex = pos + 4;
+        clientContext->currentUnchunkedIndex = clientContext->bodyStartIndex; 
 
         std::size_t posTransfer = clientContext->recvBuffer.find("Transfer-Encoding:");
         if (posTransfer != std::string::npos)
@@ -308,11 +309,42 @@ static void handleHeaders(ClientContext *clientContext)
     }
 }
 
+void    unchunkBody(ClientContext* clientContext)
+
+{
+    std::string     unchunked;
+    std::size_t     pos;
+    std::size_t     posBis;
+    std::string     body = clientContext->recvBuffer.substr(clientContext->currentUnchunkedIndex);
+
+    pos = 0;
+    while (pos < body.size())
+    {
+        std::size_t lineEnd = body.find("\r\n", pos);
+        if (lineEnd == std::string::npos)
+            throw (HttpStatusException("400", "Bad Request"));
+        std::string chunkSizeStr = body.substr(pos, lineEnd - pos);
+        std::size_t chunkSize = std::strtoul(chunkSizeStr.c_str(), NULL, 16);
+        pos = lineEnd + 2;
+        if (!chunkSize)
+            break ;
+        if (pos + chunkSize > body.size())
+            throw (HttpStatusException("400", "Bad Request"));
+        posBis = body.find("\r\n", pos + chunkSize);
+        if (posBis != pos + chunkSize)
+            throw (HttpStatusException("400", "Bad Request"));
+        unchunked.append(body, pos, chunkSize);
+        pos += chunkSize + 2;
+    }
+    unchunked = clientContext->recvBuffer.substr(0, clientContext->currentUnchunkedIndex) + unchunked;
+    clientContext->recvBuffer = unchunked;
+}
+
 static void handleBody(ClientContext *clientContext, std::string &pathRequest, ServerConfig &serverConfig)
 {
     if (clientContext->isChunkedRequest == true)
     {
-        // TODO
+        unchunkBody(clientContext);
     }
     else if (clientContext->expectedBodySize > 0)
     {
@@ -370,7 +402,7 @@ void GlobalServer::handleReading(ClientContext *clientContext)
         {
             if (clientContext->state == READING_HEADERS)
                 handleHeaders(clientContext);
-            else if (clientContext->state == READING_BODY)
+            if (clientContext->state == READING_BODY)
                 handleBody(clientContext, pathRequest, this->_serversConfig.at(clientContext->serverFd));
             else
                 throw(HttpStatusException("400", "Bad Request"));

@@ -6,7 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 14:04:09 by yassinefahf       #+#    #+#             */
-/*   Updated: 2026/03/01 00:07:47 by yabokhar         ###   ########lyon.fr   */
+/*   Updated: 2026/03/05 20:15:41 by yabokhar         ###   ########lyon.fr   */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -378,6 +378,8 @@ void	HTTPResponse::handleDeleteMethod(HTTPRequest &request)
 	const char*				filename_c_str = filename.c_str();
 	struct stat				st;
 	LocationConfig 			location;
+
+	std::cout << requestPath << '\n' << locationPath << std::endl;
 
 	try
 	{
