@@ -402,7 +402,7 @@ void GlobalServer::handleReading(ClientContext *clientContext)
         {
             if (clientContext->state == READING_HEADERS)
                 handleHeaders(clientContext);
-            if (clientContext->state == READING_BODY)
+            else if (clientContext->state == READING_BODY)
                 handleBody(clientContext, pathRequest, this->_serversConfig.at(clientContext->serverFd));
             else
                 throw(HttpStatusException("400", "Bad Request"));
