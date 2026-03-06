@@ -6,7 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 14:04:09 by yassinefahf       #+#    #+#             */
-/*   Updated: 2026/03/05 20:15:41 by yabokhar         ###   ########lyon.fr   */
+/*   Updated: 2026/03/06 19:00:57 by yassinefahf      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -262,7 +262,7 @@ void HTTPResponse::handleRessource(HTTPRequest &request)
 	std::string ressource =  handleRequestPath(request.getPathWithoutQuery(), true);
 	if (!ressource.empty() && ressource[0] == '/')
 		ressource.erase(0, 1);
-	ressource = "www/" + ressource;
+	ressource = "www" + request.getPathWithoutQuery();
 	std::ifstream file(ressource.c_str());
 	if (!file.is_open())
 		throw HTTPRequest::StatusException("404", "Page Not Found");
