@@ -35,7 +35,7 @@ jobs:
         run: |
           valgrind --track-fds=yes --leak-check=full --show-leak-kinds=all --log-file=valgrind.log ./webserv config/good/webserv.conf &
           sleep 3
-          curl -sf http://localhost:8080/ > /dev/null || (echo "Server failed to start"; exit 1)
+          curl -vvv http://localhost:8080/ > /dev/null || (echo "Server failed to start"; exit 1)
 
       # ────────── GET TESTS ──────────
 
