@@ -35,3 +35,22 @@ To run the server:
 
 
 ## Resources
+
+- [Beej's Guide to Network Programming](https://beej.us/guide/bgnet/)
+- [HTTP Status Codes — Wikipedia (FR)](https://fr.wikipedia.org/wiki/Liste_des_codes_HTTP)
+- [HTTP Status Codes — MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status)
+- [HTTP Semantics — RFC 9110](https://datatracker.ietf.org/doc/html/rfc9110)
+- [HTTP Messages — MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Messages)
+- [HTTP/1.1 — RFC 9112](https://datatracker.ietf.org/doc/html/rfc9112)
+- [Cookie Header — MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Cookie)
+- AI was used to generate HTML pages, server tests and to introduce us to Github Actions
+
+### AI Usage
+
+AI tools were used for:
+- Improving documentation wording
+- Debugging specific errors
+- Generating HTML pages, server tests (introduction to Github Actions)
+
+***All code was written, reviewed, and validated by team members.</br>
+AI was not used to generate complete features without understanding.***
