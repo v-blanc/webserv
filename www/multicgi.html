@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Multi-CGI — WebServ Tester</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .cgi-panel {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+    .cgi-panel-header {
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      padding: .75rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .cgi-panel-header .title {
+      font-family: var(--mono);
+      font-size: .8rem;
+      font-weight: 700;
+      color: var(--accent4);
+    }
+    .cgi-panel-header .file {
+      font-family: var(--mono);
+      font-size: .7rem;
+      color: var(--text-faint);
+    }
+    .cgi-panel-body {
+      padding: 1.25rem;
+      background: var(--surface);
+    }
+    .run-all-bar {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .progress-track {
+      flex: 1;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+      min-width: 120px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 2px;
+      transition: width .3s;
+      width: 0%;
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="index.html">◈ WEBSERV</a>
+  <a href="index.html">HOME</a>
+  <a href="get.html">GET</a>
+  <a href="post.html">POST</a>
+  <a href="delete.html">DELETE</a>
+  <a href="cookies.html">COOKIES</a>
+  <a href="cgi.html">CGI</a>
+  <a href="multicgi.html" class="active">MULTI-CGI</a>
+</nav>
+
+<div class="page-header">
+  <span class="tag">Common Gateway Interface</span>
+  <h1><span class="method-badge badge-cgi" style="font-size:1.5rem;padding:.3rem .8rem">CGI</span> Multiple Scripts</h1>
+  <p>Run all CGI scripts in sequence or parallel. Tests that your server can handle concurrent CGI processes, resource management and execution isolation.</p>
+</div>
+
+<main>
+
+  <!-- RUN ALL BAR -->
+  <div class="run-all-bar">
+    <div>
+      <div style="font-family:var(--mono);font-size:.78rem;color:var(--text);font-weight:700">Run All CGIs</div>
+      <div style="font-family:var(--mono);font-size:.68rem;color:var(--text-dim);margin-top:.2rem">Fires all 4 scripts sequentially and collects results</div>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="prog"></div></div>
+    <div style="font-family:var(--mono);font-size:.72rem;color:var(--text-dim)" id="prog-label">Ready</div>
+    <button class="btn btn-cgi" onclick="runAll()">▶ Run All</button>
+  </div>
+
+  <!-- ── CGI 1: HELLO ── -->
+  <div class="cgi-panel" id="panel-hello">
+    <div class="cgi-panel-header">
+      <span class="title">⚙ hello.py — Basic Output</span>
+      <span class="file">cgi-bin/hello.py</span>
+    </div>
+    <div class="cgi-panel-body">
+      <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:1rem">
+        Simplest possible CGI. Outputs <code style="color:var(--accent)">Content-Type</code>, a blank line, then HTML. 
+        Tests basic process forking and stdout capture.
+      </p>
+      <div class="form-group">
+        <label>Query String</label>
+        <input type="text" id="hello-qs" value="name=42student&lang=en" />
+      </div>
+      <div class="flex">
+        <button class="btn btn-cgi" onclick="runScript('hello')">▶ Run</button>
+        <button class="btn btn-info" onclick="clearPanel('hello')">Clear</button>
+      </div>
+      <div class="response-box" id="hello-resp" style="margin-top:.75rem">
+        <div class="response-header"><span>RESPONSE</span><span class="response-status" id="hello-status">—</span></div>
+        <div class="response-body" id="hello-body"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CGI 2: FORM ── -->
+  <div class="cgi-panel" id="panel-form">
+    <div class="cgi-panel-header">
+      <span class="title">⚙ form.py — POST Body Parser</span>
+      <span class="file">cgi-bin/form.py</span>
+    </div>
+    <div class="cgi-panel-body">
+      <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:1rem">
+        Reads POST body from <strong>stdin</strong> using <code style="color:var(--accent)">CONTENT_LENGTH</code>. 
+        Parses URL-encoded or JSON data and echoes fields back.
+      </p>
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Name</label>
+          <input type="text" id="form-name" value="42 Student" />
+        </div>
+        <div class="form-group">
+          <label>Project</label>
+          <input type="text" id="form-proj" value="webserv" />
+        </div>
+      </div>
+      <div class="flex">
+        <button class="btn btn-post" onclick="runScript('form')">▶ POST → stdin</button>
+        <button class="btn btn-info" onclick="clearPanel('form')">Clear</button>
+      </div>
+      <div class="response-box" id="form-resp" style="margin-top:.75rem">
+        <div class="response-header"><span>RESPONSE</span><span class="response-status" id="form-status">—</span></div>
+        <div class="response-body" id="form-body"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CGI 3: ENV ── -->
+  <div class="cgi-panel" id="panel-env">
+    <div class="cgi-panel-header">
+      <span class="title">⚙ env.py — Environment Dump</span>
+      <span class="file">cgi-bin/env.py</span>
+    </div>
+    <div class="cgi-panel-body">
+      <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:1rem">
+        Dumps all CGI environment variables. Validates that your server correctly injects 
+        <code style="color:var(--accent)">REQUEST_METHOD</code>, <code style="color:var(--accent)">SERVER_NAME</code>, 
+        <code style="color:var(--accent)">HTTP_*</code> headers, etc.
+      </p>
+      <div class="flex">
+        <button class="btn btn-cgi" onclick="runScript('env')">▶ Dump ENV</button>
+        <button class="btn btn-info" onclick="clearPanel('env')">Clear</button>
+      </div>
+      <div class="response-box" id="env-resp" style="margin-top:.75rem">
+        <div class="response-header"><span>RESPONSE</span><span class="response-status" id="env-status">—</span></div>
+        <div class="response-body" id="env-body"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CGI 4: COOKIE ── -->
+  <div class="cgi-panel" id="panel-cookie">
+    <div class="cgi-panel-header">
+      <span class="title">⚙ cookie.py — Cookie Manager</span>
+      <span class="file">cgi-bin/cookie.py</span>
+    </div>
+    <div class="cgi-panel-body">
+      <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:1rem">
+        A CGI that reads <code style="color:var(--accent)">HTTP_COOKIE</code> from the environment and outputs 
+        <code style="color:var(--accent)">Set-Cookie</code> headers. Tests cookie round-trip through the server.
+      </p>
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Action</label>
+          <select id="cookie-action">
+            <option>set</option>
+            <option>read</option>
+            <option>delete</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Cookie Name</label>
+          <input type="text" id="cookie-name" value="multi_cgi_test" />
+        </div>
+      </div>
+      <div class="flex">
+        <button class="btn btn-cgi" onclick="runScript('cookie')">▶ Run Cookie CGI</button>
+        <button class="btn btn-info" onclick="clearPanel('cookie')">Clear</button>
+      </div>
+      <div class="response-box" id="cookie-resp" style="margin-top:.75rem">
+        <div class="response-header"><span>RESPONSE</span><span class="response-status" id="cookie-status">—</span></div>
+        <div class="response-body" id="cookie-body"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CGI 5: COUNTER ── -->
+  <div class="cgi-panel" id="panel-counter">
+    <div class="cgi-panel-header">
+      <span class="title">⚙ counter.py — Request Counter</span>
+      <span class="file">cgi-bin/counter.py</span>
+    </div>
+    <div class="cgi-panel-body">
+      <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:1rem">
+        Uses a cookie to count how many times you've run the CGI. 
+        Tests stateful CGI using cookies, and <code style="color:var(--accent)">Set-Cookie</code> + <code style="color:var(--accent)">HTTP_COOKIE</code> round-trip.
+      </p>
+      <div class="flex">
+        <button class="btn btn-cgi" onclick="runScript('counter')">▶ Increment Counter</button>
+        <button class="btn btn-del" onclick="resetCounter()">↺ Reset</button>
+        <button class="btn btn-info" onclick="clearPanel('counter')">Clear</button>
+      </div>
+      <div class="response-box" id="counter-resp" style="margin-top:.75rem">
+        <div class="response-header"><span>RESPONSE</span><span class="response-status" id="counter-status">—</span></div>
+        <div class="response-body" id="counter-body"></div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer>WebServ Test Suite · Multi-CGI Module</footer>
+
+<script>
+function show(id, statusId, bodyId, status, body, ok) {
+  document.getElementById(id).classList.add('visible');
+  const s = document.getElementById(statusId);
+  s.textContent = status;
+  s.className = 'response-status ' + (ok ? 'status-ok' : 'status-err');
+  document.getElementById(bodyId).textContent = body;
+}
+
+function clearPanel(name) {
+  document.getElementById(name+'-resp').classList.remove('visible');
+}
+
+async function runScript(name) {
+  try {
+    let url, opts;
+
+    if (name === 'hello') {
+      const qs = document.getElementById('hello-qs').value;
+      url  = '/cgi-bin/hello.py' + (qs ? '?' + qs : '');
+      opts = { method: 'GET', cache: 'no-store' };
+
+    } else if (name === 'form') {
+      const body = new URLSearchParams({
+        name:    document.getElementById('form-name').value,
+        project: document.getElementById('form-proj').value,
+      });
+      url  = '/cgi-bin/form.py';
+      opts = { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body.toString() };
+
+    } else if (name === 'env') {
+      url  = '/cgi-bin/env.py?source=multi-cgi-page';
+      opts = { method: 'GET', cache: 'no-store', credentials: 'include' };
+
+    } else if (name === 'cookie') {
+      const action = document.getElementById('cookie-action').value;
+      const cname  = document.getElementById('cookie-name').value;
+      url  = `/cgi-bin/cookie.py?action=${action}&name=${encodeURIComponent(cname)}&value=multicgi`;
+      opts = { method: 'GET', credentials: 'include' };
+
+    } else if (name === 'counter') {
+      url  = '/cgi-bin/counter.py';
+      opts = { method: 'GET', credentials: 'include' };
+    }
+
+    const r = await fetch(url, opts);
+    const text = await r.text();
+    show(name+'-resp', name+'-status', name+'-body',
+      `${r.status} ${r.statusText}`, text.slice(0, 3000), r.ok);
+
+  } catch(e) {
+    show(name+'-resp', name+'-status', name+'-body', 'ERROR', e.message, false);
+  }
+}
+
+function resetCounter() {
+  document.cookie = 'cgi_counter=0; Max-Age=3600; Path=/';
+  clearPanel('counter');
+}
+
+async function runAll() {
+  const scripts = ['hello','form','env','cookie','counter'];
+  const prog  = document.getElementById('prog');
+  const label = document.getElementById('prog-label');
+
+  for (let i = 0; i < scripts.length; i++) {
+    const name = scripts[i];
+    label.textContent = `Running ${name}.py… (${i+1}/${scripts.length})`;
+    prog.style.width = ((i / scripts.length) * 100) + '%';
+    await runScript(name);
+    await new Promise(r => setTimeout(r, 200));
+  }
+  prog.style.width = '100%';
+  label.textContent = `Done — ${scripts.length}/${scripts.length} ✓`;
+}
+</script>
+</body>
+</html>

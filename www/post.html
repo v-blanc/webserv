@@ -1,98 +1,277 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>POST - Webserv 42</title>
-    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <style>
-        /* style cohérent */
-        body { font-family: Arial, sans-serif; background:#f4f4f4; color:#222; margin:0; text-align:center; }
-        header { background:#282c34; color:#fff; padding:16px 0 8px; }
-        header img { max-width:100%; height:auto; display:block; margin:0 auto; }
-        main { max-width:900px; margin: 24px auto; padding: 16px; }
-        .card { background:white; border-radius:8px; padding:18px; margin-bottom:18px; box-shadow:0 2px 6px rgba(0,0,0,0.06); text-align:left; }
-        h1,h2 { text-align:center; }
-        label { display:block; margin:8px 0; }
-        input[type="text"], input[type="email"], textarea { width:100%; box-sizing:border-box; padding:8px; border:1px solid #ddd; border-radius:4px; }
-        input[type="file"] { margin-top:8px; }
-        button, a.button {
-            display:inline-block; background:#61dafb; color:#000; padding:10px 16px; border-radius:8px; text-decoration:none; font-weight:bold; border:none; cursor:pointer;
-        }
-        pre { background:#f0f0f0; padding:8px; border-radius:6px; overflow:auto; }
-        .result { margin-top:12px; padding:10px; background:#fafafa; border:1px solid #eee; border-radius:6px; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>POST — WebServ Tester</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <header>
-        <!-- <img src="banner.png" alt="Webserv 42"> -->
-        <h1>POST — Démo</h1>
-    </header>
 
-    <main>
-        <div class="card">
-            <h2>Formulaire simple (application/x-www-form-urlencoded)</h2>
-            <p>Envoyer ce formulaire provoquera une requête <strong>POST</strong> vers <code>/submit</code> contenant les champs encodés.</p>
+<nav>
+  <a class="nav-logo" href="index.html">◈ WEBSERV</a>
+  <a href="index.html">HOME</a>
+  <a href="get.html">GET</a>
+  <a href="post.html" class="active">POST</a>
+  <a href="delete.html">DELETE</a>
+  <a href="cookies.html">COOKIES</a>
+  <a href="cgi.html">CGI</a>
+  <a href="multicgi.html">MULTI-CGI</a>
+</nav>
 
-            <form action="/submit" method="POST" id="simpleForm">
-                <label>Nom : <input type="text" name="name" required></label>
-                <label>Email : <input type="email" name="email" required></label>
-                <label>Message : <textarea name="message" rows="4"></textarea></label>
-                <p style="text-align:center;">
-                    <button type="submit">Envoyer (POST)</button>
-                </p>
-            </form>
+<div class="page-header">
+  <span class="tag">HTTP Method</span>
+  <h1><span class="method-badge badge-post" style="font-size:1.5rem;padding:.3rem .8rem">POST</span> Requests</h1>
+  <p>Test form submissions, JSON payloads, file uploads, and body size handling on your WebServ implementation.</p>
+</div>
 
-            <div id="formResponse" class="result" style="display:none;"></div>
-            <!-- <small>Si ton serveur ne gère pas POST, tu peux créer un fichier <code>submit.html</code> statique et rediriger.</small> -->
+<main>
+
+  <!-- ── 1. URL-ENCODED FORM ── -->
+  <div class="section">
+    <div class="section-label">application/x-www-form-urlencoded</div>
+    <div class="card">
+      <h3>Form POST</h3>
+      <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:1rem">
+        Sends data encoded as <code style="color:var(--accent)">key=value&amp;key2=value2</code> — the default HTML form encoding.
+      </p>
+      <div class="form-group">
+        <label>POST to (path)</label>
+        <input type="text" id="form-path" value="/cgi-bin/form.py" />
+      </div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Field 1 — Name</label>
+          <input type="text" id="form-name" value="John Doe" />
         </div>
-
-        <div class="card">
-            <h2>Upload de fichier (multipart/form-data)</h2>
-            <p>Sélectionne un fichier image et clique sur "Uploader". Ton serveur devra accepter un POST multipart sur <code>/upload</code>.</p>
-
-            <form action="/upload" method="POST" enctype="multipart/form-data" id="uploadForm">
-                <label>Fichier : <input type="file" name="file" accept="image/*" required></label>
-                <p style="text-align:center;">
-                    <button type="submit">Uploader</button>
-                </p>
-            </form>
-
-            <div id="uploadResponse" class="result" style="display:none;"></div>
-            <!-- <small>Alternative curl upload (CLI):</small>
-            <pre>curl -X POST -F "file=@image_sample.png" http://localhost:8080/upload</pre> -->
+        <div class="form-group">
+          <label>Field 2 — Email</label>
+          <input type="email" id="form-email" value="john@42.fr" />
         </div>
+        <div class="form-group">
+          <label>Field 3 — School</label>
+          <input type="text" id="form-school" value="42 Paris" />
+        </div>
+        <div class="form-group">
+          <label>Field 4 — Message</label>
+          <input type="text" id="form-msg" value="Hello WebServ!" />
+        </div>
+      </div>
+      <div class="code-block" id="form-preview">POST /cgi-bin/form.py HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 54
 
-        <p style="text-align:center;"><a class="button" href="index.html">← Retour</a></p>
-    </main>
+name=John+Doe&amp;email=john%4042.fr&amp;school=42+Paris&amp;message=Hello+WebServ%21</div>
+      <div class="flex" style="margin-top:1rem">
+        <button class="btn btn-post" onclick="doFormPost()">▶ Send POST</button>
+        <button class="btn btn-info" onclick="clearResponse('form-response')">Clear</button>
+      </div>
+      <div class="response-box" id="form-response">
+        <div class="response-header"><span>RESPONSE</span><span class="response-status" id="form-status">—</span></div>
+        <div class="response-body" id="form-body"></div>
+      </div>
+    </div>
+  </div>
 
-    <script>
-    (function(){
-        var form = document.getElementById('simpleForm');
-        var resp = document.getElementById('formResponse');
-        if (form) {
-            form.addEventListener('submit', function(ev){
-                // si tu veux laisser le serveur gérer le POST en full server-side,
-                // commente le preventDefault() ci-dessous.
-                // Evite d'activer si ton serveur ne supporte pas CORS ou JSON response.
-                // Ici on laisse la soumission normale (commenté).
-                ev.preventDefault();
-                var xhr = new XMLHttpRequest();
-                xhr.open('POST', form.action, true);
-                xhr.setRequestHeader('Accept','text/plain');
-                xhr.onreadystatechange = function() {
-                    if (xhr.readyState === 4) {
-                        resp.style.display = 'block';
-                        resp.textContent = 'Réponse serveur (' + xhr.status + '):\\n' + xhr.responseText;
-                    }
-                };
-                var fd = new FormData(form);
-                xhr.send(fd);
-            }, false);
-        }
-    })();
-    </script>
+  <!-- ── 2. JSON ── -->
+  <div class="section">
+    <div class="section-label">application/json</div>
+    <div class="card">
+      <h3>JSON POST</h3>
+      <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:1rem">
+        Sends a JSON body. Your server should read <code style="color:var(--accent)">Content-Type: application/json</code> and pass the body to CGI via stdin.
+      </p>
+      <div class="form-group">
+        <label>POST to (path)</label>
+        <input type="text" id="json-path" value="/cgi-bin/form.py" />
+      </div>
+      <div class="form-group">
+        <label>JSON Body</label>
+        <textarea id="json-body" rows="6">{
+  "user": "student",
+  "school": "42",
+  "project": "webserv",
+  "status": "testing"
+}</textarea>
+      </div>
+      <div class="flex" style="margin-top:.5rem">
+        <button class="btn btn-post" onclick="doJsonPost()">▶ Send JSON POST</button>
+        <button class="btn btn-info" onclick="document.getElementById('json-body').value = JSON.stringify(JSON.parse(document.getElementById('json-body').value), null, 2)">Format</button>
+        <button class="btn btn-info" onclick="clearResponse('json-response')">Clear</button>
+      </div>
+      <div class="response-box" id="json-response">
+        <div class="response-header"><span>RESPONSE</span><span class="response-status" id="json-status">—</span></div>
+        <div class="response-body" id="json-body-response"></div>
+      </div>
+    </div>
+  </div>
 
-    <footer style="padding:16px;color:#666;">Webserv 42 — Démo POST</footer>
+  <!-- ── 3. FILE UPLOAD ── -->
+  <div class="section">
+    <div class="section-label">multipart/form-data — File Upload</div>
+    <div class="card">
+      <h3>File Upload</h3>
+      <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:1rem">
+        Tests multipart body parsing. WebServ must correctly handle <code style="color:var(--accent)">Content-Type: multipart/form-data; boundary=…</code> and extract file data.
+      </p>
+      <div class="form-group">
+        <label>Upload to (path)</label>
+        <input type="text" id="upload-path" value="/cgi-bin/form.py" />
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <input type="text" id="upload-desc" value="My test file" />
+      </div>
+      <div class="form-group">
+        <label>File</label>
+        <input type="file" id="upload-file" style="color:var(--text-dim);font-family:var(--mono);font-size:.8rem" />
+      </div>
+      <div style="margin-top:.5rem;margin-bottom:.75rem">
+        <div class="code-block">POST /cgi-bin/form.py HTTP/1.1
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary
+Content-Length: &lt;calculated&gt;
+
+------WebKitFormBoundary
+Content-Disposition: form-data; name="description"
+...
+------WebKitFormBoundary
+Content-Disposition: form-data; name="file"; filename="..."
+Content-Type: &lt;mime-type&gt;</div>
+      </div>
+      <div class="flex">
+        <button class="btn btn-post" onclick="doFileUpload()">▶ Upload File</button>
+        <button class="btn btn-info" onclick="clearResponse('upload-response')">Clear</button>
+      </div>
+      <div class="response-box" id="upload-response">
+        <div class="response-header"><span>RESPONSE</span><span class="response-status" id="upload-status">—</span></div>
+        <div class="response-body" id="upload-body"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 4. RAW BODY ── -->
+  <div class="section">
+    <div class="section-label">Raw / Custom Body</div>
+    <div class="card">
+      <h3>Custom POST body</h3>
+      <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:1rem">Send any raw body with a custom Content-Type. Useful to test edge cases.</p>
+      <div class="grid-2">
+        <div class="form-group">
+          <label>POST to (path)</label>
+          <input type="text" id="raw-path" value="/cgi-bin/form.py" />
+        </div>
+        <div class="form-group">
+          <label>Content-Type</label>
+          <input type="text" id="raw-ct" value="text/plain" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Body</label>
+        <textarea id="raw-body">Hello from a raw POST body!</textarea>
+      </div>
+      <div class="flex" style="margin-top:.5rem">
+        <button class="btn btn-post" onclick="doRawPost()">▶ Send Raw POST</button>
+        <button class="btn btn-info" onclick="clearResponse('raw-response')">Clear</button>
+      </div>
+      <div class="response-box" id="raw-response">
+        <div class="response-header"><span>RESPONSE</span><span class="response-status" id="raw-status">—</span></div>
+        <div class="response-body" id="raw-body-resp"></div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer>WebServ Test Suite · POST Module</footer>
+
+<script>
+function showResponse(boxId, statusId, bodyId, status, body, ok) {
+  const box = document.getElementById(boxId);
+  const sEl = document.getElementById(statusId);
+  const bEl = document.getElementById(bodyId);
+  box.classList.add('visible');
+  sEl.textContent = status;
+  sEl.className = 'response-status ' + (ok ? 'status-ok' : 'status-err');
+  bEl.textContent = body;
+}
+
+function clearResponse(id) {
+  document.getElementById(id).classList.remove('visible');
+}
+
+async function doFormPost() {
+  const path  = document.getElementById('form-path').value;
+  const body  = new URLSearchParams({
+    name:    document.getElementById('form-name').value,
+    email:   document.getElementById('form-email').value,
+    school:  document.getElementById('form-school').value,
+    message: document.getElementById('form-msg').value,
+  });
+  try {
+    const r = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString(),
+    });
+    const text = await r.text();
+    showResponse('form-response', 'form-status', 'form-body',
+      `${r.status} ${r.statusText}`, text.slice(0,2000), r.ok);
+  } catch(e) {
+    showResponse('form-response', 'form-status', 'form-body', 'ERROR', e.message, false);
+  }
+}
+
+async function doJsonPost() {
+  const path = document.getElementById('json-path').value;
+  const body = document.getElementById('json-body').value;
+  try {
+    const r = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: body,
+    });
+    const text = await r.text();
+    showResponse('json-response', 'json-status', 'json-body-response',
+      `${r.status} ${r.statusText}`, text.slice(0,2000), r.ok);
+  } catch(e) {
+    showResponse('json-response', 'json-status', 'json-body-response', 'ERROR', e.message, false);
+  }
+}
+
+async function doFileUpload() {
+  const path  = document.getElementById('upload-path').value;
+  const desc  = document.getElementById('upload-desc').value;
+  const file  = document.getElementById('upload-file').files[0];
+  const fd    = new FormData();
+  fd.append('description', desc);
+  if (file) fd.append('file', file);
+  try {
+    const r = await fetch(path, { method: 'POST', body: fd });
+    const text = await r.text();
+    showResponse('upload-response', 'upload-status', 'upload-body',
+      `${r.status} ${r.statusText}`, text.slice(0,2000), r.ok);
+  } catch(e) {
+    showResponse('upload-response', 'upload-status', 'upload-body', 'ERROR', e.message, false);
+  }
+}
+
+async function doRawPost() {
+  const path = document.getElementById('raw-path').value;
+  const ct   = document.getElementById('raw-ct').value;
+  const body = document.getElementById('raw-body').value;
+  try {
+    const r = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': ct },
+      body: body,
+    });
+    const text = await r.text();
+    showResponse('raw-response', 'raw-status', 'raw-body-resp',
+      `${r.status} ${r.statusText}`, text.slice(0,2000), r.ok);
+  } catch(e) {
+    showResponse('raw-response', 'raw-status', 'raw-body-resp', 'ERROR', e.message, false);
+  }
+}
+</script>
 </body>
 </html>

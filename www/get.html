@@ -1,76 +1,264 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>GET - Webserv 42</title>
-    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            color: #222;
-            margin: 0;
-            padding: 0;
-            text-align: center;
-        }
-        header {
-            background-color: #282c34;
-            color: white;
-            padding: 16px 0 8px 0;
-        }
-        header img { max-width: 100%; height: auto; display: block; margin: 0 auto; }
-        main { padding: 32px 16px; max-width: 900px; margin: 0 auto; }
-        h1 { margin: 18px 0 6px; }
-        .card {
-            background: white;
-            border-radius: 8px;
-            padding: 18px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.06);
-            margin-bottom: 20px;
-        }
-        .thumb { max-width: 320px; height: auto; display:block; margin: 12px auto; border-radius: 6px; }
-        a.button {
-            display: inline-block;
-            text-decoration: none;
-            background-color: #61dafb;
-            color: #000;
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-weight: bold;
-            margin-top: 10px;
-        }
-        small { color: #666; }
-        footer { padding: 20px; color:#666; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GET — WebServ Tester</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <header>
-        <!-- <img src="banner.png" alt="Webserv 42"> -->
-        <h1>GET — Démo</h1>
-    </header>
 
-    <main>
-        <div class="card">
-            <h2>Télécharger une image (GET)</h2>
-            <p>Cliquer sur l'image ou le bouton pour effectuer une requête <strong>GET</strong> et récupérer le fichier <code>42.png</code>.</p>
+<nav>
+  <a class="nav-logo" href="index.html">◈ WEBSERV</a>
+  <a href="index.html">HOME</a>
+  <a href="get.html" class="active">GET</a>
+  <a href="post.html">POST</a>
+  <a href="delete.html">DELETE</a>
+  <a href="cookies.html">COOKIES</a>
+  <a href="cgi.html">CGI</a>
+  <a href="multicgi.html">MULTI-CGI</a>
+</nav>
 
-            <a href="assets/42.png" title="Télécharger l'image">
-                <img src="assets/42.png" alt="Aperçu logo" class="thumb">
-            </a>
+<div class="page-header">
+  <span class="tag">HTTP Method</span>
+  <h1><span class="method-badge badge-get" style="font-size:1.5rem;padding:.3rem .8rem">GET</span> Requests</h1>
+  <p>Test your server's ability to serve static files, handle query strings, return correct status codes and headers.</p>
+</div>
 
-            <p>
-                <a class="button" href="assets/42.png" download>Télécharger l'image</a>
-            </p>
+<main>
 
-            <p><small>Note : le serveur doit servir <code>assets/42.png</code> depuis le même répertoire.</small></p>
+  <!-- ── 1. BASIC GET ── -->
+  <div class="section">
+    <div class="section-label">Basic File Retrieval</div>
+
+    <div class="card">
+      <h3>Fetch a file via GET</h3>
+      <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:1rem">
+        Enter any path on the server. The request will be sent as <code style="color:var(--accent)">GET /path HTTP/1.1</code>.
+      </p>
+      <div class="flex" style="margin-bottom:1rem">
+        <div style="flex:1;min-width:200px">
+          <label>Path</label>
+          <input type="text" id="get-path" value="/" placeholder="/index.html" />
         </div>
+        <div style="min-width:140px">
+          <label>Extra Header</label>
+          <input type="text" id="get-header-key" placeholder="Accept" />
+        </div>
+        <div style="min-width:200px">
+          <label>Header Value</label>
+          <input type="text" id="get-header-val" placeholder="text/html" />
+        </div>
+      </div>
+      <div class="code-block" id="get-preview">
+<span class="method">GET</span> <span class="url" id="get-url-display">/</span> <span>HTTP/1.1</span>
+<span class="header">Host:</span> <span class="value" id="get-host-display">localhost</span>
+<span class="header">Connection:</span> <span class="value">close</span></div>
+      <div class="flex" style="margin-top:1rem">
+        <button class="btn btn-get" onclick="doGet()">▶ Send GET</button>
+        <button class="btn btn-info" onclick="clearResponse('get-response')">Clear</button>
+      </div>
+      <div class="response-box" id="get-response">
+        <div class="response-header">
+          <span>RESPONSE</span>
+          <span class="response-status" id="get-status">—</span>
+        </div>
+        <div class="response-body" id="get-body"></div>
+      </div>
+    </div>
+  </div>
 
-        <p><a class="button" href="index.html">← Retour</a></p>
-    </main>
+  <!-- ── 2. QUICK TESTS ── -->
+  <div class="section">
+    <div class="section-label">Quick Tests</div>
+    <div class="grid-3">
 
-    <footer>
-        Webserv 42 — Démo GET
-    </footer>
+      <div class="card">
+        <h3>✓ &nbsp;200 OK — Root</h3>
+        <div class="code-block">GET / HTTP/1.1</div>
+        <button class="btn btn-get" style="margin-top:.75rem" onclick="quickGet('/', 'q1')">Run</button>
+        <div class="response-box" id="q1">
+          <div class="response-header"><span>RESPONSE</span><span class="response-status" id="q1-status">—</span></div>
+          <div class="response-body" id="q1-body"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>✗ &nbsp;404 — Not Found</h3>
+        <div class="code-block">GET /no-such-page HTTP/1.1</div>
+        <button class="btn btn-get" style="margin-top:.75rem" onclick="quickGet('/no-such-page-xyz', 'q2')">Run</button>
+        <div class="response-box" id="q2">
+          <div class="response-header"><span>RESPONSE</span><span class="response-status" id="q2-status">—</span></div>
+          <div class="response-body" id="q2-body"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>CSS &nbsp;— Stylesheet</h3>
+        <div class="code-block">GET /style.css HTTP/1.1</div>
+        <button class="btn btn-get" style="margin-top:.75rem" onclick="quickGet('/style.css', 'q3')">Run</button>
+        <div class="response-box" id="q3">
+          <div class="response-header"><span>RESPONSE</span><span class="response-status" id="q3-status">—</span></div>
+          <div class="response-body" id="q3-body"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── 3. QUERY STRING ── -->
+  <div class="section">
+    <div class="section-label">Query String Parameters</div>
+    <div class="card">
+      <h3>Build a query string</h3>
+      <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:1rem">Tests that your server correctly parses and forwards <code style="color:var(--accent)">QUERY_STRING</code> to CGI or ignores it for static files.</p>
+      <div class="grid-2">
+        <div>
+          <label>Base Path</label>
+          <input type="text" id="qs-path" value="/cgi-bin/hello.py" />
+        </div>
+        <div>
+          <label>Query String (key=value&amp;...)</label>
+          <input type="text" id="qs-params" value="name=student&school=42" />
+        </div>
+      </div>
+      <div style="margin-top:.75rem">
+        <div class="code-block" id="qs-preview">GET /cgi-bin/hello.py?name=student&school=42 HTTP/1.1</div>
+      </div>
+      <button class="btn btn-get" style="margin-top:.75rem" onclick="doQueryGet()">▶ Send</button>
+      <div class="response-box" id="qs-response">
+        <div class="response-header"><span>RESPONSE</span><span class="response-status" id="qs-status">—</span></div>
+        <div class="response-body" id="qs-body"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 4. HEADERS INSPECTION ── -->
+  <div class="section">
+    <div class="section-label">Response Headers</div>
+    <div class="card">
+      <h3>Inspect server response headers</h3>
+      <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:1rem">
+        Check that your server sends the correct <code style="color:var(--accent)">Content-Type</code>, <code style="color:var(--accent)">Content-Length</code>, <code style="color:var(--accent)">Server</code> and <code style="color:var(--accent)">Date</code> headers.
+      </p>
+      <div class="form-group">
+        <label>URL to inspect</label>
+        <input type="text" id="hdr-path" value="/" />
+      </div>
+      <button class="btn btn-get" onclick="doHeaderInspect()">▶ Inspect Headers</button>
+      <div id="headers-table" style="margin-top:1rem;display:none"></div>
+    </div>
+  </div>
+
+</main>
+
+<footer>WebServ Test Suite · GET Module</footer>
+
+<script>
+const host = window.location.host;
+
+function updateGetPreview() {
+  const path = document.getElementById('get-path').value || '/';
+  const key  = document.getElementById('get-header-key').value;
+  const val  = document.getElementById('get-header-val').value;
+  document.getElementById('get-url-display').textContent  = path;
+  document.getElementById('get-host-display').textContent = host;
+  let extra = key ? `\n<span class="header">${key}:</span> <span class="value">${val}</span>` : '';
+  document.getElementById('get-preview').innerHTML =
+    `<span class="method">GET</span> <span class="url">${path}</span> <span>HTTP/1.1</span>
+<span class="header">Host:</span> <span class="value">${host}</span>
+<span class="header">Connection:</span> <span class="value">close</span>${extra}`;
+}
+
+document.getElementById('get-path').addEventListener('input', updateGetPreview);
+document.getElementById('get-header-key').addEventListener('input', updateGetPreview);
+document.getElementById('get-header-val').addEventListener('input', updateGetPreview);
+
+function showResponse(boxId, statusId, bodyId, status, body, ok) {
+  const box  = document.getElementById(boxId);
+  const sEl  = document.getElementById(statusId);
+  const bEl  = document.getElementById(bodyId);
+  box.classList.add('visible');
+  sEl.textContent = status;
+  sEl.className = 'response-status ' + (ok ? 'status-ok' : 'status-err');
+  bEl.textContent = body;
+}
+
+function clearResponse(id) {
+  document.getElementById(id).classList.remove('visible');
+}
+
+async function doGet() {
+  const path = document.getElementById('get-path').value || '/';
+  const key  = document.getElementById('get-header-key').value;
+  const val  = document.getElementById('get-header-val').value;
+  const hdrs = { 'Cache-Control': 'no-store' };
+  if (key) hdrs[key] = val;
+  try {
+    const r = await fetch(path, { method: 'GET', headers: hdrs });
+    const text = await r.text();
+    showResponse('get-response', 'get-status', 'get-body',
+      `${r.status} ${r.statusText}`, text.slice(0, 2000), r.ok);
+  } catch(e) {
+    showResponse('get-response', 'get-status', 'get-body', 'ERROR', e.message, false);
+  }
+}
+
+async function quickGet(path, prefix) {
+  try {
+    const r = await fetch(path, { method: 'GET', cache: 'no-store' });
+    const text = await r.text();
+    showResponse(prefix, prefix+'-status', prefix+'-body',
+      `${r.status} ${r.statusText}`, text.slice(0,1500), r.ok);
+  } catch(e) {
+    showResponse(prefix, prefix+'-status', prefix+'-body', 'ERROR', e.message, false);
+  }
+}
+
+document.getElementById('qs-path').addEventListener('input', updateQsPreview);
+document.getElementById('qs-params').addEventListener('input', updateQsPreview);
+
+function updateQsPreview() {
+  const p = document.getElementById('qs-path').value;
+  const q = document.getElementById('qs-params').value;
+  document.getElementById('qs-preview').textContent =
+    `GET ${p}${q ? '?' + q : ''} HTTP/1.1`;
+}
+
+async function doQueryGet() {
+  const p = document.getElementById('qs-path').value;
+  const q = document.getElementById('qs-params').value;
+  const url = p + (q ? '?' + q : '');
+  console.log(url);
+  try {
+    const r = await fetch(url, { method: 'GET', cache: 'no-store' });
+    const text = await r.text();
+    showResponse('qs-response', 'qs-status', 'qs-body',
+      `${r.status} ${r.statusText}`, text.slice(0,2000), r.ok);
+  } catch(e) {
+    showResponse('qs-response', 'qs-status', 'qs-body', 'ERROR', e.message, false);
+  }
+}
+
+async function doHeaderInspect() {
+  const path = document.getElementById('hdr-path').value || '/';
+  const tbl  = document.getElementById('headers-table');
+  try {
+    const r = await fetch(path, { method: 'GET', cache: 'no-store' });
+    let html = `<div class="card" style="margin-top:0">
+      <div class="info-row"><span class="key">Status</span>
+        <span class="val ${r.ok?'status-ok':'status-err'}">${r.status} ${r.statusText}</span></div>`;
+    r.headers.forEach((v, k) => {
+      html += `<div class="info-row"><span class="key">${k}</span><span class="val">${v}</span></div>`;
+    });
+    html += '</div>';
+    tbl.innerHTML = html;
+    tbl.style.display = 'block';
+  } catch(e) {
+    tbl.innerHTML = `<div class="card"><span class="status-err">Error: ${e.message}</span></div>`;
+    tbl.style.display = 'block';
+  }
+}
+</script>
 </body>
 </html>

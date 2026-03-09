@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cookies — WebServ Tester</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .cookie-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: .25rem .75rem;
+      font-family: var(--mono);
+      font-size: .72rem;
+      color: var(--text-dim);
+      margin: .2rem;
+    }
+    .cookie-pill .name { color: var(--accent4); font-weight: 600; }
+    .cookie-pill .val  { color: var(--accent); }
+    .cookie-pill .del-btn {
+      cursor: pointer;
+      color: var(--accent3);
+      font-size: .9rem;
+      line-height: 1;
+      background: none;
+      border: none;
+      padding: 0;
+    }
+    #cookie-display {
+      min-height: 48px;
+      padding: .75rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin-top: .75rem;
+    }
+    .session-box {
+      background: var(--bg);
+      border: 1px solid rgba(124,107,255,.3);
+      border-radius: 6px;
+      padding: 1.25rem;
+      font-family: var(--mono);
+      font-size: .78rem;
+      line-height: 1.9;
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="index.html">◈ WEBSERV</a>
+  <a href="index.html">HOME</a>
+  <a href="get.html">GET</a>
+  <a href="post.html">POST</a>
+  <a href="delete.html">DELETE</a>
+  <a href="cookies.html" class="active">COOKIES</a>
+  <a href="cgi.html">CGI</a>
+  <a href="multicgi.html">MULTI-CGI</a>
+</nav>
+
+<div class="page-header">
+  <span class="tag">Sessions & State</span>
+  <h1>🍪 Cookies &amp; Sessions</h1>
+  <p>Validate that your server correctly handles Set-Cookie headers, reads inbound Cookie headers, and maintains session state across requests.</p>
+</div>
+
+<main>
+
+  <!-- ── 1. CURRENT COOKIES ── -->
+  <div class="section">
+    <div class="section-label">Current Browser Cookies</div>
+    <div class="card">
+      <h3>Active Cookies for this Origin</h3>
+      <p style="font-size:.82rem;color:var(--text-dim)">
+        These are the cookies currently stored by the browser. They will be sent automatically with every request in the <code style="color:var(--accent)">Cookie:</code> header.
+      </p>
+      <div id="cookie-display">
+        <span style="color:var(--text-faint);font-family:var(--mono);font-size:.75rem">No cookies yet.</span>
+      </div>
+      <div class="flex" style="margin-top:.75rem">
+        <button class="btn btn-info" onclick="refreshCookies()">↺ Refresh</button>
+        <button class="btn btn-del" onclick="clearAllCookies()">✕ Clear All Cookies</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 2. SET COOKIE (client-side) ── -->
+  <div class="section">
+    <div class="section-label">Set Cookie — Client Side (document.cookie)</div>
+    <div class="card">
+      <h3>Manually set a cookie</h3>
+      <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:1rem">
+        Creates a cookie directly in the browser. Useful to pre-populate cookies before a request so you can test that your server reads the <code style="color:var(--accent)">Cookie:</code> header correctly.
+      </p>
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Cookie Name</label>
+          <input type="text" id="ck-name" value="session_id" />
+        </div>
+        <div class="form-group">
+          <label>Cookie Value</label>
+          <input type="text" id="ck-value" value="abc123xyz" />
+        </div>
+        <div class="form-group">
+          <label>Max-Age (seconds, 0 = session)</label>
+          <input type="number" id="ck-age" value="3600" />
+        </div>
+        <div class="form-group">
+          <label>Path</label>
+          <input type="text" id="ck-path" value="/" />
+        </div>
+      </div>
+      <div class="code-block" id="ck-set-preview">Set-Cookie: session_id=abc123xyz; Max-Age=3600; Path=/</div>
+      <div class="flex" style="margin-top:.75rem">
+        <button class="btn btn-cgi" onclick="setCookieClient()">＋ Set Cookie</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 3. SET COOKIE VIA SERVER ── -->
+  <div class="section">
+    <div class="section-label">Set Cookie — Via CGI (Set-Cookie header)</div>
+    <div class="card">
+      <h3>Ask server to set a cookie</h3>
+      <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:1rem">
+        Sends a GET to your CGI cookie script. The CGI outputs a <code style="color:var(--accent)">Set-Cookie:</code> header and the browser stores it. Tests that your server forwards CGI headers to the client.
+      </p>
+      <div class="grid-2">
+        <div class="form-group">
+          <label>CGI endpoint</label>
+          <input type="text" id="srv-ck-path" value="/cgi-bin/cookie.py" />
+        </div>
+        <div class="form-group">
+          <label>action</label>
+          <select id="srv-ck-action">
+            <option value="set">set</option>
+            <option value="read">read</option>
+            <option value="delete">delete</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>name</label>
+          <input type="text" id="srv-ck-name" value="webserv_session" />
+        </div>
+        <div class="form-group">
+          <label>value</label>
+          <input type="text" id="srv-ck-val" value="user42" />
+        </div>
+      </div>
+      <div class="code-block" id="srv-ck-preview">GET /cgi-bin/cookie.py?action=set&name=webserv_session&value=user42 HTTP/1.1</div>
+      <div class="flex" style="margin-top:.75rem">
+        <button class="btn btn-post" onclick="doServerCookie()">▶ Send Request</button>
+        <button class="btn btn-info" onclick="clearResponse('srv-ck-resp')">Clear</button>
+      </div>
+      <div class="response-box" id="srv-ck-resp">
+        <div class="response-header"><span>RESPONSE</span><span class="response-status" id="srv-ck-status">—</span></div>
+        <div class="response-body" id="srv-ck-body"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 4. SEND COOKIE HEADER ── -->
+  <div class="section">
+    <div class="section-label">Send Cookie Header — Inspect Server Parsing</div>
+    <div class="card">
+      <h3>Verify server reads Cookie header</h3>
+      <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:1rem">
+        Sends a request with a custom <code style="color:var(--accent)">Cookie:</code> header value. The CGI should echo it back via <code style="color:var(--accent)">HTTP_COOKIE</code> env var.
+      </p>
+      <div class="form-group">
+        <label>Cookie Header Value</label>
+        <input type="text" id="send-ck" value="user=42student; role=tester; token=secret" />
+      </div>
+      <div class="code-block" id="send-ck-preview">GET /cgi-bin/cookie.py?action=read HTTP/1.1
+Cookie: user=42student; role=tester; token=secret</div>
+      <div class="flex" style="margin-top:.75rem">
+        <button class="btn btn-get" onclick="doSendCookie()">▶ Send with Cookie</button>
+        <button class="btn btn-info" onclick="clearResponse('send-ck-resp')">Clear</button>
+      </div>
+      <div class="response-box" id="send-ck-resp">
+        <div class="response-header"><span>RESPONSE</span><span class="response-status" id="send-ck-status">—</span></div>
+        <div class="response-body" id="send-ck-body"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 5. SESSION SIMULATION ── -->
+  <div class="section">
+    <div class="section-label">Session Simulation</div>
+    <div class="card">
+      <h3>Simulate a login session</h3>
+      <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:1rem">
+        Simulates login → access protected page → logout flow entirely through cookies.
+      </p>
+      <div class="session-box" id="session-log">
+        <span style="color:var(--text-faint)">Session not started.</span>
+      </div>
+      <div class="flex" style="margin-top:.75rem">
+        <button class="btn btn-post" onclick="sessionStep('login')">① Login</button>
+        <button class="btn btn-get"  onclick="sessionStep('check')">② Check Session</button>
+        <button class="btn btn-del"  onclick="sessionStep('logout')">③ Logout</button>
+        <button class="btn btn-info" onclick="sessionStep('reset')">↺ Reset</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer>WebServ Test Suite · Cookies & Sessions Module</footer>
+
+<script>
+function refreshCookies() {
+  const display = document.getElementById('cookie-display');
+  const all = document.cookie;
+  if (!all.trim()) {
+    display.innerHTML = '<span style="color:var(--text-faint);font-family:var(--mono);font-size:.75rem">No cookies.</span>';
+    return;
+  }
+  display.innerHTML = all.split(';').map(pair => {
+    const [n, ...rest] = pair.trim().split('=');
+    const v = rest.join('=');
+    return `<span class="cookie-pill">
+      <span class="name">${n.trim()}</span>=<span class="val">${v}</span>
+      <button class="del-btn" title="Delete" onclick="deleteCookie('${n.trim()}')">✕</button>
+    </span>`;
+  }).join('');
+}
+
+function deleteCookie(name) {
+  document.cookie = `${name}=; Max-Age=0; Path=/`;
+  refreshCookies();
+}
+
+function clearAllCookies() {
+  document.cookie.split(';').forEach(c => {
+    const name = c.trim().split('=')[0];
+    document.cookie = `${name}=; Max-Age=0; Path=/`;
+  });
+  refreshCookies();
+}
+
+refreshCookies();
+
+// Update Set-Cookie preview
+['ck-name','ck-value','ck-age','ck-path'].forEach(id => {
+  document.getElementById(id).addEventListener('input', updateCkPreview);
+});
+function updateCkPreview() {
+  const n = document.getElementById('ck-name').value;
+  const v = document.getElementById('ck-value').value;
+  const a = document.getElementById('ck-age').value;
+  const p = document.getElementById('ck-path').value;
+  document.getElementById('ck-set-preview').textContent =
+    `Set-Cookie: ${n}=${v}; Max-Age=${a}; Path=${p}`;
+}
+
+function setCookieClient() {
+  const n = document.getElementById('ck-name').value;
+  const v = document.getElementById('ck-value').value;
+  const a = document.getElementById('ck-age').value;
+  const p = document.getElementById('ck-path').value;
+  document.cookie = `${n}=${v}; Max-Age=${a}; Path=${p}`;
+  refreshCookies();
+}
+
+// Server cookie preview
+['srv-ck-path','srv-ck-action','srv-ck-name','srv-ck-val'].forEach(id => {
+  document.getElementById(id).addEventListener('change', updateSrvCkPreview);
+  document.getElementById(id).addEventListener('input', updateSrvCkPreview);
+});
+function updateSrvCkPreview() {
+  const path   = document.getElementById('srv-ck-path').value;
+  const action = document.getElementById('srv-ck-action').value;
+  const name   = document.getElementById('srv-ck-name').value;
+  const val    = document.getElementById('srv-ck-val').value;
+  document.getElementById('srv-ck-preview').textContent =
+    `GET ${path}?action=${action}&name=${name}&value=${val} HTTP/1.1`;
+}
+
+// Send cookie preview
+document.getElementById('send-ck').addEventListener('input', () => {
+  const v = document.getElementById('send-ck').value;
+  document.getElementById('send-ck-preview').textContent =
+    `GET /cgi-bin/cookie.py?action=read HTTP/1.1\nCookie: ${v}`;
+});
+
+function showResponse(boxId, statusId, bodyId, status, body, ok) {
+  document.getElementById(boxId).classList.add('visible');
+  const sEl = document.getElementById(statusId);
+  sEl.textContent = status;
+  sEl.className = 'response-status ' + (ok ? 'status-ok' : 'status-err');
+  document.getElementById(bodyId).textContent = body;
+}
+
+function clearResponse(id) {
+  document.getElementById(id).classList.remove('visible');
+}
+
+async function doServerCookie() {
+  const path   = document.getElementById('srv-ck-path').value;
+  const action = document.getElementById('srv-ck-action').value;
+  const name   = document.getElementById('srv-ck-name').value;
+  const val    = document.getElementById('srv-ck-val').value;
+  const url    = `${path}?action=${action}&name=${encodeURIComponent(name)}&value=${encodeURIComponent(val)}`;
+  try {
+    const r    = await fetch(url, { method: 'GET', credentials: 'include' });
+    const text = await r.text();
+    showResponse('srv-ck-resp','srv-ck-status','srv-ck-body',
+      `${r.status} ${r.statusText}`, text.slice(0,2000), r.ok);
+    setTimeout(refreshCookies, 200);
+  } catch(e) {
+    showResponse('srv-ck-resp','srv-ck-status','srv-ck-body','ERROR', e.message, false);
+  }
+}
+
+async function doSendCookie() {
+  const ck = document.getElementById('send-ck').value;
+  try {
+    const r = await fetch('/cgi-bin/cookie.py?action=read', {
+      method: 'GET',
+      headers: { 'Cookie': ck },
+    });
+    const text = await r.text();
+    showResponse('send-ck-resp','send-ck-status','send-ck-body',
+      `${r.status} ${r.statusText}`, text.slice(0,2000), r.ok);
+  } catch(e) {
+    showResponse('send-ck-resp','send-ck-status','send-ck-body','ERROR', e.message, false);
+  }
+}
+
+// Session sim
+const sessionLog = document.getElementById('session-log');
+function slog(html) { sessionLog.innerHTML += '<br>' + html; }
+const SESSION_KEY = 'webserv_session';
+
+function sessionStep(step) {
+  if (step === 'reset') {
+    deleteCookie(SESSION_KEY);
+    sessionLog.innerHTML = '<span style="color:var(--text-faint)">Session cleared.</span>';
+    return;
+  }
+
+  if (step === 'login') {
+    sessionLog.innerHTML = '';
+    const token = Math.random().toString(36).slice(2, 12);
+    document.cookie = `${SESSION_KEY}=${token}; Max-Age=3600; Path=/`;
+    slog(`<span style="color:var(--accent2)">① LOGIN</span>`);
+    slog(`  Generated token: <span style="color:var(--accent)">${token}</span>`);
+    slog(`  Set-Cookie: <span style="color:var(--accent4)">${SESSION_KEY}=${token}</span>`);
+    slog(`  Cookie stored in browser. ✓`);
+    refreshCookies();
+
+  } else if (step === 'check') {
+    slog(`<span style="color:var(--accent)">② CHECK SESSION</span>`);
+    const all = document.cookie;
+    const found = all.split(';').find(c => c.trim().startsWith(SESSION_KEY + '='));
+    if (found) {
+      const [,val] = found.trim().split('=');
+      slog(`  Cookie found: <span style="color:var(--accent4)">${SESSION_KEY}=${val}</span>`);
+      slog(`  This will be sent as: <span style="color:var(--text-dim)">Cookie: ${found.trim()}</span>`);
+      slog(`  Session active. ✓`);
+    } else {
+      slog(`  <span style="color:var(--accent3)">No session cookie found. Not logged in.</span>`);
+    }
+
+  } else if (step === 'logout') {
+    slog(`<span style="color:var(--accent3)">③ LOGOUT</span>`);
+    const all = document.cookie;
+    const found = all.split(';').find(c => c.trim().startsWith(SESSION_KEY + '='));
+    if (found) {
+      deleteCookie(SESSION_KEY);
+      slog(`  Expired cookie: <span style="color:var(--accent4)">${SESSION_KEY}=; Max-Age=0</span>`);
+      slog(`  Session destroyed. ✓`);
+      refreshCookies();
+    } else {
+      slog(`  <span style="color:var(--accent3)">No active session to logout from.</span>`);
+    }
+  }
+}
+</script>
+</body>
+</html>
