@@ -19,12 +19,31 @@ HTTPRequest::HTTPRequest(ServerConfig &serverConfig, std::string &request, std::
         this->parseRequest(request);
         this->_isValidRequest = true;
 		for (std::map<std::string, std::string>::iterator it = _cookies.begin(); it != _cookies.end(); ++it)
+            std::cout << "[Cookie] " << it->first << " = " << it->second << std::endl;
         {
-            char    timeString[20];
-            time_t  createdAt = sessionManager.getSessionData(this->getCookie(it->first)).createdAt;
-			std::cout << "[Cookie] " << it->first << " = " << it->second << std::endl;
-            std::strftime(timeString, sizeof(timeString), "%Y-%m-%d %H:%M:%S", std::localtime(&createdAt));
-            std::cout << "[Cookie-CreatedAt] " << timeString << std::endl;
+            std::string sessionId = this->getCookie("session_id");
+            if (!sessionId.empty())
+            {
+                if (sessionManager.sessionExists(sessionId))
+                {
+                    SessionData data = sessionManager.getSessionData(sessionId);
+                    char createdAtStr[20];
+                    char lastAccessStr[20];
+                    std::strftime(createdAtStr, sizeof(createdAtStr), "%Y-%m-%d %H:%M:%S", std::localtime(&data.createdAt));
+                    std::strftime(lastAccessStr, sizeof(lastAccessStr), "%Y-%m-%d %H:%M:%S", std::localtime(&data.lastAccess));
+                    std::cout << "[Session] id=" << sessionId << std::endl;
+                    std::cout << "[Session] createdAt=" << createdAtStr << " lastAccess=" << lastAccessStr << std::endl;
+                    if (data.values.empty())
+                        std::cout << "[Session] values: (empty)" << std::endl;
+                    else
+                    {
+                        for (std::map<std::string, std::string>::iterator vit = data.values.begin(); vit != data.values.end(); ++vit)
+                            std::cout << "[Session] values: " << vit->first << " = " << vit->second << std::endl;
+                    }
+                }
+                else
+                    std::cout << "[Session] unknown session_id (will create a new one)" << std::endl;
+            }
         }
         HTTPResponse myResponse(*this, "", serverConfig, "", sessionManager);
         responseBuff = myResponse.getResponse();
