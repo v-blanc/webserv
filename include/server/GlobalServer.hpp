@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:25 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/19 20:03:31 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/03/09 18:53:15 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,13 +41,13 @@ private:
     void loopServer();
 
     // Other methods
-    void handleNewClientConnexion(int &serverFd);
+    void handleNewClientConnection(int &serverFd);
     void handleReading(ClientContext *clientContext);
     void handleWriting(ClientContext *clientContext);
-    void handleCloseConnexion(ClientContext *clientContext);
+    void handleCloseConnection(ClientContext *clientContext);
     void handleCgiEvent(CgiContext *cgiContext);
     void cleanupCgi(CgiContext *cgiContext);
-    void closeOldClientConnexions();
+    void closeOldClientConnections();
     void closeTimedOutCgi();
 };
 

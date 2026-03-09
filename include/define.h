@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/04 12:35:58 by vblanc            #+#    #+#             */
-/*   Updated: 2026/02/25 16:20:35 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/03/09 18:53:02 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -49,7 +49,7 @@
 #define MAX_EPOLL_WAIT_EVENTS 128
 #define RECV_BUFFER_SIZE 4096
 #define MAX_HEADER_SIZE 88192
-#define TIMEOUT_OLD_CONNEXIONS 20 // in seconds
+#define TIMEOUT_OLD_CONNECTIONS 20 // in seconds
 #define CGI_TIMEOUT 10
 
 // TYPEDEF

@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 15:10:24 by vblanc            #+#    #+#             */
-/*   Updated: 2026/02/25 14:44:10 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/03/09 18:54:20 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -100,7 +100,7 @@ void Server::setupServer()
             continue;
         }
 
-        // Enable the socket to receive connexions (passive mode)
+        // Enable the socket to receive connections (passive mode)
         if (listen(fd, SOMAXCONN) < 0)
             throw std::runtime_error(RED "listen() error" DEFAULT);
 
