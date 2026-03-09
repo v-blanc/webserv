@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/07 14:57:52 by vblanc            #+#    #+#             */
-/*   Updated: 2026/03/09 18:15:00 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/03/09 18:46:12 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,7 @@ HTTPRequest::HTTPRequest(ServerConfig &serverConfig, std::string &request, std::
     {
         this->parseRequest(request);
         this->_isValidRequest = true;
-		for (std::map<std::string, std::string>::iterator it = _cookies.begin(); it != _cookies.end(); ++it)
+        for (std::map<std::string, std::string>::iterator it = _cookies.begin(); it != _cookies.end(); ++it)
             std::cout << "[Cookie] " << it->first << " = " << it->second << std::endl;
         {
             std::string sessionId = this->getCookie("session_id");
@@ -71,7 +71,7 @@ std::string HTTPRequest::getPathWithoutQuery() const
     for (std::size_t i = 0; i < path.size(); ++i)
     {
         if (path[i] == '/' && !normalized.empty() && normalized[normalized.size() - 1] == '/')
-            continue ;
+            continue;
         normalized += path[i];
     }
     return (normalized);
@@ -172,15 +172,15 @@ void printHTTPRequest(HTTPRequest &request)
     std::cout << "\"" << request.getBody() << "\"" << std::endl;
 }
 
-std::string	HTTPRequest::getCookie(const std::string &name) const
+std::string HTTPRequest::getCookie(const std::string &name) const
 {
-	std::map<std::string, std::string>::const_iterator	it = _cookies.find(name);
-	if (it != _cookies.end())
-		return (it->second);
-	return ("");
+    std::map<std::string, std::string>::const_iterator it = _cookies.find(name);
+    if (it != _cookies.end())
+        return (it->second);
+    return ("");
 }
 
-void	HTTPRequest::pushBackCookies(const std::string key, const std::string value)
+void HTTPRequest::pushBackCookies(const std::string key, const std::string value)
 {
-	_cookies[key] = value;
+    _cookies[key] = value;
 }
