@@ -91,11 +91,19 @@ void	HTTPResponse::prepareGoodResponse()
 
 HTTPResponse::~HTTPResponse(){}
 
+std::string HTTPResponse::resolveRoot(const std::string &root)
+
+{
+	if (!root.empty() && root[0] == '/')
+		return (root.substr(1));
+	return (root);
+}
+
 void	HTTPResponse::handleBadRequest(const std::string &status, const std::string &message)
 {
 	if (message == "Page Not Found")
 	{
-		this->_body = getLocalFileContent(this->_serverConfig.getRoot() + "/error/404.html");
+		this->_body = getLocalFileContent(resolveRoot(this->_serverConfig.getRoot()) + "/error/404.html");
 		this->_contentLength = this->_body.size();
 	}
 	std::ostringstream oss;
@@ -172,16 +180,16 @@ void	HTTPResponse::handlePostMethod(HTTPRequest &request)
 		cgiInfo.contentLength = request.getContentLength();
 		cgiInfo.contentType = request.getContentType();
 		cgiInfo.body = request.getBody();
-		cgiInfo.root = myLocation.getRoot();
+		cgiInfo.root = resolveRoot(myLocation.getRoot());
 		throw CgiRequiredException(cgiInfo);
 	}
 	if (!request.getFileName().empty())
 	{
 		std::string fileName;
 		if (!myLocation.getUploadStore().empty())
-			fileName = myLocation.getRoot() + "/" + myLocation.getUploadStore() + '/' + request.getFileName();
+			fileName = resolveRoot(myLocation.getRoot()) + "/" + myLocation.getUploadStore() + '/' + request.getFileName();
 		else
-			fileName = myLocation.getRoot() + "/upload_store/" + request.getFileName();
+			fileName = resolveRoot(myLocation.getRoot()) + "/upload_store/" + request.getFileName();
 		std::ofstream file(fileName.c_str());
 		if (!file.is_open())
 			throw HTTPRequest::StatusException("404", "Page Not Found");
@@ -189,10 +197,10 @@ void	HTTPResponse::handlePostMethod(HTTPRequest &request)
 		file.close();
 		this->_status = "201";
 		this->_message = "Created";
-		this->_body = getLocalFileContent(myLocation.getRoot() + "/upload.html");
+		this->_body = getLocalFileContent(resolveRoot(myLocation.getRoot()) + "/upload.html");
 	}
 	if (this->_body.empty())
-		this->_body = getLocalFileContent(myLocation.getRoot() + "/submit.html");
+		this->_body = getLocalFileContent(resolveRoot(myLocation.getRoot()) + "/submit.html");
 }
 
 bool	HTTPResponse::ismethodNotAllowed(std::vector<std::string> methods, std::string myMethod)
@@ -211,8 +219,7 @@ void HTTPResponse::handleIndexFile(const LocationConfig &myLocation, std::string
 	for (std::vector<std::string>::iterator it = indices.begin(); it != indices.end(); ++it)
 	{
 		std::string	rightIndex = *it;
-		rightPath = myLocation.getRoot();
-		rightPath = rightPath.substr(1, rightPath.size());
+		rightPath = resolveRoot(myLocation.getRoot());
 		rightPath += path + rightIndex;
 		fd = open(rightPath.c_str(), O_RDONLY);
 		if (fd != -1)
@@ -260,7 +267,7 @@ void HTTPResponse::handleRessource(HTTPRequest &request)
 	std::string ressource =  handleRequestPath(request.getPathWithoutQuery(), true);
 	if (!ressource.empty() && ressource[0] == '/')
 		ressource.erase(0, 1);
-	ressource = this->_serverConfig.getRoot() + request.getPathWithoutQuery();
+	ressource = resolveRoot(this->_serverConfig.getRoot()) + request.getPathWithoutQuery();
 	std::ifstream file(ressource.c_str());
 	if (!file.is_open())
 		throw HTTPRequest::StatusException("404", "Page Not Found");
@@ -354,7 +361,7 @@ void HTTPResponse::handleGetMethod(HTTPRequest &request)
 		cgiInfo.contentLength = request.getContentLength();
 		cgiInfo.contentType = request.getContentType();
 		cgiInfo.body = request.getBody();
-		cgiInfo.root = myLocation.getRoot();
+		cgiInfo.root = resolveRoot(myLocation.getRoot());
 		throw (CgiRequiredException(cgiInfo));
 	}
 	std::string requestPath = request.getPathWithoutQuery();
@@ -387,7 +394,7 @@ void	HTTPResponse::handleDeleteMethod(HTTPRequest &request)
 		location = this->_serverConfig.getLocationConfigByPath("/");
 	}
 
-	std::string const		filename = location.getRoot() + requestPath;
+	std::string const		filename = resolveRoot(location.getRoot()) + requestPath;
 	const char*				filename_c_str = filename.c_str();
 	if (!location.getReturn().empty())
 	{

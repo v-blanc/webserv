@@ -46,5 +46,6 @@ class HTTPResponse
 		std::string	handleRequestPath(std::string requestPath, bool isFileName);
 		void handleRessource(HTTPRequest &request);
 		void fillLocationWithServerRules(LocationConfig &location);
+		std::string resolveRoot(const std::string &root);
 };
 #endif
