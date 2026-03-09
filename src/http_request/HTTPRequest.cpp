@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/07 14:57:52 by vblanc            #+#    #+#             */
-/*   Updated: 2026/03/09 20:10:50 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/03/09 18:15:00 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -73,7 +73,7 @@ std::string HTTPRequest::getPathWithoutQuery() const
     for (std::size_t i = 0; i < path.size(); ++i)
     {
         if (path[i] == '/' && !normalized.empty() && normalized[normalized.size() - 1] == '/')
-            continue;
+            continue ;
         normalized += path[i];
     }
     return (normalized);
@@ -155,15 +155,34 @@ bool HTTPRequest::resolveCgiInterpreter(const std::vector<stringPair> &cgiHandle
     return (false);
 }
 
-std::string HTTPRequest::getCookie(const std::string &name) const
+void printHTTPRequest(HTTPRequest &request)
 {
-    std::map<std::string, std::string>::const_iterator it = _cookies.find(name);
-    if (it != _cookies.end())
-        return (it->second);
-    return ("");
+    std::string pad(4, ' ');
+
+    std::cout << "First line:" << std::endl;
+    std::cout << pad << "Method: \'" << request.getMethod() << "\'" << std::endl;
+    std::cout << pad << "Path: \'" << request.getPath() << "\'" << std::endl;
+    std::cout << std::endl;
+
+    std::cout << "Header:" << std::endl;
+    std::cout << pad << "Host: \'" << request.getHost() << "\'" << std::endl;
+    std::cout << pad << "ContentLength: \'" << request.getContentLength() << "\'" << std::endl;
+    std::cout << pad << "Connection: \'" << request.getConnection() << "\'" << std::endl;
+    std::cout << std::endl;
+
+    std::cout << "Body:" << std::endl;
+    std::cout << "\"" << request.getBody() << "\"" << std::endl;
 }
 
-void HTTPRequest::pushBackCookies(const std::string key, const std::string value)
+std::string	HTTPRequest::getCookie(const std::string &name) const
 {
-    _cookies[key] = value;
+	std::map<std::string, std::string>::const_iterator	it = _cookies.find(name);
+	if (it != _cookies.end())
+		return (it->second);
+	return ("");
+}
+
+void	HTTPRequest::pushBackCookies(const std::string key, const std::string value)
+{
+	_cookies[key] = value;
 }
