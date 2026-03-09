@@ -1,65 +1,326 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Webserv</title>
-    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
-            text-align: center;
-            font-size: x-large; 
-        }
-        header {
-            background-color: #282c34;
-            color: white;
-            padding: 20px 0;
-        }
-        header img {
-            max-width: 100%;
-            height: auto;
-        }
-        h1 {
-            margin: 20px 0;
-        }
-        .buttons {
-            margin: 30px 0;
-        }
-        .buttons a {
-            display: inline-block;
-            text-decoration: none;
-            background-color: #61dafb;
-            color: #000;
-            padding: 15px 25px;
-            margin: 10px;
-            border-radius: 8px;
-            font-weight: bold;
-            transition: background 0.3s;
-        }
-        .buttons a:hover {
-            background-color: #21a1f1;
-            color: white;
-        }
-        p {
-            font-weight: bold;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WebServ — 42 Project Tester</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* ── HERO ── */
+    .hero {
+      min-height: calc(100vh - 56px);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 4rem 2rem;
+      max-width: 1100px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    .hero-eyebrow {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .hero-eyebrow::before {
+      content: '';
+      width: 32px;
+      height: 1px;
+      background: var(--accent);
+    }
+
+    .hero h1 {
+      font-size: clamp(3rem, 8vw, 7rem);
+      font-weight: 700;
+      line-height: 0.95;
+      letter-spacing: -0.04em;
+      margin-bottom: 2rem;
+    }
+
+    .hero h1 .dim { color: var(--text-faint); }
+    .hero h1 .accent { color: var(--accent); }
+    .hero h1 .accent2 { color: var(--accent2); }
+
+    .hero-desc {
+      font-size: 1.1rem;
+      color: var(--text-dim);
+      max-width: 520px;
+      margin-bottom: 3rem;
+      line-height: 1.7;
+    }
+
+    /* ── GRID CARDS ── */
+    .test-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      max-width: 1100px;
+      margin: 0 auto 4rem;
+      padding: 0 2rem;
+    }
+
+    .test-card {
+      background: var(--surface);
+      padding: 2rem;
+      text-decoration: none;
+      color: var(--text);
+      display: block;
+      transition: background 0.2s;
+      position: relative;
+    }
+
+    .test-card:hover { background: var(--bg3); }
+
+    .test-card .card-num {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--text-faint);
+      margin-bottom: 1.25rem;
+      letter-spacing: 0.1em;
+    }
+
+    .test-card .card-icon {
+      font-size: 1.75rem;
+      margin-bottom: 1rem;
+      display: block;
+    }
+
+    .test-card h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.01em;
+    }
+
+    .test-card p {
+      font-size: 0.82rem;
+      color: var(--text-dim);
+      line-height: 1.6;
+    }
+
+    .test-card .card-methods {
+      margin-top: 1.25rem;
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .test-card .arrow {
+      position: absolute;
+      top: 2rem;
+      right: 2rem;
+      color: var(--text-faint);
+      font-size: 1.2rem;
+      transition: transform 0.2s, color 0.2s;
+    }
+
+    .test-card:hover .arrow {
+      transform: translate(3px, -3px);
+      color: var(--accent);
+    }
+
+    /* ── SERVER STATUS ── */
+    .status-bar {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      margin: 0 2rem 3rem;
+      max-width: 1100px;
+      margin-left: auto;
+      margin-right: auto;
+      flex-wrap: wrap;
+    }
+
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--text-dim);
+    }
+
+    .status-item strong {
+      color: var(--text);
+    }
+
+    /* ── ASCII ART ── */
+    .ascii {
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      line-height: 1.2;
+      color: var(--text-faint);
+      margin-bottom: 2rem;
+      white-space: pre;
+    }
+  </style>
 </head>
 <body>
-    <header>
-        <!-- <img src="banner.jpg" alt="Webserv 42 Banner"> -->
-        <h1>Projet Webserv - 42</h1>
-    </header>
-    
-    <p>Bienvenue sur la présentation du projet Webserv. Vous pouvez tester les différentes méthodes HTTP ci-dessous :</p>
 
-    <div class="buttons">
-        <a href="get.html">GET</a>
-        <a href="post.html">POST</a>
-        <a href="delete.html">DELETE</a>
+<nav>
+  <a class="nav-logo" href="index.html">◈ WEBSERV</a>
+  <a href="index.html" class="active">HOME</a>
+  <a href="get.html">GET</a>
+  <a href="post.html">POST</a>
+  <a href="delete.html">DELETE</a>
+  <a href="cookies.html">COOKIES</a>
+  <a href="cgi.html">CGI</a>
+  <a href="multicgi.html">MULTI-CGI</a>
+</nav>
+
+<section class="hero">
+  <div class="hero-eyebrow">42 School — HTTP/1.1 Server</div>
+  <h1>
+    <span class="dim">Test</span><br>
+    <span class="accent">Web</span><span class="accent2">Serv</span><br>
+    <span class="dim">Suite</span>
+  </h1>
+  <p class="hero-desc">
+    A comprehensive testing interface for your 42 WebServ implementation.
+    Validate every feature — HTTP methods, CGI execution, cookies & sessions, 
+    and edge cases — all from a single place.
+  </p>
+  <div class="flex">
+    <a href="get.html" class="btn btn-get">→ Start Testing</a>
+    <a href="#features" class="btn btn-info">View Features</a>
+  </div>
+</section>
+
+<!-- STATUS BAR -->
+<div class="status-bar" id="status-bar">
+  <div class="status-item">
+    <span class="dot dot-green" id="status-dot"></span>
+    <span>Server: <strong id="status-text">Checking…</strong></span>
+  </div>
+  <div class="status-item">
+    <span>Protocol: <strong>HTTP/1.1</strong></span>
+  </div>
+  <div class="status-item">
+    <span>Host: <strong id="host-text">—</strong></span>
+  </div>
+  <div class="status-item">
+    <span>Time: <strong id="time-text">—</strong></span>
+  </div>
+</div>
+
+<!-- FEATURE CARDS -->
+<div class="test-grid" id="features">
+
+  <a class="test-card" href="get.html">
+    <span class="card-num">01 / 05</span>
+    <span class="card-icon">↓</span>
+    <h2>GET Requests</h2>
+    <p>Test static file serving, query parameters, custom headers, directory listing, and 404/403 error handling.</p>
+    <div class="card-methods">
+      <span class="method-badge badge-get">GET</span>
     </div>
+    <span class="arrow">↗</span>
+  </a>
+
+  <a class="test-card" href="post.html">
+    <span class="card-num">02 / 05</span>
+    <span class="card-icon">↑</span>
+    <h2>POST Requests</h2>
+    <p>Send form data, JSON payloads, file uploads (multipart), and test body size limits and content types.</p>
+    <div class="card-methods">
+      <span class="method-badge badge-post">POST</span>
+    </div>
+    <span class="arrow">↗</span>
+  </a>
+
+  <a class="test-card" href="delete.html">
+    <span class="card-num">03 / 05</span>
+    <span class="card-icon">✕</span>
+    <h2>DELETE Requests</h2>
+    <p>Delete server resources, test 204/404 responses, and verify proper cleanup and authorization behaviour.</p>
+    <div class="card-methods">
+      <span class="method-badge badge-delete">DELETE</span>
+    </div>
+    <span class="arrow">↗</span>
+  </a>
+
+  <a class="test-card" href="cookies.html">
+    <span class="card-num">04 / 05</span>
+    <span class="card-icon">🍪</span>
+    <h2>Cookies & Sessions</h2>
+    <p>Set, read, update and delete cookies. Simulate session management and test Set-Cookie / Cookie headers.</p>
+    <div class="card-methods">
+      <span class="method-badge badge-get">GET</span>
+      <span class="method-badge badge-post">POST</span>
+    </div>
+    <span class="arrow">↗</span>
+  </a>
+
+  <a class="test-card" href="cgi.html">
+    <span class="card-num">05a / 05</span>
+    <span class="card-icon">⚙</span>
+    <h2>Single CGI</h2>
+    <p>Execute a single CGI script. Inspect environment variables, stdin/stdout piping, and response generation.</p>
+    <div class="card-methods">
+      <span class="method-badge badge-cgi">CGI</span>
+    </div>
+    <span class="arrow">↗</span>
+  </a>
+
+  <a class="test-card" href="multicgi.html">
+    <span class="card-num">05b / 05</span>
+    <span class="card-icon">⚙⚙</span>
+    <h2>Multiple CGIs</h2>
+    <p>Run several CGI scripts in parallel: env dumper, form processor, cookie manager, and request counter.</p>
+    <div class="card-methods">
+      <span class="method-badge badge-cgi">CGI</span>
+      <span class="method-badge badge-post">POST</span>
+    </div>
+    <span class="arrow">↗</span>
+  </a>
+
+</div>
+
+<footer>
+  WebServ Test Suite · 42 School · HTTP/1.1 · Built for testing purposes
+</footer>
+
+<script>
+  // Server status check
+  const dot  = document.getElementById('status-dot');
+  const text = document.getElementById('status-text');
+  const host = document.getElementById('host-text');
+  const time = document.getElementById('time-text');
+
+  host.textContent = window.location.host || 'localhost';
+
+  function updateTime() {
+    time.textContent = new Date().toLocaleTimeString();
+  }
+  updateTime();
+  setInterval(updateTime, 1000);
+
+  // Ping the server with a simple GET
+  fetch('/', { method: 'GET', cache: 'no-store' })
+    .then(r => {
+      text.textContent = `Online (${r.status})`;
+      dot.className = 'dot dot-green';
+    })
+    .catch(() => {
+      text.textContent = 'Offline';
+      dot.className = 'dot dot-red';
+    });
+</script>
 </body>
 </html>

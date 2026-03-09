@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CGI — WebServ Tester</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="index.html">◈ WEBSERV</a>
+  <a href="index.html">HOME</a>
+  <a href="get.html">GET</a>
+  <a href="post.html">POST</a>
+  <a href="delete.html">DELETE</a>
+  <a href="cookies.html">COOKIES</a>
+  <a href="cgi.html" class="active">CGI</a>
+  <a href="multicgi.html">MULTI-CGI</a>
+</nav>
+
+<div class="page-header">
+  <span class="tag">Common Gateway Interface</span>
+  <h1><span class="method-badge badge-cgi" style="font-size:1.5rem;padding:.3rem .8rem">CGI</span> Single Script</h1>
+  <p>Test execution of a single CGI script. Verify environment variable injection, stdin piping, and stdout capture by your server.</p>
+</div>
+
+<main>
+
+  <!-- ── 1. HELLO WORLD CGI ── -->
+  <div class="section">
+    <div class="section-label">Hello World — Simplest CGI</div>
+    <div class="card">
+      <h3>hello.py</h3>
+      <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:1rem">
+        The most basic CGI: outputs a <code style="color:var(--accent)">Content-Type</code> header followed by an HTML body. Tests that your server can fork, exec, and capture stdout.
+      </p>
+      <div class="code-block">#!/usr/bin/env python3
+<span class="comment"># cgi-bin/hello.py</span>
+import os, datetime
+
+print("Content-Type: text/html")
+print()  <span class="comment"># Blank line separates headers from body</span>
+print(f"&lt;h1&gt;Hello from CGI!&lt;/h1&gt;")
+print(f"&lt;p&gt;Time: {datetime.datetime.now()}&lt;/p&gt;")</div>
+      <div class="form-group" style="margin-top:1rem">
+        <label>CGI Path</label>
+        <input type="text" id="hw-path" value="/cgi-bin/hello.py" />
+      </div>
+      <div class="flex" style="margin-top:.5rem">
+        <button class="btn btn-cgi" onclick="runCgi('hw-path','hw-resp','hw-status','hw-body','GET')">▶ Run CGI (GET)</button>
+        <button class="btn btn-info" onclick="clearResponse('hw-resp')">Clear</button>
+      </div>
+      <div class="response-box" id="hw-resp">
+        <div class="response-header"><span>RESPONSE</span><span class="response-status" id="hw-status">—</span></div>
+        <div class="response-body" id="hw-body"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 2. ENV VARIABLES ── -->
+  <div class="section">
+    <div class="section-label">Environment Variables — CGI Spec Compliance</div>
+    <div class="card">
+      <h3>env.py — Environment dump</h3>
+      <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:1rem">
+        Your server must inject these variables before executing the CGI process. This script dumps them all.
+      </p>
+      <div class="grid-2" style="margin-bottom:1rem">
+        <div class="code-block">REQUIRED VARS:
+REQUEST_METHOD
+QUERY_STRING
+CONTENT_TYPE
+CONTENT_LENGTH
+SERVER_NAME
+SERVER_PORT
+PATH_INFO
+SCRIPT_NAME
+HTTP_*</div>
+        <div>
+          <div class="info-row"><span class="key">REQUEST_METHOD</span><span class="val">GET / POST / …</span></div>
+          <div class="info-row"><span class="key">QUERY_STRING</span><span class="val">foo=bar&x=1</span></div>
+          <div class="info-row"><span class="key">CONTENT_TYPE</span><span class="val">application/json</span></div>
+          <div class="info-row"><span class="key">HTTP_COOKIE</span><span class="val">session=abc</span></div>
+          <div class="info-row"><span class="key">HTTP_HOST</span><span class="val">localhost:8080</span></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>CGI Path</label>
+        <input type="text" id="env-path" value="/cgi-bin/env.py" />
+      </div>
+      <div class="form-group">
+        <label>Query String (appended to URL)</label>
+        <input type="text" id="env-qs" value="test=42&lang=c%2B%2B" />
+      </div>
+      <div class="flex" style="margin-top:.5rem">
+        <button class="btn btn-cgi" onclick="runEnvCgi()">▶ Dump ENV</button>
+        <button class="btn btn-info" onclick="clearResponse('env-resp')">Clear</button>
+      </div>
+      <div class="response-box" id="env-resp">
+        <div class="response-header"><span>RESPONSE</span><span class="response-status" id="env-status">—</span></div>
+        <div class="response-body" id="env-body"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 3. CGI WITH POST ── -->
+  <div class="section">
+    <div class="section-label">CGI + POST — stdin piping</div>
+    <div class="card">
+      <h3>POST body → CGI stdin</h3>
+      <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:1rem">
+        Your server must pipe the POST body to the CGI's stdin and set <code style="color:var(--accent)">CONTENT_LENGTH</code> correctly. This script reads stdin and echoes it.
+      </p>
+      <div class="form-group">
+        <label>CGI Path</label>
+        <input type="text" id="cgi-post-path" value="/cgi-bin/form.py" />
+      </div>
+      <div class="form-group">
+        <label>POST Body (will be read from stdin inside CGI)</label>
+        <textarea id="cgi-post-body">name=42student&project=webserv&grade=outstanding</textarea>
+      </div>
+      <div class="form-group">
+        <label>Content-Type</label>
+        <input type="text" id="cgi-post-ct" value="application/x-www-form-urlencoded" />
+      </div>
+      <div class="flex" style="margin-top:.5rem">
+        <button class="btn btn-post" onclick="runCgiPost()">▶ POST → CGI stdin</button>
+        <button class="btn btn-info" onclick="clearResponse('cgi-post-resp')">Clear</button>
+      </div>
+      <div class="response-box" id="cgi-post-resp">
+        <div class="response-header"><span>RESPONSE</span><span class="response-status" id="cgi-post-status">—</span></div>
+        <div class="response-body" id="cgi-post-body-resp"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 4. CGI HOW IT WORKS ── -->
+  <div class="section">
+    <div class="section-label">How CGI Works</div>
+    <div class="card">
+      <div class="code-block"><span class="comment"># Server receives request:</span>
+<span class="method">GET</span> <span class="url">/cgi-bin/hello.py?name=42</span> HTTP/1.1
+
+<span class="comment"># Server forks a child process:</span>
+fork() → execve("/cgi-bin/hello.py", ...)
+
+<span class="comment"># Server sets environment variables:</span>
+<span class="header">REQUEST_METHOD</span>=<span class="value">GET</span>
+<span class="header">QUERY_STRING</span>=<span class="value">name=42</span>
+<span class="header">SERVER_NAME</span>=<span class="value">localhost</span>
+<span class="header">SERVER_PORT</span>=<span class="value">8080</span>
+
+<span class="comment"># For POST: server pipes body → stdin</span>
+<span class="comment"># CGI writes response → stdout</span>
+<span class="comment"># Server forwards stdout → client</span></div>
+    </div>
+  </div>
+
+</main>
+
+<footer>WebServ Test Suite · Single CGI Module</footer>
+
+<script>
+function showResponse(boxId, statusId, bodyId, status, body, ok) {
+  document.getElementById(boxId).classList.add('visible');
+  const sEl = document.getElementById(statusId);
+  sEl.textContent = status;
+  sEl.className = 'response-status ' + (ok ? 'status-ok' : 'status-err');
+  document.getElementById(bodyId).textContent = body;
+}
+
+function clearResponse(id) {
+  document.getElementById(id).classList.remove('visible');
+}
+
+async function runCgi(pathId, boxId, statusId, bodyId, method) {
+  const path = document.getElementById(pathId).value;
+  try {
+    const r = await fetch(path, { method, cache: 'no-store' });
+    const text = await r.text();
+    showResponse(boxId, statusId, bodyId, `${r.status} ${r.statusText}`, text.slice(0,3000), r.ok);
+  } catch(e) {
+    showResponse(boxId, statusId, bodyId, 'ERROR', e.message, false);
+  }
+}
+
+async function runEnvCgi() {
+  const path = document.getElementById('env-path').value;
+  const qs   = document.getElementById('env-qs').value;
+  const url  = path + (qs ? '?' + qs : '');
+  try {
+    const r = await fetch(url, { method: 'GET', cache: 'no-store', credentials: 'include' });
+    const text = await r.text();
+    showResponse('env-resp','env-status','env-body',`${r.status} ${r.statusText}`,text.slice(0,3000),r.ok);
+  } catch(e) {
+    showResponse('env-resp','env-status','env-body','ERROR',e.message,false);
+  }
+}
+
+async function runCgiPost() {
+  const path = document.getElementById('cgi-post-path').value;
+  const body = document.getElementById('cgi-post-body').value;
+  const ct   = document.getElementById('cgi-post-ct').value;
+  try {
+    const r = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': ct },
+      body: body,
+    });
+    const text = await r.text();
+    showResponse('cgi-post-resp','cgi-post-status','cgi-post-body-resp',
+      `${r.status} ${r.statusText}`,text.slice(0,3000),r.ok);
+  } catch(e) {
+    showResponse('cgi-post-resp','cgi-post-status','cgi-post-body-resp','ERROR',e.message,false);
+  }
+}
+</script>
+</body>
+</html>

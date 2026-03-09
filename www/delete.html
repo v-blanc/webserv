@@ -1,68 +1,273 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>DELETE - Webserv 42</title>
-    <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <style>
-        body { font-family: Arial, sans-serif; background:#f4f4f4; color:#222; margin:0; text-align:center; }
-        header { background:#282c34; color:#fff; padding:16px 0 8px; }
-        header img { max-width:100%; display:block; margin:0 auto; }
-        main { max-width:800px; margin:24px auto; padding:16px; }
-        .card { background:#fff; border-radius:8px; padding:18px; box-shadow:0 2px 6px rgba(0,0,0,0.06); margin-bottom:18px; }
-        button { background:#ff6b6b; color:#fff; border:none; padding:10px 16px; border-radius:8px; cursor:pointer; font-weight:bold; }
-        .ok { color: green; }
-        .err { color: red; }
-        pre { background:#f0f0f0; padding:8px; border-radius:6px; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DELETE — WebServ Tester</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .danger-zone {
+      border-color: rgba(255,107,107,0.35);
+      background: rgba(255,107,107,0.04);
+    }
+    .danger-zone::before {
+      background: linear-gradient(90deg, transparent, var(--accent3), transparent);
+    }
+    .file-list { list-style: none; }
+    .file-list li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: .55rem .75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      margin-bottom: .4rem;
+      font-family: var(--mono);
+      font-size: .78rem;
+      background: var(--bg);
+    }
+    .file-list li .path { color: var(--accent); }
+    .file-list li.deleted { opacity: .35; text-decoration: line-through; }
+  </style>
 </head>
 <body>
-    <header>
-        <img src="banner.png" alt="Webserv 42">
-        <h1>DELETE — Démo</h1>
-    </header>
 
-    <main>
-        <div class="card">
-            <h2>Simuler une requête DELETE</h2>
-            <p>Cliquer sur le bouton enverra une requête HTTP <strong>DELETE</strong> vers <code>/resource-to-delete</code> (via fetch).</p>
+<nav>
+  <a class="nav-logo" href="index.html">◈ WEBSERV</a>
+  <a href="index.html">HOME</a>
+  <a href="get.html">GET</a>
+  <a href="post.html">POST</a>
+  <a href="delete.html" class="active">DELETE</a>
+  <a href="cookies.html">COOKIES</a>
+  <a href="cgi.html">CGI</a>
+  <a href="multicgi.html">MULTI-CGI</a>
+</nav>
 
-            <p style="text-align:center;">
-                <button id="btnDelete">Envoyer DELETE</button>
-            </p>
+<div class="page-header">
+  <span class="tag">HTTP Method</span>
+  <h1><span class="method-badge badge-delete" style="font-size:1.5rem;padding:.3rem .8rem">DELETE</span> Requests</h1>
+  <p>Test DELETE resource removal, verify 204/404 response codes, and check proper cleanup on your server.</p>
+</div>
 
-            <div id="result" style="margin-top:12px;"></div>
+<main>
 
-            <p style="margin-top:12px;"><strong>Tester depuis la ligne de commande :</strong></p>
-            <pre>curl -v -X DELETE http://localhost:8080/resource-to-delete</pre>
-            <small>Ton serveur peut répondre 200/204/404 selon la ressource et ta logique.</small>
+  <!-- ── 1. SIMPLE DELETE ── -->
+  <div class="section">
+    <div class="section-label">Basic DELETE Request</div>
+    <div class="card danger-zone">
+      <h3>Send a DELETE request</h3>
+      <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:1rem">
+        Sends <code style="color:var(--accent3)">DELETE /path HTTP/1.1</code>. 
+        Expect <strong>204 No Content</strong> on success, <strong>404</strong> if the resource does not exist, or <strong>403</strong> if deletion is not allowed.
+      </p>
+      <div class="form-group">
+        <label>Resource Path to DELETE</label>
+        <input type="text" id="del-path" value="/uploads/test.txt" placeholder="/path/to/resource" />
+      </div>
+      <div class="code-block" id="del-preview">
+DELETE /uploads/test.txt HTTP/1.1
+Host: localhost
+Connection: close</div>
+      <div class="flex" style="margin-top:1rem">
+        <button class="btn btn-del" onclick="doDel()">✕ Send DELETE</button>
+        <button class="btn btn-info" onclick="clearResponse('del-response')">Clear</button>
+      </div>
+      <div class="response-box" id="del-response">
+        <div class="response-header"><span>RESPONSE</span><span class="response-status" id="del-status">—</span></div>
+        <div class="response-body" id="del-body"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 2. SCENARIO: CREATE THEN DELETE ── -->
+  <div class="section">
+    <div class="section-label">Create → Verify → Delete → Verify Workflow</div>
+    <div class="card">
+      <h3>Full lifecycle test</h3>
+      <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:1.25rem">
+        Step through the complete resource lifecycle: <strong>POST</strong> (create) → <strong>GET</strong> (verify exists) → <strong>DELETE</strong> (remove) → <strong>GET</strong> (verify 404).
+      </p>
+
+      <div class="form-group">
+        <label>Resource path (writable location)</label>
+        <input type="text" id="lc-path" value="/uploads/lifecycle_test.txt" />
+      </div>
+      <div class="form-group">
+        <label>File content (to POST)</label>
+        <textarea id="lc-body">This file was created to test the DELETE method.</textarea>
+      </div>
+
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.75rem">
+        <button class="btn btn-post" onclick="lcStep(1)">① POST — Create</button>
+        <button class="btn btn-get"  onclick="lcStep(2)">② GET — Verify</button>
+        <button class="btn btn-del"  onclick="lcStep(3)">③ DELETE — Remove</button>
+        <button class="btn btn-get"  onclick="lcStep(4)">④ GET — Confirm 404</button>
+      </div>
+
+      <div style="margin-top:1rem">
+        <div class="section-label" style="margin-bottom:.5rem">Step Log</div>
+        <div id="lc-log" style="font-family:var(--mono);font-size:.75rem;line-height:2;color:var(--text-dim)">
+          Waiting for steps…
         </div>
+      </div>
+    </div>
+  </div>
 
-        <p style="text-align:center;"><a style="display:inline-block;margin-top:6px;" href="index.html">← Retour</a></p>
-    </main>
+  <!-- ── 3. QUICK TESTS ── -->
+  <div class="section">
+    <div class="section-label">Edge Cases</div>
+    <div class="grid-2">
 
-    <script>
-    (function(){
-        var btn = document.getElementById('btnDelete');
-        var out = document.getElementById('result');
-        btn.addEventListener('click', function(){
-            out.textContent = 'Envoi de la requête DELETE…';
-            fetch('/resource-to-delete', { method: 'DELETE' })
-            .then(function(resp){
-                return resp.text().then(function(text){
-                    out.innerHTML = '<div class="' + (resp.ok ? 'ok' : 'err') + '">Status: ' + resp.status + ' ' + resp.statusText + '<pre>' + escapeHtml(text) + '</pre></div>';
-                });
-            })
-            .catch(function(err){
-                out.innerHTML = '<div class="err">Erreur réseau: ' + escapeHtml(err.message) + '</div>';
-            });
-        }, false);
+      <div class="card">
+        <h3>404 — Delete non-existent</h3>
+        <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:.75rem">
+          Server should return <strong>404 Not Found</strong> when the resource doesn't exist.
+        </p>
+        <div class="code-block">DELETE /uploads/ghost_file.txt HTTP/1.1</div>
+        <button class="btn btn-del" style="margin-top:.75rem" onclick="quickDel('/uploads/ghost_file.txt','qt1')">Run</button>
+        <div class="response-box" id="qt1">
+          <div class="response-header"><span>RESPONSE</span><span class="response-status" id="qt1-status">—</span></div>
+          <div class="response-body" id="qt1-body"></div>
+        </div>
+      </div>
 
-        function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-    })();
-    </script>
+      <div class="card">
+        <h3>403 — Delete protected resource</h3>
+        <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:.75rem">
+          Attempting to delete a protected file should yield <strong>403 Forbidden</strong> or <strong>405 Method Not Allowed</strong>.
+        </p>
+        <div class="code-block">DELETE /index.html HTTP/1.1</div>
+        <button class="btn btn-del" style="margin-top:.75rem" onclick="quickDel('/index.html','qt2')">Run</button>
+        <div class="response-box" id="qt2">
+          <div class="response-header"><span>RESPONSE</span><span class="response-status" id="qt2-status">—</span></div>
+          <div class="response-body" id="qt2-body"></div>
+        </div>
+      </div>
 
-    <footer style="padding:16px;color:#666;">Webserv 42 — Démo DELETE</footer>
+    </div>
+  </div>
+
+  <!-- ── 4. RESPONSE CODES TABLE ── -->
+  <div class="section">
+    <div class="section-label">Expected Response Codes</div>
+    <div class="card">
+      <div class="info-row">
+        <span class="key">204 No Content</span>
+        <span class="val">Resource deleted successfully (no body)</span>
+      </div>
+      <div class="info-row">
+        <span class="key">200 OK</span>
+        <span class="val">Resource deleted, response body included</span>
+      </div>
+      <div class="info-row">
+        <span class="key">404 Not Found</span>
+        <span class="val">Resource to delete does not exist</span>
+      </div>
+      <div class="info-row">
+        <span class="key">403 Forbidden</span>
+        <span class="val">No permission to delete this resource</span>
+      </div>
+      <div class="info-row">
+        <span class="key">405 Method Not Allowed</span>
+        <span class="val">DELETE not permitted on this route</span>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer>WebServ Test Suite · DELETE Module</footer>
+
+<script>
+function showResponse(boxId, statusId, bodyId, status, body, ok) {
+  const box = document.getElementById(boxId);
+  const sEl = document.getElementById(statusId);
+  const bEl = document.getElementById(bodyId);
+  box.classList.add('visible');
+  sEl.textContent = status;
+  sEl.className = 'response-status ' + (ok ? 'status-ok' : 'status-err');
+  bEl.textContent = body || '(empty body)';
+}
+
+function clearResponse(id) {
+  document.getElementById(id).classList.remove('visible');
+}
+
+document.getElementById('del-path').addEventListener('input', () => {
+  const p = document.getElementById('del-path').value;
+  document.getElementById('del-preview').textContent =
+    `DELETE ${p} HTTP/1.1\nHost: ${window.location.host}\nConnection: close`;
+});
+
+async function doDel() {
+  const path = document.getElementById('del-path').value;
+  try {
+    const r = await fetch(path, { method: 'DELETE' });
+    const text = await r.text();
+    showResponse('del-response', 'del-status', 'del-body',
+      `${r.status} ${r.statusText}`, text, r.ok);
+  } catch(e) {
+    showResponse('del-response', 'del-status', 'del-body', 'ERROR', e.message, false);
+  }
+}
+
+async function quickDel(path, prefix) {
+  try {
+    const r = await fetch(path, { method: 'DELETE' });
+    const text = await r.text();
+    showResponse(prefix, prefix+'-status', prefix+'-body',
+      `${r.status} ${r.statusText}`, text || '(empty body)', r.status < 500);
+  } catch(e) {
+    showResponse(prefix, prefix+'-status', prefix+'-body', 'ERROR', e.message, false);
+  }
+}
+
+const lcLog = document.getElementById('lc-log');
+function lcAppend(html) {
+  lcLog.innerHTML += html + '\n';
+}
+
+async function lcStep(step) {
+  const path = document.getElementById('lc-path').value;
+  const body = document.getElementById('lc-body').value;
+  if (step === 1) {
+    lcLog.innerHTML = '';
+    lcAppend(`<span style="color:var(--accent2)">① POST → ${path}</span>`);
+    try {
+      const r = await fetch(path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: body,
+      });
+      lcAppend(`   Status: <span style="color:${r.ok?'var(--accent)':'var(--accent3)'}">${r.status} ${r.statusText}</span>`);
+    } catch(e) { lcAppend(`   <span style="color:var(--accent3)">Error: ${e.message}</span>`); }
+
+  } else if (step === 2) {
+    lcAppend(`<span style="color:var(--accent)">② GET → ${path}</span>`);
+    try {
+      const r = await fetch(path, { method: 'GET', cache: 'no-store' });
+      const t = await r.text();
+      lcAppend(`   Status: <span style="color:${r.ok?'var(--accent)':'var(--accent3)'}">${r.status} ${r.statusText}</span>`);
+      if (r.ok) lcAppend(`   Body: "${t.slice(0,80).trim()}…"`);
+    } catch(e) { lcAppend(`   <span style="color:var(--accent3)">Error: ${e.message}</span>`); }
+
+  } else if (step === 3) {
+    lcAppend(`<span style="color:var(--accent3)">③ DELETE → ${path}</span>`);
+    try {
+      const r = await fetch(path, { method: 'DELETE' });
+      const t = await r.text();
+      lcAppend(`   Status: <span style="color:${r.status===204||r.ok?'var(--accent)':'var(--accent3)'}">${r.status} ${r.statusText}</span>`);
+    } catch(e) { lcAppend(`   <span style="color:var(--accent3)">Error: ${e.message}</span>`); }
+
+  } else if (step === 4) {
+    lcAppend(`<span style="color:var(--accent)">④ GET → ${path} (expect 404)</span>`);
+    try {
+      const r = await fetch(path, { method: 'GET', cache: 'no-store' });
+      const ok404 = r.status === 404;
+      lcAppend(`   Status: <span style="color:${ok404?'var(--accent)':'var(--accent3)'}">${r.status} ${r.statusText} ${ok404?'✓ PASS':'✗ FAIL'}</span>`);
+    } catch(e) { lcAppend(`   <span style="color:var(--accent3)">Error: ${e.message}</span>`); }
+  }
+}
+</script>
 </body>
 </html>
