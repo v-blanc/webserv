@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:14 by vblanc            #+#    #+#             */
-/*   Updated: 2026/03/09 13:54:46 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/03/09 16:31:45 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -318,33 +318,36 @@ void unchunkBody(ClientContext *clientContext)
     pos = 0;
     while (pos < chunkedBuffer.size())
     {
-
         std::size_t chunkSizeEndIndex = chunkedBuffer.find("\r\n", pos);
         if (chunkSizeEndIndex == std::string::npos)
-            throw(HttpStatusException("400", "Bad Request"));
+            throw(HttpStatusException("400", "Bad Request 1"));
 
         std::string chunkSizeStr = chunkedBuffer.substr(pos, chunkSizeEndIndex - pos);
 
         // Magic number: 8 is for max 0xFFFFFFFF = 4GB
         if (chunkSizeStr.empty() || chunkSizeStr[0] == ' ' || chunkSizeStr.size() > 8)
+            throw HttpStatusException("400", "Bad Request 2");
+
+        if (chunkSizeStr.size() >= 2 && chunkSizeStr[0] == '0' &&
+            (chunkSizeStr[1] == 'x' || chunkSizeStr[1] == 'X'))
             throw HttpStatusException("400", "Bad Request");
 
         char *endPtr = NULL;
         errno = 0;
         std::size_t chunkSize = std::strtoul(chunkSizeStr.c_str(), &endPtr, 16);
         if (*endPtr != '\0' || errno == ERANGE)
-            throw HttpStatusException("400", "Bad Request");
+            throw HttpStatusException("400", "Bad Request 3");
 
         std::size_t chunkBufferStartIndex = chunkSizeEndIndex + 2;
         if (chunkBufferStartIndex + chunkSize > chunkedBuffer.size())
-            throw(HttpStatusException("400", "Bad Request"));
+            throw(HttpStatusException("400", "Bad Request 4"));
 
         std::size_t chunkBufferEndIndex = chunkedBuffer.find("\r\n", chunkBufferStartIndex);
         if (chunkBufferEndIndex != chunkBufferStartIndex + chunkSize)
-            throw(HttpStatusException("400", "Bad Request"));
+            throw(HttpStatusException("400", "Bad Request 5"));
 
         unchunkedBuffer.append(chunkedBuffer, chunkBufferStartIndex, chunkBufferEndIndex - chunkBufferStartIndex);
-        pos += chunkBufferEndIndex + 2;
+        pos = chunkBufferEndIndex + 2;
     }
 
     clientContext->recvBuffer = clientContext->recvBuffer.substr(0, clientContext->currentUnchunkedIndex) + unchunkedBuffer;
@@ -355,11 +358,10 @@ static void handleBody(ClientContext *clientContext, std::string &pathRequest, S
 {
     if (clientContext->isChunkedRequest == true)
     {
-        if (clientContext->recvBuffer.find("0\r\n\r\n") == std::string::npos)
-            return;
+        if (clientContext->recvBuffer.find("0\r\n\r\n") != std::string::npos)
+            clientContext->state = READY_TO_SEND;
 
         unchunkBody(clientContext);
-        clientContext->state = READY_TO_SEND;
     }
 
     if (clientContext->isChunkedRequest == false && clientContext->expectedBodySize > 0)
