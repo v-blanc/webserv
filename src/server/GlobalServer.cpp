@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:14 by vblanc            #+#    #+#             */
-/*   Updated: 2026/03/09 18:55:16 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/03/09 20:15:22 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -552,7 +552,7 @@ void GlobalServer::closeOldClientConnections()
 
     for (std::size_t i = 0; i < clientContextsToClose.size(); i++)
     {
-        std::cout << MAGENTA + getTimeOfDay() + " [debug] : Closing old client fd " << clientContextsToClose.at(i) << DEFAULT << std::endl;
+        std::cout << MAGENTA + getTimeOfDay() + " [connection] : Closing old client fd " << clientContextsToClose.at(i) << DEFAULT << std::endl;
         this->handleCloseConnection(this->_clientContexts.at(clientContextsToClose.at(i)));
     }
 }

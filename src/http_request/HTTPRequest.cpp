@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/07 14:57:52 by vblanc            #+#    #+#             */
-/*   Updated: 2026/03/09 18:46:12 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/03/09 20:10:50 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -151,25 +151,6 @@ bool HTTPRequest::resolveCgiInterpreter(const std::vector<stringPair> &cgiHandle
         }
     }
     return (false);
-}
-
-void printHTTPRequest(HTTPRequest &request)
-{
-    std::string pad(4, ' ');
-
-    std::cout << "First line:" << std::endl;
-    std::cout << pad << "Method: \'" << request.getMethod() << "\'" << std::endl;
-    std::cout << pad << "Path: \'" << request.getPath() << "\'" << std::endl;
-    std::cout << std::endl;
-
-    std::cout << "Header:" << std::endl;
-    std::cout << pad << "Host: \'" << request.getHost() << "\'" << std::endl;
-    std::cout << pad << "ContentLength: \'" << request.getContentLength() << "\'" << std::endl;
-    std::cout << pad << "Connection: \'" << request.getConnection() << "\'" << std::endl;
-    std::cout << std::endl;
-
-    std::cout << "Body:" << std::endl;
-    std::cout << "\"" << request.getBody() << "\"" << std::endl;
 }
 
 std::string HTTPRequest::getCookie(const std::string &name) const
