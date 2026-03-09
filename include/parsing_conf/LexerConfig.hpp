@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   LexerConfig.hpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
+/*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/05 10:44:22 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/20 16:07:52 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/03/09 18:16:38 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,8 +37,5 @@ private:
     void nextChar();
     void skipWhiteSpaceAndComments();
 };
-
-// TODO: Debug
-void printLexerConfig(LexerConfig lexer);
 
 #endif

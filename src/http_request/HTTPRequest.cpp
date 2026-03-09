@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HTTPRequest.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: yafahfou <yafahfou@student.42.fr>          +#+  +:+       +#+        */
+/*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/07 14:57:52 by vblanc            #+#    #+#             */
-/*   Updated: 2026/02/16 11:49:03 by yafahfou         ###   ########.fr       */
+/*   Updated: 2026/03/09 18:15:00 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -151,57 +151,6 @@ bool HTTPRequest::resolveCgiInterpreter(const std::vector<stringPair> &cgiHandle
         }
     }
     return (false);
-}
-
-void HTTPRequest::debugResponseWithCgiHandlers(int &clientFd, const std::vector<stringPair> &cgiHandlers)
-{
-    std::string interpreter;
-
-    if (this->resolveCgiInterpreter(cgiHandlers, interpreter))
-    {
-        std::string body = "CGI selected\n";
-        body += "path: " + this->_path + "\n";
-        body += "interpreter: " + interpreter + "\n";
-
-        std::string resp = "HTTP/1.1 501 Not Implemented\r\n";
-        resp += "Content-Type: text/plain\r\n";
-        resp += "Content-Length: " + toString(body.size()) + "\r\n\r\n";
-        resp += body;
-        send(clientFd, resp.c_str(), resp.size(), MSG_NOSIGNAL);
-        return;
-    }
-    this->debugStandardReponse(clientFd);
-}
-
-void HTTPRequest::debugStandardReponse(int &clientFd)
-{
-    if (!this->_isValidRequest)
-        return;
-
-    std::string sendBuf = "HTTP/1.1 200 OK\r\nLocation: http://localhost:8080/\r\nContent-Length: ";
-    std::string fileName = "www" + this->_path;
-
-    if (this->isCgiExtension())
-    {
-        this->sendCgiStubResponse(clientFd);
-        return;
-    }
-    if (this->_path == "/")
-        fileName.append("index.html");
-
-    if (isInvalidPath(fileName))
-    {
-        std::cerr << "Invalid path: contain invalid " << std::endl;
-        return;
-    }
-
-    std::string content = getLocalFileContent(fileName);
-
-    sendBuf.append(toString(content.size()));
-    sendBuf.append("\r\n\r\n");
-    sendBuf.append(content);
-
-    send(clientFd, sendBuf.c_str(), sendBuf.size(), MSG_NOSIGNAL);
 }
 
 void printHTTPRequest(HTTPRequest &request)

@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/10 10:24:29 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/19 20:03:34 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/03/09 17:16:47 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,6 @@
 #define STRUCTSERVER_H
 
 #include "define.h"
-#include <string>
 
 struct EpollContext
 {

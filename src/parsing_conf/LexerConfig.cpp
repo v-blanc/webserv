@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   LexerConfig.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
+/*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/05 12:00:57 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/20 16:07:47 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/03/09 18:20:25 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -125,20 +125,5 @@ static const char *tokenName(Token::Type t)
         return "END";
     default:
         return "UNKNOWN";
-    }
-}
-
-void printLexerConfig(LexerConfig lexer)
-{
-    for (;;)
-    {
-        Token t = lexer.currToken();
-        std::cout << tokenName(t.type) << " (line " << t.line << ")";
-        if (t.type == Token::WORD)
-            std::cout << " : [" << t.content << "]";
-        std::cout << "\n";
-        if (t.type == Token::END)
-            break;
-        lexer.nextToken();
     }
 }
