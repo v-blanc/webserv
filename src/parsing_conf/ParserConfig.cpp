@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   PasrerConfig.cpp                                   :+:      :+:    :+:   */
+/*   ParserConfig.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/05 17:26:32 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/07 14:48:10 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/03/09 18:19:47 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -78,29 +78,4 @@ Node ParserConfig::parseStatement()
 void ParserConfig::nextToken()
 {
     this->_currToken = this->_lexer.nextToken();
-}
-
-void printNode(const Node &n, int indent)
-{
-    std::string pad(indent * 4, ' ');
-
-    if (!n.directive.empty())
-    {
-        std::cout << pad << "(dir):" << n.directive;
-        std::cout << " (args):";
-        for (size_t i = 0; i < n.args.size(); ++i)
-            std::cout << " \"" << n.args[i] << "\"";
-        if (n.children.empty())
-            std::cout << " ;\n";
-        else
-        {
-            std::cout << " {\n";
-            for (size_t i = 0; i < n.children.size(); ++i)
-                printNode(n.children[i], indent + 1);
-            std::cout << pad << "}\n";
-        }
-    }
-    else // root
-        for (size_t i = 0; i < n.children.size(); ++i)
-            printNode(n.children[i], indent);
 }

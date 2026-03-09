@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 14:30:16 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/17 19:14:36 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/03/09 18:16:24 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,7 +62,6 @@ private:
     void fillGlobalConfig();
 };
 
-// TODO: Debug
 void printGlobalConfig(GlobalConfig &globalConfig);
 
 #endif

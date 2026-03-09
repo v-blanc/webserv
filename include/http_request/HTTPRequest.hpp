@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HTTPRequest.hpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
+/*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/07 14:57:04 by vblanc            #+#    #+#             */
-/*   Updated: 2026/02/19 17:36:10 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/03/09 18:15:24 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,21 +27,21 @@ public:
     ~HTTPRequest();
 
     // Getter
-    const std::string &getFileName() const { return this->_fileName;};
+    const std::string &getFileName() const { return this->_fileName; };
     bool getIsValidRequest() const { return this->_isValidRequest; };
     std::string getMethod() const { return this->_method; };
     const std::string &getPath() const { return this->_path; };
     const std::string &getQueryString() const { return this->_queryString; };
     std::string getPathWithoutQuery() const;
-    void setPath(std::string returnPath) {this->_path = returnPath;}
+    void setPath(std::string returnPath) { this->_path = returnPath; }
     std::string getHost() const { return this->_host; };
     long long getContentLength() const { return this->_contentLength; };
     std::string getContentType() const { return this->_contentType; };
     bool getConnection() const { return this->_connection; }; // ?
     std::string getBody() const { return this->_body; };
     bool isChunked() const { return this->_isChunked; };
-	std::string	getCookie(const std::string& name) const;
-	void		pushBackCookies(const std::string key, const std::string value);
+    std::string getCookie(const std::string &name) const;
+    void pushBackCookies(const std::string key, const std::string value);
 
     class StatusException : public HttpStatusException
     {
@@ -50,16 +50,10 @@ public:
             : HttpStatusException(status, message) {}
         virtual ~StatusException() throw() {}
     };
-    // Execute
-    // virtual void generateResponse() = 0;
 
-    // TODO: Debug
-    void debugStandardReponse(int &clientFd);
-    void debugResponseWithCgiHandlers(int &clientFd, const std::vector<stringPair> &cgiHandlers);
     bool resolveCgiInterpreter(const std::vector<stringPair> &cgiHandlers, std::string &interpreter) const;
 
 private:
-
     bool _isValidRequest;
     std::pair<std::string, std::string> codeStatus;
 
@@ -89,12 +83,8 @@ private:
     std::string getNormalizedExtensionFromPath(void) const;
     // (moved to public)
 
-	//Cookies
-	std::map<std::string, std::string>	_cookies;
-
+    // Cookies
+    std::map<std::string, std::string> _cookies;
 };
-
-// TODO: Debug
-// void printHTTPRequest(HTTPRequest &request);
 
 #endif

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   LocationConfig.hpp                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
+/*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/05 19:37:24 by vblanc            #+#    #+#             */
-/*   Updated: 2026/02/27 17:53:04 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/03/09 18:16:51 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -60,7 +60,7 @@ private:
     long long _clientMaxBodySize;
     std::string _root;
     std::string _uploadStore;
-    std::string _return;                            // 1 or 2 (code URL)
+    std::string _return;                           // 1 or 2 (code URL)
     std::vector<std::string> _index;               // No limit
     std::map<std::size_t, std::string> _errorPage; // No limit (at least 2, last URI)
     std::vector<std::string> _limitExcept;         // No limit

@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/06 12:10:43 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/17 18:50:40 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/03/09 18:02:59 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,6 @@
 #include "colors.h"
 #include "structConfig.h"
 
-// toString.cpp
 template <typename T>
 std::string toString(T value)
 {
@@ -50,6 +49,7 @@ void throwDuplicateValues(std::string directive, std::string value, std::string 
 void throwUnknownDirective(std::string directive, std::string fileName, std::string line);
 void handleListenFormatError(std::string listen, std::string fileName, std::string line);
 void throwErrorPageInvalidValue(std::string value, std::string fileName, std::string line);
+void throwInvalidLimitExceptValue(std::string value, std::string fileName, std::string line);
 
 // errorMessageServer.cpp
 void handleBindError(std::string listen, std::string fileName);

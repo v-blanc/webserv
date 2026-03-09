@@ -32,7 +32,4 @@ private:
     void nextToken();
 };
 
-// TODO: Debug
-void printNode(const Node &n, int indent = 0);
-
 #endif

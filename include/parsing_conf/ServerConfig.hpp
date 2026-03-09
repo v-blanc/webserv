@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ServerConfig.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
+/*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/05 19:35:55 by vblanc            #+#    #+#             */
-/*   Updated: 2026/01/23 17:14:07 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/03/09 18:17:11 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -60,9 +60,9 @@ private:
     std::vector<std::string> _index;
     std::map<std::size_t, std::string> _errorPage;
     std::vector<std::string> _listenStr;
-    std::vector<listenPair> _listen;      // No limit (but given 1 by 1)
-    std::vector<std::string> _serverName; // No limit
-    std::vector<stringPair> _cgiHandler;  // 2 (ext and interpreter)
+    std::vector<listenPair> _listen;                  // No limit (but given 1 by 1)
+    std::vector<std::string> _serverName;             // No limit
+    std::vector<stringPair> _cgiHandler;              // 2 (ext and interpreter)
     std::vector<LocationConfig> _locationConfig;
     std::map<std::string, LocationConfig> _locationConfigByPath;
 
