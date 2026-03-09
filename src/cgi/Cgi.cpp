@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/13 14:58:49 by yabokhar          #+#    #+#             */
-/*   Updated: 2026/02/25 14:44:46 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/03/09 23:38:36 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,7 +25,7 @@ static bool setNonBlocking(int fd)
 	return (true);
 }
 
-std::vector<std::string> buildCgiEnv(CgiRequestInfo const& cgiInfo, std::string const& scriptFilename)
+std::vector<std::string> buildCgiEnv(CgiRequestInfo const &cgiInfo, std::string const &scriptFilename)
 {
 	std::vector<std::string> env;
 
@@ -40,9 +40,9 @@ std::vector<std::string> buildCgiEnv(CgiRequestInfo const& cgiInfo, std::string 
 	return (env);
 }
 
-char** vectorToEnvp(std::vector<std::string> const& env)
+char **vectorToEnvp(std::vector<std::string> const &env)
 {
-	char** envp = new char *[env.size() + 1];
+	char **envp = new char *[env.size() + 1];
 
 	for (std::size_t i = 0; i < env.size(); ++i)
 	{
@@ -53,20 +53,19 @@ char** vectorToEnvp(std::vector<std::string> const& env)
 	return (envp);
 }
 
-void freeEnvp(char** envp)
+void freeEnvp(char **envp)
 {
 	if (!envp)
-		return ;
+		return;
 	for (std::size_t i = 0; envp[i] != NULL; ++i)
 		delete[] envp[i];
 	delete[] envp;
 }
 
-CgiContext* executeCgi(
-	CgiRequestInfo const& cgiInfo,
-	ClientContext* clientContext,
-	int epfd
-)
+CgiContext *executeCgi(
+	CgiRequestInfo const &cgiInfo,
+	ClientContext *clientContext,
+	int epfd)
 {
 	int inPipe[2];
 	int outPipe[2];
@@ -101,9 +100,16 @@ CgiContext* executeCgi(
 		return (NULL);
 	}
 
-	std::string scriptFilename = cgiInfo.pathWithoutQuery;
-	if (!scriptFilename.empty() && scriptFilename[0] == '/')
-		scriptFilename.erase(0, 1);
+	std::string scriptFilename = resolvePath(1, cgiInfo.pathWithoutQuery.c_str());
+
+	std::string scriptDir2 = resolvePath(2, cgiInfo.root.c_str(), scriptFilename.c_str());
+	std::size_t pos = scriptDir2.rfind('/');
+	if (pos != std::string::npos)
+		scriptDir2 = scriptDir2.substr(0, pos);
+	std::cout << RED "scriptDir2: " << scriptDir2 << std::endl;
+	// std::string scriptBase = resolvePath(2, cgiInfo.root.c_str(), scriptFilename.c_str());
+
+	// std::string fullPath = "www" + resolvePath(2, scriptDir.c_str(), scriptBase.c_str());
 
 	std::string scriptDir = cgiInfo.root;
 	std::string scriptBase = scriptFilename;
@@ -113,8 +119,11 @@ CgiContext* executeCgi(
 		scriptDir += "/" + scriptFilename.substr(0, slashPos);
 		scriptBase = scriptFilename.substr(slashPos + 1);
 	}
+	std::cout << RED "scriptDir: " << scriptDir << std::endl;
+	std::cout << "scriptBase: " << scriptBase << std::endl;
 
 	std::string fullPath = cgiInfo.root + "/" + scriptFilename;
+	std::cout << "fullPath: " << fullPath << DEFAULT << std::endl;
 	struct stat fileStat;
 	if (stat(fullPath.c_str(), &fileStat) != 0)
 	{
@@ -131,6 +140,7 @@ CgiContext* executeCgi(
 		close(inPipe[1]);
 		close(outPipe[0]);
 		close(outPipe[1]);
+
 		return (NULL);
 	}
 
@@ -144,7 +154,7 @@ CgiContext* executeCgi(
 	}
 
 	std::vector<std::string> envVec = buildCgiEnv(cgiInfo, scriptFilename);
-	char** envp = vectorToEnvp(envVec);
+	char **envp = vectorToEnvp(envVec);
 
 	pid_t pid = fork();
 	if (pid < 0)
@@ -185,7 +195,7 @@ CgiContext* executeCgi(
 	close(inPipe[1]);
 	close(outPipe[1]);
 
-	CgiContext*	cgiCtx;
+	CgiContext *cgiCtx;
 	try
 	{
 		cgiCtx = new CgiContext;
@@ -195,7 +205,7 @@ CgiContext* executeCgi(
 		close(outPipe[0]);
 		kill(pid, SIGKILL);
 		waitpid(pid, NULL, 0);
-		throw (HttpStatusException("500", "Internal Server Error"));
+		throw(HttpStatusException("500", "Internal Server Error"));
 	}
 	cgiCtx->fd = outPipe[0];
 	cgiCtx->client = clientContext;
@@ -216,4 +226,3 @@ CgiContext* executeCgi(
 	}
 	return (cgiCtx);
 }
-

@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:14 by vblanc            #+#    #+#             */
-/*   Updated: 2026/03/09 16:31:45 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/03/09 23:13:59 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -457,6 +457,7 @@ void GlobalServer::handleReading(ClientContext *clientContext)
         }
         catch (const CgiRequiredException &e)
         {
+            std::cout << e.what() << std::endl;
             CgiRequestInfo const &cgiInfo = e.getCgiInfo();
             CgiContext *cgiCtx = executeCgi(cgiInfo, clientContext, this->_epfd);
 

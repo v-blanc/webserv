@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/06 12:10:43 by vblanc            #+#    #+#             */
-/*   Updated: 2026/03/09 18:02:59 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/03/09 22:59:46 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -54,5 +54,8 @@ void throwInvalidLimitExceptValue(std::string value, std::string fileName, std::
 // errorMessageServer.cpp
 void handleBindError(std::string listen, std::string fileName);
 void throwMajorIssueCreatingServer(std::string serverName);
+
+// resolvePath.cpp
+std::string resolvePath(int count, ...);
 
 #endif
