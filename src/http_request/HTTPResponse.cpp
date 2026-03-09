@@ -156,8 +156,6 @@ void	HTTPResponse::handlePostMethod(HTTPRequest &request)
 			throw (HTTPRequest::StatusException("508", "Loop Detected"));
 		std::string	newPath = myLocation.getReturn();
 		request.setPath(newPath);
-		this->_status = "301";
-		this->_message = "Moved Permanently";
 		this->_newLocation = newPath;
 		return (handlePostMethod(request));
 	}
@@ -338,8 +336,6 @@ void HTTPResponse::handleGetMethod(HTTPRequest &request)
 			throw (HTTPRequest::StatusException("508", "Loop Detected"));
 		std::string	newPath = myLocation.getReturn();
 		request.setPath(newPath);
-		this->_status = "301";
-		this->_message = "Moved Permanently";
 		this->_newLocation = newPath;
 		return (handleGetMethod(request));
 	}
@@ -399,8 +395,6 @@ void	HTTPResponse::handleDeleteMethod(HTTPRequest &request)
 			throw (HTTPRequest::StatusException("508", "Loop Detected"));
 		std::string	newPath = location.getReturn();
 		request.setPath(newPath);
-		this->_status = "301";
-		this->_message = "Moved Permanently";
 		this->_newLocation = newPath;
 		return (handleGetMethod(request));
 	}
