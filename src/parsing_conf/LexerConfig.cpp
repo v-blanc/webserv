@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/05 12:00:57 by vblanc            #+#    #+#             */
-/*   Updated: 2026/03/09 18:20:25 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/03/09 18:37:05 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -106,24 +106,5 @@ void LexerConfig::skipWhiteSpaceAndComments()
             continue;
         }
         break;
-    }
-}
-
-static const char *tokenName(Token::Type t)
-{
-    switch (t)
-    {
-    case Token::WORD:
-        return "WORD";
-    case Token::LBRACE:
-        return "LBRACE";
-    case Token::RBRACE:
-        return "RBRACE";
-    case Token::SEMICOLON:
-        return "SEMICOLON";
-    case Token::END:
-        return "END";
-    default:
-        return "UNKNOWN";
     }
 }

@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 12:57:33 by vblanc            #+#    #+#             */
-/*   Updated: 2026/03/09 18:19:07 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/03/09 18:29:18 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,8 +27,6 @@ int main(int argc, char **argv)
     try
     {
         GlobalConfig globalConfig(configFile.c_str());
-        // printGlobalConfig(globalConfig); // DEBUG
-
         GlobalServer globalServer(globalConfig);
     }
     catch (const std::exception &e)
