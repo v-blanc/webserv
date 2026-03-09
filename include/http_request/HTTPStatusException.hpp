@@ -30,6 +30,7 @@ struct CgiRequestInfo
 		unsigned long	contentLength;
 		std::string 	contentType;
 		std::string 	body;
+		std::string		root;
 };
 
 class	CgiRequiredException : public std::exception

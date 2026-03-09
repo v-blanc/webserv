@@ -172,6 +172,7 @@ void	HTTPResponse::handlePostMethod(HTTPRequest &request)
 		cgiInfo.contentLength = request.getContentLength();
 		cgiInfo.contentType = request.getContentType();
 		cgiInfo.body = request.getBody();
+		cgiInfo.root = myLocation.getRoot();
 		throw CgiRequiredException(cgiInfo);
 	}
 	if (!request.getFileName().empty())
@@ -353,6 +354,7 @@ void HTTPResponse::handleGetMethod(HTTPRequest &request)
 		cgiInfo.contentLength = request.getContentLength();
 		cgiInfo.contentType = request.getContentType();
 		cgiInfo.body = request.getBody();
+		cgiInfo.root = myLocation.getRoot();
 		throw (CgiRequiredException(cgiInfo));
 	}
 	std::string requestPath = request.getPathWithoutQuery();
