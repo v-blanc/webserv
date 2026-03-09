@@ -83,6 +83,8 @@ private:
     std::string getNormalizedExtensionFromPath(void) const;
     // (moved to public)
 
+    void debugPrintSession(const SessionManager &sessionManager) const;
+
     // Cookies
     std::map<std::string, std::string> _cookies;
 };
