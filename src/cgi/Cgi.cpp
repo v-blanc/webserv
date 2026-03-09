@@ -105,7 +105,7 @@ CgiContext* executeCgi(
 	if (!scriptFilename.empty() && scriptFilename[0] == '/')
 		scriptFilename.erase(0, 1);
 
-	std::string scriptDir = "www";
+	std::string scriptDir = cgiInfo.root;
 	std::string scriptBase = scriptFilename;
 	std::size_t slashPos = scriptFilename.rfind('/');
 	if (slashPos != std::string::npos)
@@ -114,7 +114,7 @@ CgiContext* executeCgi(
 		scriptBase = scriptFilename.substr(slashPos + 1);
 	}
 
-	std::string fullPath = "www/" + scriptFilename;
+	std::string fullPath = cgiInfo.root + "/" + scriptFilename;
 	struct stat fileStat;
 	if (stat(fullPath.c_str(), &fileStat) != 0)
 	{
