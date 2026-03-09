@@ -6,7 +6,7 @@
 /*   By: yassinefahfouhi <yassinefahfouhi@studen    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 14:04:09 by yassinefahf       #+#    #+#             */
-/*   Updated: 2026/03/06 19:00:57 by yassinefahf      ###   ########.fr       */
+/*   Updated: 2026/03/09 20:25:39 by yabokhar         ###   ########lyon.fr   */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -103,7 +103,13 @@ void	HTTPResponse::handleBadRequest(const std::string &status, const std::string
 {
 	if (message == "Page Not Found")
 	{
-		this->_body = getLocalFileContent(resolveRoot(this->_serverConfig.getRoot()) + "/error/404.html");
+		std::map<std::size_t, std::string> const errorPages = this->_serverConfig.getErrorPage();
+		std::map<std::size_t, std::string>::const_iterator it = errorPages.find(404);
+
+		if (it != errorPages.end())
+			this->_body = getLocalFileContent(resolveRoot(this->_serverConfig.getRoot()) + it->second);
+		/*else
+			throw (HTTPRequest::StatusException("404", "Page Not Found"));*/
 		this->_contentLength = this->_body.size();
 	}
 	std::ostringstream oss;
@@ -205,6 +211,8 @@ void	HTTPResponse::handlePostMethod(HTTPRequest &request)
 
 bool	HTTPResponse::ismethodNotAllowed(std::vector<std::string> methods, std::string myMethod)
 {
+	if (methods.empty())
+		return (false);
 	std::vector<std::string>::iterator it = std::find(methods.begin(), methods.end(), myMethod);
 	if (it == methods.end())
 		return (true);
@@ -365,6 +373,12 @@ void HTTPResponse::handleGetMethod(HTTPRequest &request)
 		throw (CgiRequiredException(cgiInfo));
 	}
 	std::string requestPath = request.getPathWithoutQuery();
+	std::cerr << "[DEBUG GET] path='" << path << "' requestPath='" << requestPath
+	          << "' root='" << resolveRoot(myLocation.getRoot())
+	          << "' index_count=" << myLocation.getIndex().size()
+	          << " limitExcept_count=" << myLocation.getLimitExcept().size() << std::endl;
+	if (!myLocation.getIndex().empty())
+		std::cerr << "[DEBUG GET] first_index='" << myLocation.getIndex().at(0) << "'" << std::endl;
 	if (path == "/" || requestPath.at(requestPath.size() - 1) == '/')
 		handleIndexFile(myLocation, requestPath);
 	else
