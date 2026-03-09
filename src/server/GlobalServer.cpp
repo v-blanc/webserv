@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:14 by vblanc            #+#    #+#             */
-/*   Updated: 2026/02/25 18:08:51 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/03/09 16:31:45 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -273,7 +273,7 @@ static void handleHeaders(ClientContext *clientContext)
     if (pos != std::string::npos)
     {
         clientContext->bodyStartIndex = pos + 4;
-        clientContext->currentUnchunkedIndex = clientContext->bodyStartIndex; 
+        clientContext->currentUnchunkedIndex = clientContext->bodyStartIndex;
 
         std::size_t posTransfer = clientContext->recvBuffer.find("Transfer-Encoding:");
         if (posTransfer != std::string::npos)
@@ -309,51 +309,69 @@ static void handleHeaders(ClientContext *clientContext)
     }
 }
 
-void    unchunkBody(ClientContext* clientContext)
-
+void unchunkBody(ClientContext *clientContext)
 {
-    std::string     unchunked;
-    std::size_t     pos;
-    std::size_t     posBis;
-    std::string     body = clientContext->recvBuffer.substr(clientContext->currentUnchunkedIndex);
+    std::string chunkedBuffer = clientContext->recvBuffer.substr(clientContext->currentUnchunkedIndex);
+    std::size_t pos;
+    std::string unchunkedBuffer;
 
     pos = 0;
-    while (pos < body.size())
+    while (pos < chunkedBuffer.size())
     {
-        std::size_t lineEnd = body.find("\r\n", pos);
-        if (lineEnd == std::string::npos)
-            throw (HttpStatusException("400", "Bad Request"));
-        std::string chunkSizeStr = body.substr(pos, lineEnd - pos);
-        std::size_t chunkSize = std::strtoul(chunkSizeStr.c_str(), NULL, 16);
-        pos = lineEnd + 2;
-        if (!chunkSize)
-            break ;
-        if (pos + chunkSize > body.size())
-            throw (HttpStatusException("400", "Bad Request"));
-        posBis = body.find("\r\n", pos + chunkSize);
-        if (posBis != pos + chunkSize)
-            throw (HttpStatusException("400", "Bad Request"));
-        unchunked.append(body, pos, chunkSize);
-        pos += chunkSize + 2;
+        std::size_t chunkSizeEndIndex = chunkedBuffer.find("\r\n", pos);
+        if (chunkSizeEndIndex == std::string::npos)
+            throw(HttpStatusException("400", "Bad Request 1"));
+
+        std::string chunkSizeStr = chunkedBuffer.substr(pos, chunkSizeEndIndex - pos);
+
+        // Magic number: 8 is for max 0xFFFFFFFF = 4GB
+        if (chunkSizeStr.empty() || chunkSizeStr[0] == ' ' || chunkSizeStr.size() > 8)
+            throw HttpStatusException("400", "Bad Request 2");
+
+        if (chunkSizeStr.size() >= 2 && chunkSizeStr[0] == '0' &&
+            (chunkSizeStr[1] == 'x' || chunkSizeStr[1] == 'X'))
+            throw HttpStatusException("400", "Bad Request");
+
+        char *endPtr = NULL;
+        errno = 0;
+        std::size_t chunkSize = std::strtoul(chunkSizeStr.c_str(), &endPtr, 16);
+        if (*endPtr != '\0' || errno == ERANGE)
+            throw HttpStatusException("400", "Bad Request 3");
+
+        std::size_t chunkBufferStartIndex = chunkSizeEndIndex + 2;
+        if (chunkBufferStartIndex + chunkSize > chunkedBuffer.size())
+            throw(HttpStatusException("400", "Bad Request 4"));
+
+        std::size_t chunkBufferEndIndex = chunkedBuffer.find("\r\n", chunkBufferStartIndex);
+        if (chunkBufferEndIndex != chunkBufferStartIndex + chunkSize)
+            throw(HttpStatusException("400", "Bad Request 5"));
+
+        unchunkedBuffer.append(chunkedBuffer, chunkBufferStartIndex, chunkBufferEndIndex - chunkBufferStartIndex);
+        pos = chunkBufferEndIndex + 2;
     }
-    unchunked = clientContext->recvBuffer.substr(0, clientContext->currentUnchunkedIndex) + unchunked;
-    clientContext->recvBuffer = unchunked;
+
+    clientContext->recvBuffer = clientContext->recvBuffer.substr(0, clientContext->currentUnchunkedIndex) + unchunkedBuffer;
+    clientContext->currentUnchunkedIndex = clientContext->recvBuffer.size();
 }
 
 static void handleBody(ClientContext *clientContext, std::string &pathRequest, ServerConfig &serverConfig)
 {
     if (clientContext->isChunkedRequest == true)
     {
+        if (clientContext->recvBuffer.find("0\r\n\r\n") != std::string::npos)
+            clientContext->state = READY_TO_SEND;
+
         unchunkBody(clientContext);
     }
-    else if (clientContext->expectedBodySize > 0)
+
+    if (clientContext->isChunkedRequest == false && clientContext->expectedBodySize > 0)
     {
         if (clientContext->recvBuffer.size() - clientContext->bodyStartIndex == clientContext->expectedBodySize)
             clientContext->state = READY_TO_SEND;
         else if (clientContext->recvBuffer.size() - clientContext->bodyStartIndex > clientContext->expectedBodySize)
             throw(HttpStatusException("413", "Payload Too Large"));
     }
-    else
+    else if (clientContext->isChunkedRequest == false)
         throw(HttpStatusException("400", "Bad Request"));
 
     if (pathRequest.empty())
@@ -400,10 +418,13 @@ void GlobalServer::handleReading(ClientContext *clientContext)
 
         try
         {
-            if (clientContext->state == READING_HEADERS)
-                handleHeaders(clientContext);
-            else if (clientContext->state == READING_BODY)
-                handleBody(clientContext, pathRequest, this->_serversConfig.at(clientContext->serverFd));
+            if (clientContext->state == READING_HEADERS || clientContext->state == READING_BODY)
+            {
+                if (clientContext->state == READING_HEADERS)
+                    handleHeaders(clientContext);
+                if (clientContext->state == READING_BODY)
+                    handleBody(clientContext, pathRequest, this->_serversConfig.at(clientContext->serverFd));
+            }
             else
                 throw(HttpStatusException("400", "Bad Request"));
         }
