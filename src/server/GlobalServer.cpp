@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:14 by vblanc            #+#    #+#             */
-/*   Updated: 2026/03/09 18:22:23 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/03/09 20:15:22 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -112,7 +112,7 @@ void GlobalServer::loopServer()
         struct epoll_event events[MAX_EPOLL_WAIT_EVENTS];
         int n = epoll_wait(this->_epfd, events, MAX_EPOLL_WAIT_EVENTS, 100);
 
-        this->closeOldClientConnexions();
+        this->closeOldClientConnections();
         this->closeTimedOutCgi();
 
         if (n < 0)
@@ -124,12 +124,12 @@ void GlobalServer::loopServer()
             if (ServerContext *serverContext = dynamic_cast<ServerContext *>(context))
             {
                 if (events[i].events & EPOLLIN)
-                    this->handleNewClientConnexion(serverContext->fd);
+                    this->handleNewClientConnection(serverContext->fd);
             }
             else if (ClientContext *clientContext = dynamic_cast<ClientContext *>(context))
             {
                 if (events[i].events & (EPOLLERR | EPOLLHUP | EPOLLRDHUP))
-                    this->handleCloseConnexion(clientContext);
+                    this->handleCloseConnection(clientContext);
                 else
                 {
                     if (events[i].events & EPOLLIN)
@@ -183,7 +183,7 @@ static ClientContext *newClientContext(int clientSocket, int serverFd)
     return (clientContext);
 }
 
-void GlobalServer::handleNewClientConnexion(int &serverFd)
+void GlobalServer::handleNewClientConnection(int &serverFd)
 {
     int clientSocket;
     struct sockaddr_in clientAddr;
@@ -217,7 +217,7 @@ void GlobalServer::handleNewClientConnexion(int &serverFd)
             return;
         }
 
-        std::cout << GREEN + getTimeOfDay() + " [ok] : Accepted new connexion from port ‘" << ntohs(clientAddr.sin_port) << "’ (as fd " << clientSocket << ") on server fd " << serverFd << DEFAULT << std::endl;
+        std::cout << MAGENTA + getTimeOfDay() + " [connection] : Accepted new connection from port ‘" << ntohs(clientAddr.sin_port) << "’ (as fd " << clientSocket << ") on server fd " << serverFd << DEFAULT << std::endl;
     }
 }
 
@@ -430,7 +430,7 @@ void GlobalServer::handleReading(ClientContext *clientContext)
             }
             catch (const std::exception &)
             {
-                this->handleCloseConnexion(clientContext);
+                this->handleCloseConnection(clientContext);
             }
             return;
         }
@@ -481,6 +481,8 @@ void GlobalServer::handleWriting(ClientContext *clientContext)
     ssize_t s;
     while (clientContext->sendBufferIndex < static_cast<ssize_t>(clientContext->sendBuffer.size()))
     {
+        // std::cout << YELLOW << "Response sent:\n" DARKEN "\"" << clientContext->sendBuffer << "\"" DEFAULT << std::endl; // DEBUG
+
         s = send(clientContext->fd, clientContext->sendBuffer.c_str() + clientContext->sendBufferIndex, clientContext->sendBuffer.size() - clientContext->sendBufferIndex, MSG_NOSIGNAL);
 
         if (s > 0)
@@ -493,7 +495,7 @@ void GlobalServer::handleWriting(ClientContext *clientContext)
         else
         {
             throw std::runtime_error(RED "error ? s=" + toString(s) + " errno = " + toString(errno) + DEFAULT);
-            this->handleCloseConnexion(clientContext);
+            this->handleCloseConnection(clientContext);
         }
     }
 
@@ -501,7 +503,7 @@ void GlobalServer::handleWriting(ClientContext *clientContext)
     {
         disableEPOLLOUT(this->_epfd, clientContext);
         if (clientContext->keepAlive == false)
-            this->handleCloseConnexion(clientContext);
+            this->handleCloseConnection(clientContext);
         else
             resetClientContext(clientContext);
     }
@@ -509,7 +511,7 @@ void GlobalServer::handleWriting(ClientContext *clientContext)
         throw std::runtime_error(RED "Unexpected error during handleWriting(): clientContext->sendBufferIndex != clientContext->sendBuffer.size()" DEFAULT);
 }
 
-void GlobalServer::handleCloseConnexion(ClientContext *clientContext)
+void GlobalServer::handleCloseConnection(ClientContext *clientContext)
 {
     if (this->_clientContexts.count(clientContext->fd) == 0)
     {
@@ -528,7 +530,7 @@ void GlobalServer::handleCloseConnexion(ClientContext *clientContext)
             cleanupCgi(found->second);
     }
 
-    std::cout << MAGENTA + getTimeOfDay() + " [debug] : Close connexion fd " << clientContext->fd << DEFAULT << std::endl;
+    std::cout << MAGENTA + getTimeOfDay() + " [connection] : Close connection fd " << clientContext->fd << DEFAULT << std::endl;
 
     if (epoll_ctl(this->_epfd, EPOLL_CTL_DEL, clientContext->fd, NULL))
         throw(std::runtime_error(RED "epoll_ctl() HERE error" DEFAULT));
@@ -538,20 +540,20 @@ void GlobalServer::handleCloseConnexion(ClientContext *clientContext)
     delete clientContext;
 }
 
-void GlobalServer::closeOldClientConnexions()
+void GlobalServer::closeOldClientConnections()
 {
     std::vector<int> clientContextsToClose;
 
     for (std::map<int, ClientContext *>::iterator it = this->_clientContexts.begin(); it != this->_clientContexts.end(); it++)
     {
-        if ((time(NULL) - it->second->lastActive) > TIMEOUT_OLD_CONNEXIONS)
+        if ((time(NULL) - it->second->lastActive) > TIMEOUT_OLD_CONNECTIONS)
             clientContextsToClose.push_back(it->first);
     }
 
     for (std::size_t i = 0; i < clientContextsToClose.size(); i++)
     {
-        std::cout << MAGENTA + getTimeOfDay() + " [debug] : Closing old client fd " << clientContextsToClose.at(i) << DEFAULT << std::endl;
-        this->handleCloseConnexion(this->_clientContexts.at(clientContextsToClose.at(i)));
+        std::cout << MAGENTA + getTimeOfDay() + " [connection] : Closing old client fd " << clientContextsToClose.at(i) << DEFAULT << std::endl;
+        this->handleCloseConnection(this->_clientContexts.at(clientContextsToClose.at(i)));
     }
 }
 
