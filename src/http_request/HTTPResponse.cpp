@@ -95,7 +95,7 @@ void	HTTPResponse::handleBadRequest(const std::string &status, const std::string
 {
 	if (message == "Page Not Found")
 	{
-		this->_body = getLocalFileContent("www/error/404.html");
+		this->_body = getLocalFileContent(this->_serverConfig.getRoot() + "/error/404.html");
 		this->_contentLength = this->_body.size();
 	}
 	std::ostringstream oss;
@@ -178,9 +178,9 @@ void	HTTPResponse::handlePostMethod(HTTPRequest &request)
 	{
 		std::string fileName;
 		if (!myLocation.getUploadStore().empty())
-			fileName = "www/" + myLocation.getUploadStore() + '/' + request.getFileName();
+			fileName = myLocation.getRoot() + "/" + myLocation.getUploadStore() + '/' + request.getFileName();
 		else
-			fileName = "www/upload_store/" + request.getFileName();
+			fileName = myLocation.getRoot() + "/upload_store/" + request.getFileName();
 		std::ofstream file(fileName.c_str());
 		if (!file.is_open())
 			throw HTTPRequest::StatusException("404", "Page Not Found");
@@ -188,11 +188,10 @@ void	HTTPResponse::handlePostMethod(HTTPRequest &request)
 		file.close();
 		this->_status = "201";
 		this->_message = "Created";
-		this->_body = getLocalFileContent("www/upload.html");
-		std::cout<<"ana hna"<<std::endl;
+		this->_body = getLocalFileContent(myLocation.getRoot() + "/upload.html");
 	}
 	if (this->_body.empty())
-		this->_body = getLocalFileContent("www/submit.html");
+		this->_body = getLocalFileContent(myLocation.getRoot() + "/submit.html");
 }
 
 bool	HTTPResponse::ismethodNotAllowed(std::vector<std::string> methods, std::string myMethod)
@@ -260,7 +259,7 @@ void HTTPResponse::handleRessource(HTTPRequest &request)
 	std::string ressource =  handleRequestPath(request.getPathWithoutQuery(), true);
 	if (!ressource.empty() && ressource[0] == '/')
 		ressource.erase(0, 1);
-	ressource = "www" + request.getPathWithoutQuery();
+	ressource = this->_serverConfig.getRoot() + request.getPathWithoutQuery();
 	std::ifstream file(ressource.c_str());
 	if (!file.is_open())
 		throw HTTPRequest::StatusException("404", "Page Not Found");
@@ -370,12 +369,8 @@ void	HTTPResponse::handleDeleteMethod(HTTPRequest &request)
 {
 	std::string const		requestPath = request.getPathWithoutQuery();
 	std::string const		locationPath = handleRequestPath(requestPath, false);
-	std::string const		filename = "www" + requestPath;
-	const char*				filename_c_str = filename.c_str();
 	struct stat				st;
 	LocationConfig 			location;
-
-	std::cout << requestPath << '\n' << locationPath << std::endl;
 
 	try
 	{
@@ -388,7 +383,10 @@ void	HTTPResponse::handleDeleteMethod(HTTPRequest &request)
 	if (!this->_serverConfig.isValidLocationPath(locationPath))
 	{
 		location = this->_serverConfig.getLocationConfigByPath("/");
-	} 
+	}
+
+	std::string const		filename = location.getRoot() + requestPath;
+	const char*				filename_c_str = filename.c_str();
 	if (!location.getReturn().empty())
 	{
 		if (++this->_redirectCount > 10)
