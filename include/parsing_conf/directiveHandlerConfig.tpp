@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/06 14:21:38 by vblanc            #+#    #+#             */
-/*   Updated: 2026/02/25 17:04:51 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/03/09 18:03:57 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,8 +36,11 @@ void handleClientMaxBodySize(Config &config, Node &node, std::string &directive)
     else if (node.args.size() != 1)
         throwInvalidNumberOfArguments(directive, config.getFileName(), node.line);
 
+    if (!node.args.at(0).empty() && node.args.at(0)[0] == '-')
+        throwInvalidClientMaxValue(directive, config.getFileName(), node.line);
+
     std::stringstream ss(node.args.at(0));
-    long long result;
+    unsigned long long result;
     ss >> result;
     if (!ss.eof() || ss.fail())
         throwInvalidClientMaxValue(directive, config.getFileName(), node.line);
@@ -72,6 +75,9 @@ void handleErrorPageDirective(Config &config, Node &node, std::string &directive
 
     for (std::size_t i = 0; i < (node.args.size() - 1); i++)
     {
+        if (!node.args.at(i).empty() && node.args.at(i)[0] == '-')
+            throwInvalidClientMaxValue(directive, config.getFileName(), node.line);
+
         std::stringstream ss(node.args.at(i));
         int errorCode;
         ss >> errorCode;
@@ -256,6 +262,9 @@ void handleLimitExceptDirective(Config &config, Node &node, std::string &directi
 
     for (size_t i = 0; i < limitExcept.size(); ++i)
     {
+        if (limitExcept.at(i) != "GET" && limitExcept.at(i) != "POST" && limitExcept.at(i) != "DELETE")
+            throwInvalidLimitExceptValue(limitExcept.at(i), config.getFileName(), node.line);
+
         if (seen.count(limitExcept.at(i)))
             throwDuplicateValues(directive, node.args.at(0), config.getFileName(), node.line);
         seen.insert(limitExcept.at(i));

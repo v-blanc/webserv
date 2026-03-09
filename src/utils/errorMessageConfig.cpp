@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/06 12:15:31 by vblanc            #+#    #+#             */
-/*   Updated: 2025/12/17 18:50:31 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/03/09 18:05:25 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -136,6 +136,14 @@ void handleListenFormatError(std::string listen, std::string fileName, std::stri
 void throwErrorPageInvalidValue(std::string value, std::string fileName, std::string line)
 {
     std::string errorMessage = RED + getTimeOfDay() + " [emerg] : invalid value \"" + value + "\" in ";
+    errorMessage += fileName + ":" + line + DEFAULT;
+
+    throw std::runtime_error(errorMessage);
+}
+
+void throwInvalidLimitExceptValue(std::string value, std::string fileName, std::string line)
+{
+    std::string errorMessage = RED + getTimeOfDay() + " [emerg] : invalid value limit_except \"" + value + "\" in ";
     errorMessage += fileName + ":" + line + DEFAULT;
 
     throw std::runtime_error(errorMessage);
