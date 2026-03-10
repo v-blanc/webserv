@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/04 12:35:58 by vblanc            #+#    #+#             */
-/*   Updated: 2026/03/09 18:53:02 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/03/10 03:07:55 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,6 +31,7 @@
 #include <unistd.h>
 
 #include <algorithm>
+#include <cstdarg>
 #include <cstdlib>
 #include <cstring>
 #include <ctime>

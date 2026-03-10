@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:14 by vblanc            #+#    #+#             */
-/*   Updated: 2026/03/10 01:17:45 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/03/10 03:58:13 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -468,6 +468,31 @@ void GlobalServer::handleReading(ClientContext *clientContext)
     }
 }
 
+static void logRequest(ClientContext *clientContext)
+{
+    if (clientContext->recvBuffer.find("\r\n") != std::string::npos && clientContext->sendBuffer.find("\r\n") != std::string::npos)
+    {
+        std::string recvFirstLine = clientContext->recvBuffer.substr(0, clientContext->recvBuffer.find("\r\n"));
+        std::size_t methodEnd = recvFirstLine.find(' ');
+        std::size_t pathEnd = recvFirstLine.find(' ', methodEnd + 1);
+        std::string method = recvFirstLine.substr(0, methodEnd);
+        std::string path = recvFirstLine.substr(methodEnd + 1, pathEnd - (methodEnd + 1));
+
+        std::string sentFirstLine = clientContext->sendBuffer.substr(0, clientContext->sendBuffer.find("\r\n"));
+        std::size_t statusEnd = sentFirstLine.find(' ') + 1;
+        std::size_t messageEnd = sentFirstLine.find(' ', statusEnd + 1);
+        std::string status = sentFirstLine.substr(statusEnd, messageEnd - (statusEnd));
+        std::string message = sentFirstLine.substr(messageEnd + 1, sentFirstLine.size() - messageEnd);
+
+        if (status[0] == '2')
+            std::cout << GREEN;
+        else
+            std::cout << DARKEN RED;
+
+        std::cout << getTimeOfDay() + " [" << method << " " << path << "] : " << status << " " << message << DEFAULT << std::endl;
+    }
+}
+
 void GlobalServer::handleWriting(ClientContext *clientContext)
 {
     if (clientContext->state != READY_TO_SEND && clientContext->state != SENDING)
@@ -475,6 +500,8 @@ void GlobalServer::handleWriting(ClientContext *clientContext)
 
     if (clientContext->state == READY_TO_SEND)
         clientContext->state = SENDING;
+
+    logRequest(clientContext);
 
     ssize_t s;
     while (clientContext->sendBufferIndex < static_cast<ssize_t>(clientContext->sendBuffer.size()))
@@ -574,8 +601,6 @@ void GlobalServer::handleCgiEvent(CgiContext *cgiContext)
     }
     else if (!r)
     {
-        std::cout << GREEN + getTimeOfDay() + " [ok] : CGI finished normaly for fd " << cgiContext->fd << DEFAULT << std::endl;
-
         std::string response;
         response += "HTTP/1.1 200 OK\r\n";
         response += "Content-Type: text/plain\r\n";

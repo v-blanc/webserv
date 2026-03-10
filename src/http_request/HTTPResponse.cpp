@@ -6,21 +6,11 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 14:04:09 by yassinefahf       #+#    #+#             */
-/*   Updated: 2026/03/10 01:32:24 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/03/10 03:51:47 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "HTTPResponse.hpp"
-
-static void printRequestLog(HTTPRequest &request, const std::string &status, const std::string &message)
-{
-	if (status[0] == '2')
-		std::cout << GREEN;
-	else
-		std::cout << DARKEN RED;
-
-	std::cout << getTimeOfDay() + " [" << request.getMethod() << " " << request.getPath() << "] : " << status << " " << message << DEFAULT << std::endl;
-}
 
 HTTPResponse::HTTPResponse(HTTPRequest &request, const std::string &status, ServerConfig &serverConfig, std::string message, SessionManager &sessionManager) : _serverConfig(serverConfig), _sessionManager(sessionManager), _body(""), _contentLength(0), _response(""), _redirectCount(0)
 {
@@ -33,7 +23,6 @@ HTTPResponse::HTTPResponse(HTTPRequest &request, const std::string &status, Serv
 	if (status != "")
 	{
 		handleBadRequest(status, message);
-		printRequestLog(request, status, message);
 	}
 	else
 	{
@@ -43,12 +32,10 @@ HTTPResponse::HTTPResponse(HTTPRequest &request, const std::string &status, Serv
 			{
 				handleGetMethod(request);
 				prepareGoodResponse();
-				printRequestLog(request, this->_status, this->_message);
 			}
 			catch (const HTTPRequest::StatusException &e)
 			{
 				handleBadRequest(e.getStatus(), e.getMessage());
-				printRequestLog(request, e.getStatus(), e.getMessage());
 			}
 		}
 		else if (request.getMethod() == "POST")
@@ -57,12 +44,10 @@ HTTPResponse::HTTPResponse(HTTPRequest &request, const std::string &status, Serv
 			{
 				handlePostMethod(request);
 				prepareGoodResponse();
-				printRequestLog(request, this->_status, this->_message);
 			}
 			catch (const HTTPRequest::StatusException &e)
 			{
 				handleBadRequest(e.getStatus(), e.getMessage());
-				printRequestLog(request, e.getStatus(), e.getMessage());
 			}
 		}
 		else if (request.getMethod() == "DELETE")
@@ -71,16 +56,12 @@ HTTPResponse::HTTPResponse(HTTPRequest &request, const std::string &status, Serv
 			{
 				handleDeleteMethod(request);
 				prepareGoodResponse();
-				printRequestLog(request, this->_status, this->_message);
 			}
 			catch (const HTTPRequest::StatusException &e)
 			{
 				handleBadRequest(e.getStatus(), e.getMessage());
-				printRequestLog(request, e.getStatus(), e.getMessage());
 			}
 		}
-		else
-			return;
 	}
 }
 
@@ -405,24 +386,27 @@ void HTTPResponse::handleDeleteMethod(HTTPRequest &request)
 
 {
 	std::string const requestPath = request.getPathWithoutQuery();
-	std::string const locationPath = handleRequestPath(requestPath, false);
+	std::string locationPath = resolvePath(1, requestPath.c_str());
+
+	// std::size_t pos = requestPath.rfind('/');
+	// if (pos != std::string::npos && pos != 0 && pos != requestPath.size() - 1)
+	// 	locationPath = resolvePath(1, requestPath.substr(0, pos).c_str());
+
 	struct stat st;
 	LocationConfig location;
 
-	try
-	{
+	std::cout << "locationPath: " << locationPath << std::endl;
+	if (this->_serverConfig.isValidLocationPath(locationPath))
 		location = this->_serverConfig.getLocationConfigByPath(locationPath);
-	}
-	catch (const std::out_of_range &e)
-	{
+	else if (this->_serverConfig.isValidLocationPath("/"))
 		location = this->_serverConfig.getLocationConfigByPath("/");
-	}
-	if (!this->_serverConfig.isValidLocationPath(locationPath))
-	{
-		location = this->_serverConfig.getLocationConfigByPath("/");
-	}
+	else
+		fillLocationWithServerRules(location);
 
-	std::string const filename = resolveRoot(location.getRoot()) + requestPath;
+	if (this->ismethodNotAllowed(location.getLimitExcept(), request.getMethod()))
+		throw HTTPRequest::StatusException("405", "Method Not Allowed");
+
+	std::string const filename = resolvePath(2, location.getRoot().c_str(), requestPath.c_str());
 	const char *filename_c_str = filename.c_str();
 	if (!location.getReturn().empty())
 	{
@@ -433,8 +417,10 @@ void HTTPResponse::handleDeleteMethod(HTTPRequest &request)
 		this->_newLocation = newPath;
 		return (handleGetMethod(request));
 	}
+
 	if (this->ismethodNotAllowed(location.getLimitExcept(), request.getMethod()))
 		throw HTTPRequest::StatusException("405", "Method Not Allowed");
+
 	if (stat(filename_c_str, &st) < 0)
 	{
 		this->_status = "204";
@@ -442,6 +428,7 @@ void HTTPResponse::handleDeleteMethod(HTTPRequest &request)
 		this->_body.clear();
 		return;
 	}
+
 	if (access(filename_c_str, W_OK) < 0)
 	{
 		this->_status = "403";
@@ -449,6 +436,7 @@ void HTTPResponse::handleDeleteMethod(HTTPRequest &request)
 		this->_body = "Permission denied";
 		return;
 	}
+
 	if (S_ISDIR(st.st_mode))
 		delete_recursive(filename_c_str);
 	else

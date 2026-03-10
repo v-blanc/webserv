@@ -1,8 +1,16 @@
-#include <iostream>
-#include <string>
-#include <vector>
-#include <sstream>
-#include <cstdarg>
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   resolvePath.cpp                                    :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2026/03/10 03:07:16 by vblanc            #+#    #+#             */
+/*   Updated: 2026/03/10 03:07:37 by vblanc           ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include "utils.hpp"
 
 static std::vector<std::string> splitPath(const std::string &path)
 {
