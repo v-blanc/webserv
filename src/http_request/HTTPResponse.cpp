@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 14:04:09 by yassinefahf       #+#    #+#             */
-/*   Updated: 2026/03/10 13:57:21 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/03/10 14:23:23 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -309,8 +309,6 @@ void HTTPResponse::fillLocationWithServerRules(LocationConfig &location)
 void HTTPResponse::handleRessource(HTTPRequest &request)
 {
 	std::string ressource = handleRequestPath(request.getPathWithoutQuery(), true);
-	if (!ressource.empty() && ressource[0] == '/')
-		ressource.erase(0, 1);
 	ressource = resolveRoot(this->_serverConfig.getRoot()) + request.getPathWithoutQuery();
 	std::ifstream file(ressource.c_str());
 	if (!file.is_open())
