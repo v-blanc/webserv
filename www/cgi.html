@@ -21,8 +21,8 @@
 
 <div class="page-header">
   <span class="tag">Common Gateway Interface</span>
-  <h1><span class="method-badge badge-cgi" style="font-size:1.5rem;padding:.3rem .8rem">CGI</span> Single Script</h1>
-  <p>Test execution of a single CGI script. Verify environment variable injection, stdin piping, and stdout capture by your server.</p>
+  <h1><span class="method-badge badge-cgi" style="font-size:1.5rem;padding:.3rem .8rem">CGI</span> Single Language</h1>
+  <p>Test execution of Python3 CGI scripts. Verify environment variable injection, stdin piping, and stdout capture by our server.</p>
 </div>
 
 <main>
@@ -37,12 +37,11 @@
       </p>
       <div class="code-block">#!/usr/bin/env python3
 <span class="comment"># cgi-bin/hello.py</span>
-import os, datetime
+import os
 
 print("Content-Type: text/html")
 print()  <span class="comment"># Blank line separates headers from body</span>
-print(f"&lt;h1&gt;Hello from CGI!&lt;/h1&gt;")
-print(f"&lt;p&gt;Time: {datetime.datetime.now()}&lt;/p&gt;")</div>
+print(f"&lt;h1&gt;Hello from CGI!&lt;/h1&gt;")</div>
       <div class="form-group" style="margin-top:1rem">
         <label>CGI Path</label>
         <input type="text" id="hw-path" value="/cgi-bin/hello.py" />
@@ -54,52 +53,6 @@ print(f"&lt;p&gt;Time: {datetime.datetime.now()}&lt;/p&gt;")</div>
       <div class="response-box" id="hw-resp">
         <div class="response-header"><span>RESPONSE</span><span class="response-status" id="hw-status">—</span></div>
         <div class="response-body" id="hw-body"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── 2. ENV VARIABLES ── -->
-  <div class="section">
-    <div class="section-label">Environment Variables — CGI Spec Compliance</div>
-    <div class="card">
-      <h3>env.py — Environment dump</h3>
-      <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:1rem">
-        Your server must inject these variables before executing the CGI process. This script dumps them all.
-      </p>
-      <div class="grid-2" style="margin-bottom:1rem">
-        <div class="code-block">REQUIRED VARS:
-REQUEST_METHOD
-QUERY_STRING
-CONTENT_TYPE
-CONTENT_LENGTH
-SERVER_NAME
-SERVER_PORT
-PATH_INFO
-SCRIPT_NAME
-HTTP_*</div>
-        <div>
-          <div class="info-row"><span class="key">REQUEST_METHOD</span><span class="val">GET / POST / …</span></div>
-          <div class="info-row"><span class="key">QUERY_STRING</span><span class="val">foo=bar&x=1</span></div>
-          <div class="info-row"><span class="key">CONTENT_TYPE</span><span class="val">application/json</span></div>
-          <div class="info-row"><span class="key">HTTP_COOKIE</span><span class="val">session=abc</span></div>
-          <div class="info-row"><span class="key">HTTP_HOST</span><span class="val">localhost:8080</span></div>
-        </div>
-      </div>
-      <div class="form-group">
-        <label>CGI Path</label>
-        <input type="text" id="env-path" value="/cgi-bin/env.py" />
-      </div>
-      <div class="form-group">
-        <label>Query String (appended to URL)</label>
-        <input type="text" id="env-qs" value="test=42&lang=c%2B%2B" />
-      </div>
-      <div class="flex" style="margin-top:.5rem">
-        <button class="btn btn-cgi" onclick="runEnvCgi()">▶ Dump ENV</button>
-        <button class="btn btn-info" onclick="clearResponse('env-resp')">Clear</button>
-      </div>
-      <div class="response-box" id="env-resp">
-        <div class="response-header"><span>RESPONSE</span><span class="response-status" id="env-status">—</span></div>
-        <div class="response-body" id="env-body"></div>
       </div>
     </div>
   </div>
@@ -134,29 +87,6 @@ HTTP_*</div>
       </div>
     </div>
   </div>
-
-  <!-- ── 4. CGI HOW IT WORKS ── -->
-  <div class="section">
-    <div class="section-label">How CGI Works</div>
-    <div class="card">
-      <div class="code-block"><span class="comment"># Server receives request:</span>
-<span class="method">GET</span> <span class="url">/cgi-bin/hello.py?name=42</span> HTTP/1.1
-
-<span class="comment"># Server forks a child process:</span>
-fork() → execve("/cgi-bin/hello.py", ...)
-
-<span class="comment"># Server sets environment variables:</span>
-<span class="header">REQUEST_METHOD</span>=<span class="value">GET</span>
-<span class="header">QUERY_STRING</span>=<span class="value">name=42</span>
-<span class="header">SERVER_NAME</span>=<span class="value">localhost</span>
-<span class="header">SERVER_PORT</span>=<span class="value">8080</span>
-
-<span class="comment"># For POST: server pipes body → stdin</span>
-<span class="comment"># CGI writes response → stdout</span>
-<span class="comment"># Server forwards stdout → client</span></div>
-    </div>
-  </div>
-
 </main>
 
 <footer>WebServ Test Suite · Single CGI Module</footer>

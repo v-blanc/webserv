@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 14:04:09 by yassinefahf       #+#    #+#             */
-/*   Updated: 2026/03/10 03:51:47 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/03/10 06:08:21 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,46 +21,23 @@ HTTPResponse::HTTPResponse(HTTPRequest &request, const std::string &status, Serv
 		_sessionId = _sessionManager.createSession();
 
 	if (status != "")
-	{
 		handleBadRequest(status, message);
-	}
 	else
 	{
-		if (request.getMethod() == "GET")
+		try
 		{
-			try
-			{
+			if (request.getMethod() == "GET")
 				handleGetMethod(request);
-				prepareGoodResponse();
-			}
-			catch (const HTTPRequest::StatusException &e)
-			{
-				handleBadRequest(e.getStatus(), e.getMessage());
-			}
-		}
-		else if (request.getMethod() == "POST")
-		{
-			try
-			{
+			else if (request.getMethod() == "POST")
 				handlePostMethod(request);
-				prepareGoodResponse();
-			}
-			catch (const HTTPRequest::StatusException &e)
-			{
-				handleBadRequest(e.getStatus(), e.getMessage());
-			}
-		}
-		else if (request.getMethod() == "DELETE")
-		{
-			try
-			{
+			else if (request.getMethod() == "DELETE")
 				handleDeleteMethod(request);
-				prepareGoodResponse();
-			}
-			catch (const HTTPRequest::StatusException &e)
-			{
-				handleBadRequest(e.getStatus(), e.getMessage());
-			}
+
+			prepareGoodResponse();
+		}
+		catch (const HTTPRequest::StatusException &e)
+		{
+			handleBadRequest(e.getStatus(), e.getMessage());
 		}
 	}
 }
@@ -108,51 +85,53 @@ void HTTPResponse::handleBadRequest(const std::string &status, const std::string
 	{
 		std::map<std::size_t, std::string> const errorPages = this->_serverConfig.getErrorPage();
 		std::map<std::size_t, std::string>::const_iterator it = errorPages.find(404);
-
 		if (it != errorPages.end())
 			this->_body = getLocalFileContent(resolveRoot(this->_serverConfig.getRoot()) + it->second);
-		/*else
-			throw (HTTPRequest::StatusException("404", "Page Not Found"));*/
 		this->_contentLength = this->_body.size();
 	}
+
 	std::ostringstream oss;
 	oss << "HTTP/1.1 " << status << " " << message << "\r\n";
+	oss << "Content-Length: " << this->_contentLength << "\r\n";
+	oss << "Set-Cookie: session_id=" << this->_sessionId << "; Path=/; Max-Age=3600\r\n";
+	oss << "\r\n";
 	if (!this->_body.empty())
-		oss << "Content Length: " << this->_contentLength << "\r\n\r\n"
-			<< this->_body;
-	else
-		oss << "Content Length: 0\r\n\r\n";
+		oss << this->_body;
 	this->_response = oss.str();
 }
 
 std::string HTTPResponse::handleRequestPath(std::string requestPath, bool isFileName)
 {
-	std::size_t pos = requestPath.find_last_of('/');
-	if (pos == 0 && isFileName == false)
-		return (requestPath);
-	if (pos != std::string::npos)
+	if (isFileName)
 	{
-		if (isFileName)
-			return (requestPath.substr(pos, requestPath.size()));
-		else
-		{
-			int count = std::count(requestPath.begin(), requestPath.end(), '/');
-			std::size_t secondLast = requestPath.rfind('/', pos - 1);
-			std::size_t pred = pos;
-			while (count > 2)
-			{
-				if (this->_serverConfig.isValidLocationPath(requestPath.substr(secondLast, (pred - secondLast))))
-					break;
-				else
-				{
-					pred = secondLast;
-					secondLast = requestPath.rfind('/', secondLast - 1);
-					count--;
-				}
-			}
-			return (requestPath.substr(secondLast, (pred - secondLast)));
-		}
+		std::size_t pos = requestPath.find_last_of('/');
+		if (pos != std::string::npos)
+			return (requestPath.substr(pos));
+		return (requestPath);
 	}
+
+	std::string path = requestPath;
+
+	while (path.size() > 1 && path[path.size() - 1] == '/')
+		path.erase(path.size() - 1);
+
+	while (!path.empty())
+	{
+		if (this->_serverConfig.isValidLocationPath(path))
+			return (path);
+
+		std::size_t pos = path.find_last_of('/');
+		if (pos == std::string::npos)
+			break;
+		if (pos == 0)
+		{
+			if (this->_serverConfig.isValidLocationPath("/"))
+				return ("/");
+			break;
+		}
+		path = path.substr(0, pos);
+	}
+
 	return (requestPath);
 }
 
@@ -172,11 +151,9 @@ void HTTPResponse::handlePostMethod(HTTPRequest &request)
 	{
 		if (++this->_redirectCount > 10)
 			throw(HTTPRequest::StatusException("508", "Loop Detected"));
-
 		std::string newPath = myLocation.getReturn();
 		request.setPath(newPath);
 		this->_newLocation = newPath;
-
 		return (handlePostMethod(request));
 	}
 
@@ -200,20 +177,28 @@ void HTTPResponse::handlePostMethod(HTTPRequest &request)
 
 	if (!request.getFileName().empty())
 	{
-		std::string fileName = resolvePath(3, myLocation.getRoot().c_str(), myLocation.getUploadStore().c_str(), request.getFileName().c_str());
-		std::ofstream file(fileName.c_str());
+		if (myLocation.getUploadStore().empty())
+			throw HTTPRequest::StatusException("500", "Internal Server Error");
+
+		std::string destPath = resolvePath(3,
+										   myLocation.getRoot().c_str(),
+										   myLocation.getUploadStore().c_str(),
+										   request.getFileName().c_str());
+
+		std::ofstream file(destPath.c_str(), std::ios::binary);
 		if (!file.is_open())
-			throw HTTPRequest::StatusException("404", "Page Not Found");
+			throw HTTPRequest::StatusException("500", "Internal Server Error");
 
 		file << request.getBody();
 		file.close();
+
 		this->_status = "201";
 		this->_message = "Created";
-		this->_body = getLocalFileContent(resolvePath(3, myLocation.getRoot().c_str(), myLocation.getUploadStore().c_str(), request.getFileName().c_str()));
+		this->_body = "File uploaded successfully: " + request.getFileName();
+		return;
 	}
 
-	if (this->_body.empty())
-		this->_body = getLocalFileContent(resolvePath(3, myLocation.getRoot().c_str(), myLocation.getUploadStore().c_str(), request.getFileName().c_str()));
+	this->_body = request.getBody();
 }
 
 bool HTTPResponse::ismethodNotAllowed(std::vector<std::string> methods, std::string myMethod)
@@ -383,19 +368,12 @@ void HTTPResponse::handleGetMethod(HTTPRequest &request)
 static void delete_recursive(const char *filename);
 
 void HTTPResponse::handleDeleteMethod(HTTPRequest &request)
-
 {
 	std::string const requestPath = request.getPathWithoutQuery();
-	std::string locationPath = resolvePath(1, requestPath.c_str());
 
-	// std::size_t pos = requestPath.rfind('/');
-	// if (pos != std::string::npos && pos != 0 && pos != requestPath.size() - 1)
-	// 	locationPath = resolvePath(1, requestPath.substr(0, pos).c_str());
-
-	struct stat st;
+	std::string locationPath = handleRequestPath(requestPath, false);
 	LocationConfig location;
 
-	std::cout << "locationPath: " << locationPath << std::endl;
 	if (this->_serverConfig.isValidLocationPath(locationPath))
 		location = this->_serverConfig.getLocationConfigByPath(locationPath);
 	else if (this->_serverConfig.isValidLocationPath("/"))
@@ -403,11 +381,6 @@ void HTTPResponse::handleDeleteMethod(HTTPRequest &request)
 	else
 		fillLocationWithServerRules(location);
 
-	if (this->ismethodNotAllowed(location.getLimitExcept(), request.getMethod()))
-		throw HTTPRequest::StatusException("405", "Method Not Allowed");
-
-	std::string const filename = resolvePath(2, location.getRoot().c_str(), requestPath.c_str());
-	const char *filename_c_str = filename.c_str();
 	if (!location.getReturn().empty())
 	{
 		if (++this->_redirectCount > 10)
@@ -415,13 +388,19 @@ void HTTPResponse::handleDeleteMethod(HTTPRequest &request)
 		std::string newPath = location.getReturn();
 		request.setPath(newPath);
 		this->_newLocation = newPath;
-		return (handleGetMethod(request));
+		return (handleDeleteMethod(request));
 	}
 
 	if (this->ismethodNotAllowed(location.getLimitExcept(), request.getMethod()))
 		throw HTTPRequest::StatusException("405", "Method Not Allowed");
 
-	if (stat(filename_c_str, &st) < 0)
+	std::string const filename = resolvePath(2,
+											 location.getRoot().c_str(),
+											 requestPath.c_str());
+	const char *cstr = filename.c_str();
+
+	struct stat st;
+	if (stat(cstr, &st) < 0)
 	{
 		this->_status = "204";
 		this->_message = "No Content";
@@ -429,18 +408,28 @@ void HTTPResponse::handleDeleteMethod(HTTPRequest &request)
 		return;
 	}
 
-	if (access(filename_c_str, W_OK) < 0)
-	{
-		this->_status = "403";
-		this->_message = "Forbidden";
-		this->_body = "Permission denied";
-		return;
-	}
+	bool writable = false;
+	uid_t euid = geteuid();
+	if (euid == 0)
+		writable = (st.st_mode & (S_IWUSR | S_IWGRP | S_IWOTH)) != 0;
+	else if (euid == st.st_uid)
+		writable = (st.st_mode & S_IWUSR) != 0;
+	else if (getegid() == st.st_gid)
+		writable = (st.st_mode & S_IWGRP) != 0;
+	else
+		writable = (st.st_mode & S_IWOTH) != 0;
+
+	if (!writable)
+		throw HTTPRequest::StatusException("403", "Forbidden");
 
 	if (S_ISDIR(st.st_mode))
-		delete_recursive(filename_c_str);
+		delete_recursive(cstr);
 	else
-		std::remove(filename_c_str);
+		std::remove(cstr);
+
+	this->_status = "204";
+	this->_message = "No Content";
+	this->_body.clear();
 }
 
 static void delete_recursive(const char *base_path)

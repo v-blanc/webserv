@@ -19,12 +19,12 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 1rem;
     }
     .cgi-panel-header .title {
       font-family: var(--mono);
       font-size: .8rem;
       font-weight: 700;
-      color: var(--accent4);
     }
     .cgi-panel-header .file {
       font-family: var(--mono);
@@ -35,6 +35,26 @@
       padding: 1.25rem;
       background: var(--surface);
     }
+
+    /* Per-language accent colours */
+    .lang-py  { color: #4b8bbe; }
+    .lang-pl  { color: #00acd7; }
+    .lang-php { color: #8993be; }
+
+    .badge-py  { background: rgba(75,139,190,.15);  color: #4b8bbe;  border: 1px solid rgba(75,139,190,.3);  }
+    .badge-pl  { background: rgba(0,172,215,.15);   color: #00acd7;  border: 1px solid rgba(0,172,215,.3);  }
+    .badge-php { background: rgba(137,147,190,.15); color: #8993be;  border: 1px solid rgba(137,147,190,.3); }
+
+    .lang-badge {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: .65rem;
+      font-weight: 700;
+      padding: .15rem .55rem;
+      border-radius: 3px;
+      letter-spacing: .06em;
+    }
+
     .run-all-bar {
       background: var(--bg2);
       border: 1px solid var(--border);
@@ -59,8 +79,26 @@
       height: 100%;
       background: var(--accent);
       border-radius: 2px;
-      transition: width .3s;
+      transition: width .35s ease;
       width: 0%;
+    }
+
+    .interpreter-row {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      flex-wrap: wrap;
+      font-family: var(--mono);
+      font-size: .72rem;
+      color: var(--text-faint);
+      margin-bottom: 1rem;
+    }
+    .interpreter-row code {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: .1rem .45rem;
+      color: var(--text-dim);
     }
   </style>
 </head>
@@ -79,241 +117,249 @@
 
 <div class="page-header">
   <span class="tag">Common Gateway Interface</span>
-  <h1><span class="method-badge badge-cgi" style="font-size:1.5rem;padding:.3rem .8rem">CGI</span> Multiple Scripts</h1>
-  <p>Run all CGI scripts in sequence or parallel. Tests that your server can handle concurrent CGI processes, resource management and execution isolation.</p>
+  <h1><span class="method-badge badge-cgi" style="font-size:1.5rem;padding:.3rem .8rem">CGI</span> Multiple Languages</h1>
+  <p>Run the same Hello World script in three different languages — Python, Perl and PHP — to verify our server correctly forks each interpreter and captures stdout.</p>
 </div>
 
 <main>
 
-  <!-- RUN ALL BAR -->
+  <!-- ── RUN ALL BAR ── -->
   <div class="run-all-bar">
     <div>
-      <div style="font-family:var(--mono);font-size:.78rem;color:var(--text);font-weight:700">Run All CGIs</div>
-      <div style="font-family:var(--mono);font-size:.68rem;color:var(--text-dim);margin-top:.2rem">Fires all 4 scripts sequentially and collects results</div>
+      <div style="font-family:var(--mono);font-size:.78rem;color:var(--text);font-weight:700">Run All Three CGIs</div>
+      <div style="font-family:var(--mono);font-size:.68rem;color:var(--text-dim);margin-top:.2rem">
+        Fires hello.py &rarr; hello.pl &rarr; hello.php in sequence
+      </div>
     </div>
     <div class="progress-track"><div class="progress-fill" id="prog"></div></div>
-    <div style="font-family:var(--mono);font-size:.72rem;color:var(--text-dim)" id="prog-label">Ready</div>
-    <button class="btn btn-cgi" onclick="runAll()">▶ Run All</button>
+    <div style="font-family:var(--mono);font-size:.72rem;color:var(--text-dim);min-width:120px;text-align:right" id="prog-label">Ready</div>
+    <button class="btn btn-cgi" onclick="runAll()">&#9658; Run All</button>
   </div>
 
-  <!-- ── CGI 1: HELLO ── -->
-  <div class="cgi-panel" id="panel-hello">
+  <!-- ── PANEL 1: PYTHON ── -->
+  <div class="cgi-panel" id="panel-py">
     <div class="cgi-panel-header">
-      <span class="title">⚙ hello.py — Basic Output</span>
+      <span class="title lang-py">&#9881; &nbsp;hello.py</span>
+      <span class="lang-badge badge-py">Python 3</span>
       <span class="file">cgi-bin/hello.py</span>
     </div>
     <div class="cgi-panel-body">
+      <div class="interpreter-row">
+        Interpreter: <code>/usr/bin/python3</code>
+        &nbsp;&middot;&nbsp; Config: <code>cgi_handler .py /usr/bin/python3</code>
+      </div>
       <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:1rem">
-        Simplest possible CGI. Outputs <code style="color:var(--accent)">Content-Type</code>, a blank line, then HTML. 
-        Tests basic process forking and stdout capture.
-      </p>
-      <div class="form-group">
-        <label>Query String</label>
-        <input type="text" id="hello-qs" value="name=42student&lang=en" />
-      </div>
-      <div class="flex">
-        <button class="btn btn-cgi" onclick="runScript('hello')">▶ Run</button>
-        <button class="btn btn-info" onclick="clearPanel('hello')">Clear</button>
-      </div>
-      <div class="response-box" id="hello-resp" style="margin-top:.75rem">
-        <div class="response-header"><span>RESPONSE</span><span class="response-status" id="hello-status">—</span></div>
-        <div class="response-body" id="hello-body"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── CGI 2: FORM ── -->
-  <div class="cgi-panel" id="panel-form">
-    <div class="cgi-panel-header">
-      <span class="title">⚙ form.py — POST Body Parser</span>
-      <span class="file">cgi-bin/form.py</span>
-    </div>
-    <div class="cgi-panel-body">
-      <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:1rem">
-        Reads POST body from <strong>stdin</strong> using <code style="color:var(--accent)">CONTENT_LENGTH</code>. 
-        Parses URL-encoded or JSON data and echoes fields back.
+        Reads <code style="color:var(--accent)">QUERY_STRING</code> via <code style="color:var(--accent)">os.environ</code>,
+        outputs a <code style="color:var(--accent)">Content-Type</code> header, a blank line, then an HTML body.
+        Tests Python CGI forking and stdout capture.
       </p>
       <div class="grid-2">
         <div class="form-group">
-          <label>Name</label>
-          <input type="text" id="form-name" value="42 Student" />
+          <label>name param</label>
+          <input type="text" id="py-name" value="42student" />
         </div>
         <div class="form-group">
-          <label>Project</label>
-          <input type="text" id="form-proj" value="webserv" />
+          <label>lang param</label>
+          <input type="text" id="py-lang" value="en" />
         </div>
       </div>
-      <div class="flex">
-        <button class="btn btn-post" onclick="runScript('form')">▶ POST → stdin</button>
-        <button class="btn btn-info" onclick="clearPanel('form')">Clear</button>
+      <div class="code-block" id="py-preview">GET /cgi-bin/hello.py?name=42student&lang=en HTTP/1.1</div>
+      <div class="flex" style="margin-top:.75rem">
+        <button class="btn btn-cgi" onclick="runScript('py')">&#9658; Run Python CGI</button>
+        <button class="btn btn-info" onclick="clearPanel('py')">Clear</button>
       </div>
-      <div class="response-box" id="form-resp" style="margin-top:.75rem">
-        <div class="response-header"><span>RESPONSE</span><span class="response-status" id="form-status">—</span></div>
-        <div class="response-body" id="form-body"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── CGI 3: ENV ── -->
-  <div class="cgi-panel" id="panel-env">
-    <div class="cgi-panel-header">
-      <span class="title">⚙ env.py — Environment Dump</span>
-      <span class="file">cgi-bin/env.py</span>
-    </div>
-    <div class="cgi-panel-body">
-      <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:1rem">
-        Dumps all CGI environment variables. Validates that your server correctly injects 
-        <code style="color:var(--accent)">REQUEST_METHOD</code>, <code style="color:var(--accent)">SERVER_NAME</code>, 
-        <code style="color:var(--accent)">HTTP_*</code> headers, etc.
-      </p>
-      <div class="flex">
-        <button class="btn btn-cgi" onclick="runScript('env')">▶ Dump ENV</button>
-        <button class="btn btn-info" onclick="clearPanel('env')">Clear</button>
-      </div>
-      <div class="response-box" id="env-resp" style="margin-top:.75rem">
-        <div class="response-header"><span>RESPONSE</span><span class="response-status" id="env-status">—</span></div>
-        <div class="response-body" id="env-body"></div>
+      <div class="response-box" id="py-resp" style="margin-top:.75rem">
+        <div class="response-header">
+          <span>RESPONSE</span>
+          <span class="response-status" id="py-status">&#8212;</span>
+        </div>
+        <div class="response-body" id="py-body"></div>
       </div>
     </div>
   </div>
 
-  <!-- ── CGI 4: COOKIE ── -->
-  <div class="cgi-panel" id="panel-cookie">
+  <!-- ── PANEL 2: PERL ── -->
+  <div class="cgi-panel" id="panel-pl">
     <div class="cgi-panel-header">
-      <span class="title">⚙ cookie.py — Cookie Manager</span>
-      <span class="file">cgi-bin/cookie.py</span>
+      <span class="title lang-pl">&#9881; &nbsp;hello.pl</span>
+      <span class="lang-badge badge-pl">Perl 5</span>
+      <span class="file">cgi-bin/hello.pl</span>
     </div>
     <div class="cgi-panel-body">
+      <div class="interpreter-row">
+        Interpreter: <code>/usr/bin/perl</code>
+        &nbsp;&middot;&nbsp; Config: <code>cgi_handler .pl /usr/bin/perl</code>
+      </div>
       <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:1rem">
-        A CGI that reads <code style="color:var(--accent)">HTTP_COOKIE</code> from the environment and outputs 
-        <code style="color:var(--accent)">Set-Cookie</code> headers. Tests cookie round-trip through the server.
+        Reads <code style="color:var(--accent)">QUERY_STRING</code> via <code style="color:var(--accent)">$ENV{QUERY_STRING}</code>,
+        splits key=value pairs manually and prints headers + HTML.
+        Tests Perl CGI forking.
       </p>
       <div class="grid-2">
         <div class="form-group">
-          <label>Action</label>
-          <select id="cookie-action">
-            <option>set</option>
-            <option>read</option>
-            <option>delete</option>
-          </select>
+          <label>name param</label>
+          <input type="text" id="pl-name" value="42student" />
         </div>
         <div class="form-group">
-          <label>Cookie Name</label>
-          <input type="text" id="cookie-name" value="multi_cgi_test" />
+          <label>color param (hex, no #)</label>
+          <input type="text" id="pl-color" value="00acd7" />
         </div>
       </div>
-      <div class="flex">
-        <button class="btn btn-cgi" onclick="runScript('cookie')">▶ Run Cookie CGI</button>
-        <button class="btn btn-info" onclick="clearPanel('cookie')">Clear</button>
+      <div class="code-block" id="pl-preview">GET /cgi-bin/hello.pl?name=42student&color=00acd7 HTTP/1.1</div>
+      <div class="flex" style="margin-top:.75rem">
+        <button class="btn btn-cgi" onclick="runScript('pl')">&#9658; Run Perl CGI</button>
+        <button class="btn btn-info" onclick="clearPanel('pl')">Clear</button>
       </div>
-      <div class="response-box" id="cookie-resp" style="margin-top:.75rem">
-        <div class="response-header"><span>RESPONSE</span><span class="response-status" id="cookie-status">—</span></div>
-        <div class="response-body" id="cookie-body"></div>
+      <div class="response-box" id="pl-resp" style="margin-top:.75rem">
+        <div class="response-header">
+          <span>RESPONSE</span>
+          <span class="response-status" id="pl-status">&#8212;</span>
+        </div>
+        <div class="response-body" id="pl-body"></div>
       </div>
     </div>
   </div>
 
-  <!-- ── CGI 5: COUNTER ── -->
-  <div class="cgi-panel" id="panel-counter">
+  <!-- ── PANEL 3: PHP ── -->
+  <div class="cgi-panel" id="panel-php">
     <div class="cgi-panel-header">
-      <span class="title">⚙ counter.py — Request Counter</span>
-      <span class="file">cgi-bin/counter.py</span>
+      <span class="title lang-php">&#9881; &nbsp;hello.php</span>
+      <span class="lang-badge badge-php">PHP</span>
+      <span class="file">cgi-bin/hello.php</span>
     </div>
     <div class="cgi-panel-body">
-      <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:1rem">
-        Uses a cookie to count how many times you've run the CGI. 
-        Tests stateful CGI using cookies, and <code style="color:var(--accent)">Set-Cookie</code> + <code style="color:var(--accent)">HTTP_COOKIE</code> round-trip.
-      </p>
-      <div class="flex">
-        <button class="btn btn-cgi" onclick="runScript('counter')">▶ Increment Counter</button>
-        <button class="btn btn-del" onclick="resetCounter()">↺ Reset</button>
-        <button class="btn btn-info" onclick="clearPanel('counter')">Clear</button>
+      <div class="interpreter-row">
+        Interpreter: <code>/usr/bin/php-cgi</code>
+        &nbsp;&middot;&nbsp; Config: <code>cgi_handler .php /usr/bin/php-cgi</code>
       </div>
-      <div class="response-box" id="counter-resp" style="margin-top:.75rem">
-        <div class="response-header"><span>RESPONSE</span><span class="response-status" id="counter-status">—</span></div>
-        <div class="response-body" id="counter-body"></div>
+      <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:1rem">
+        Uses <code style="color:var(--accent)">$_GET</code> superglobal and <code style="color:var(--accent)">header()</code>
+        to produce the CGI response. Note: requires <code style="color:var(--accent)">php-cgi</code>
+        (not <code style="color:var(--accent)">php</code>) — install with
+        <code style="color:var(--accent)">apt install php-cgi</code>.
+      </p>
+      <div class="grid-2">
+        <div class="form-group">
+          <label>name param</label>
+          <input type="text" id="php-name" value="42student" />
+        </div>
+        <div class="form-group">
+          <label>version param</label>
+          <input type="text" id="php-ver" value="8" />
+        </div>
+      </div>
+      <div class="code-block" id="php-preview">GET /cgi-bin/hello.php?name=42student&version=8 HTTP/1.1</div>
+      <div class="flex" style="margin-top:.75rem">
+        <button class="btn btn-cgi" onclick="runScript('php')">&#9658; Run PHP CGI</button>
+        <button class="btn btn-info" onclick="clearPanel('php')">Clear</button>
+      </div>
+      <div class="response-box" id="php-resp" style="margin-top:.75rem">
+        <div class="response-header">
+          <span>RESPONSE</span>
+          <span class="response-status" id="php-status">&#8212;</span>
+        </div>
+        <div class="response-body" id="php-body"></div>
       </div>
     </div>
   </div>
 
 </main>
 
-<footer>WebServ Test Suite · Multi-CGI Module</footer>
+<footer>WebServ Test Suite &middot; Multi-CGI Module</footer>
 
 <script>
-function show(id, statusId, bodyId, status, body, ok) {
-  document.getElementById(id).classList.add('visible');
+// ── Helpers ──────────────────────────────────────────────────
+function show(respId, statusId, bodyId, status, body, ok) {
+  document.getElementById(respId).classList.add('visible');
   const s = document.getElementById(statusId);
   s.textContent = status;
   s.className = 'response-status ' + (ok ? 'status-ok' : 'status-err');
   document.getElementById(bodyId).textContent = body;
 }
 
-function clearPanel(name) {
-  document.getElementById(name+'-resp').classList.remove('visible');
+function clearPanel(lang) {
+  document.getElementById(lang + '-resp').classList.remove('visible');
 }
 
-async function runScript(name) {
+// ── Build query string per language ─────────────────────────
+function buildQS(lang) {
+  const p = new URLSearchParams();
+  if (lang === 'py') {
+    const n = document.getElementById('py-name').value;
+    const l = document.getElementById('py-lang').value;
+    if (n) p.set('name', n);
+    if (l) p.set('lang', l);
+  } else if (lang === 'pl') {
+    const n = document.getElementById('pl-name').value;
+    const c = document.getElementById('pl-color').value;
+    if (n) p.set('name', n);
+    if (c) p.set('color', c);
+  } else if (lang === 'php') {
+    const n = document.getElementById('php-name').value;
+    const v = document.getElementById('php-ver').value;
+    if (n) p.set('name', n);
+    if (v) p.set('version', v);
+  }
+  return p.toString();
+}
+
+function fileName(lang) {
+  return lang === 'py' ? 'hello.py' : lang === 'pl' ? 'hello.pl' : 'hello.php';
+}
+
+// ── Live preview ─────────────────────────────────────────────
+function updatePreview(lang) {
+  const qs  = buildQS(lang);
+  const url = '/cgi-bin/' + fileName(lang) + (qs ? '?' + qs : '');
+  document.getElementById(lang + '-preview').textContent = 'GET ' + url + ' HTTP/1.1';
+}
+
+['py-name', 'py-lang'].forEach(function(id) {
+  document.getElementById(id).addEventListener('input', function() { updatePreview('py'); });
+});
+['pl-name', 'pl-color'].forEach(function(id) {
+  document.getElementById(id).addEventListener('input', function() { updatePreview('pl'); });
+});
+['php-name', 'php-ver'].forEach(function(id) {
+  document.getElementById(id).addEventListener('input', function() { updatePreview('php'); });
+});
+
+updatePreview('py');
+updatePreview('pl');
+updatePreview('php');
+
+// ── Run a single CGI ─────────────────────────────────────────
+async function runScript(lang) {
+  const qs  = buildQS(lang);
+  const url = '/cgi-bin/' + fileName(lang) + (qs ? '?' + qs : '');
   try {
-    let url, opts;
-
-    if (name === 'hello') {
-      const qs = document.getElementById('hello-qs').value;
-      url  = '/cgi-bin/hello.py' + (qs ? '?' + qs : '');
-      opts = { method: 'GET', cache: 'no-store' };
-
-    } else if (name === 'form') {
-      const body = new URLSearchParams({
-        name:    document.getElementById('form-name').value,
-        project: document.getElementById('form-proj').value,
-      });
-      url  = '/cgi-bin/form.py';
-      opts = { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body.toString() };
-
-    } else if (name === 'env') {
-      url  = '/cgi-bin/env.py?source=multi-cgi-page';
-      opts = { method: 'GET', cache: 'no-store', credentials: 'include' };
-
-    } else if (name === 'cookie') {
-      const action = document.getElementById('cookie-action').value;
-      const cname  = document.getElementById('cookie-name').value;
-      url  = `/cgi-bin/cookie.py?action=${action}&name=${encodeURIComponent(cname)}&value=multicgi`;
-      opts = { method: 'GET', credentials: 'include' };
-
-    } else if (name === 'counter') {
-      url  = '/cgi-bin/counter.py';
-      opts = { method: 'GET', credentials: 'include' };
-    }
-
-    const r = await fetch(url, opts);
+    const r    = await fetch(url, { method: 'GET', cache: 'no-store' });
     const text = await r.text();
-    show(name+'-resp', name+'-status', name+'-body',
-      `${r.status} ${r.statusText}`, text.slice(0, 3000), r.ok);
-
+    show(lang + '-resp', lang + '-status', lang + '-body',
+      r.status + ' ' + r.statusText, text.slice(0, 3000), r.ok);
   } catch(e) {
-    show(name+'-resp', name+'-status', name+'-body', 'ERROR', e.message, false);
+    show(lang + '-resp', lang + '-status', lang + '-body', 'ERROR', e.message, false);
   }
 }
 
-function resetCounter() {
-  document.cookie = 'cgi_counter=0; Max-Age=3600; Path=/';
-  clearPanel('counter');
-}
-
+// ── Run all three in sequence ────────────────────────────────
 async function runAll() {
-  const scripts = ['hello','form','env','cookie','counter'];
+  const langs = ['py', 'pl', 'php'];
   const prog  = document.getElementById('prog');
   const label = document.getElementById('prog-label');
 
-  for (let i = 0; i < scripts.length; i++) {
-    const name = scripts[i];
-    label.textContent = `Running ${name}.py… (${i+1}/${scripts.length})`;
-    prog.style.width = ((i / scripts.length) * 100) + '%';
-    await runScript(name);
-    await new Promise(r => setTimeout(r, 200));
+  prog.style.width = '0%';
+
+  for (let i = 0; i < langs.length; i++) {
+    const lang = langs[i];
+    label.textContent = 'Running ' + fileName(lang) + '... (' + (i + 1) + '/' + langs.length + ')';
+    prog.style.width  = ((i / langs.length) * 100) + '%';
+    await runScript(lang);
+    await new Promise(function(r) { setTimeout(r, 150); });
   }
-  prog.style.width = '100%';
-  label.textContent = `Done — ${scripts.length}/${scripts.length} ✓`;
+
+  prog.style.width  = '100%';
+  label.textContent = 'Done — ' + langs.length + '/' + langs.length + ' \u2713';
 }
 </script>
 </body>
