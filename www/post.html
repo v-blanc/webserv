@@ -5,6 +5,45 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>POST — WebServ Tester</title>
   <link rel="stylesheet" href="style.css" />
+  <style>
+    /* Drop zone for file upload */
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: 6px;
+      padding: 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+      font-family: var(--mono);
+      font-size: .8rem;
+      color: var(--text-faint);
+    }
+    .drop-zone:hover,
+    .drop-zone.drag-over {
+      border-color: var(--accent2);
+      background: rgba(124,107,255,.05);
+      color: var(--text-dim);
+    }
+    .drop-zone.has-file {
+      border-color: var(--accent);
+      background: rgba(0,255,157,.04);
+      color: var(--accent);
+    }
+    .drop-zone .icon { font-size: 1.75rem; margin-bottom: .5rem; display: block; }
+
+    /* Live body size badge */
+    .size-badge {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: .65rem;
+      padding: .1rem .5rem;
+      border-radius: 3px;
+      background: rgba(0,255,157,.1);
+      color: var(--accent);
+      border: 1px solid rgba(0,255,157,.2);
+      margin-left: .5rem;
+    }
+  </style>
 </head>
 <body>
 
@@ -22,48 +61,56 @@
 <div class="page-header">
   <span class="tag">HTTP Method</span>
   <h1><span class="method-badge badge-post" style="font-size:1.5rem;padding:.3rem .8rem">POST</span> Requests</h1>
-  <p>Test form submissions, JSON payloads, file uploads, and body size handling on your WebServ implementation.</p>
+  <p>Three ways to POST data to your server: URL-encoded form fields, a JSON body, and a direct binary file upload.</p>
 </div>
 
 <main>
 
-  <!-- ── 1. URL-ENCODED FORM ── -->
+  <!-- ══════════════════════════════════════════════════════
+       1. application/x-www-form-urlencoded
+  ══════════════════════════════════════════════════════════ -->
   <div class="section">
     <div class="section-label">application/x-www-form-urlencoded</div>
     <div class="card">
       <h3>Form POST</h3>
       <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:1rem">
-        Sends data encoded as <code style="color:var(--accent)">key=value&amp;key2=value2</code> — the default HTML form encoding.
+        The default HTML form encoding. Fields are serialised as
+        <code style="color:var(--accent)">key=value&amp;key2=value2</code> and sent as the request body.
+        Your server must set <code style="color:var(--accent)">CONTENT_TYPE</code> and
+        <code style="color:var(--accent)">CONTENT_LENGTH</code> before calling the CGI.
       </p>
+
       <div class="form-group">
         <label>POST to (path)</label>
         <input type="text" id="form-path" value="/cgi-bin/form.py" />
       </div>
       <div class="grid-2">
         <div class="form-group">
-          <label>Field 1 — Name</label>
+          <label>name</label>
           <input type="text" id="form-name" value="John Doe" />
         </div>
         <div class="form-group">
-          <label>Field 2 — Email</label>
-          <input type="email" id="form-email" value="john@42.fr" />
+          <label>email</label>
+          <input type="text" id="form-email" value="john@42.fr" />
         </div>
         <div class="form-group">
-          <label>Field 3 — School</label>
+          <label>school</label>
           <input type="text" id="form-school" value="42 Paris" />
         </div>
         <div class="form-group">
-          <label>Field 4 — Message</label>
+          <label>message</label>
           <input type="text" id="form-msg" value="Hello WebServ!" />
         </div>
       </div>
+
       <div class="code-block" id="form-preview">POST /cgi-bin/form.py HTTP/1.1
 Content-Type: application/x-www-form-urlencoded
-Content-Length: 54
+Content-Length: —
 
-name=John+Doe&amp;email=john%4042.fr&amp;school=42+Paris&amp;message=Hello+WebServ%21</div>
+name=John+Doe&email=john%4042.fr&school=42+Paris&message=Hello+WebServ%21</div>
+
       <div class="flex" style="margin-top:1rem">
-        <button class="btn btn-post" onclick="doFormPost()">▶ Send POST</button>
+        <button class="btn btn-post" onclick="doFormPost()">&#9658; Send POST</button>
         <button class="btn btn-info" onclick="clearResponse('form-response')">Clear</button>
       </div>
       <div class="response-box" id="form-response">
@@ -73,30 +120,37 @@ name=John+Doe&amp;email=john%4042.fr&amp;school=42+Paris&amp;message=Hello+WebSe
     </div>
   </div>
 
-  <!-- ── 2. JSON ── -->
+  <!-- ══════════════════════════════════════════════════════
+       2. application/json
+  ══════════════════════════════════════════════════════════ -->
   <div class="section">
     <div class="section-label">application/json</div>
     <div class="card">
       <h3>JSON POST</h3>
       <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:1rem">
-        Sends a JSON body. Your server should read <code style="color:var(--accent)">Content-Type: application/json</code> and pass the body to CGI via stdin.
+        Sends a raw JSON body. Your server must forward it to the CGI via
+        <code style="color:var(--accent)">stdin</code> with
+        <code style="color:var(--accent)">CONTENT_TYPE=application/json</code> and the correct
+        <code style="color:var(--accent)">CONTENT_LENGTH</code>.
       </p>
+
       <div class="form-group">
         <label>POST to (path)</label>
         <input type="text" id="json-path" value="/cgi-bin/form.py" />
       </div>
       <div class="form-group">
-        <label>JSON Body</label>
-        <textarea id="json-body" rows="6">{
+        <label>JSON body <span class="size-badge" id="json-size">0 B</span></label>
+        <textarea id="json-body" rows="7">{
   "user": "student",
   "school": "42",
   "project": "webserv",
   "status": "testing"
 }</textarea>
       </div>
+
       <div class="flex" style="margin-top:.5rem">
-        <button class="btn btn-post" onclick="doJsonPost()">▶ Send JSON POST</button>
-        <button class="btn btn-info" onclick="document.getElementById('json-body').value = JSON.stringify(JSON.parse(document.getElementById('json-body').value), null, 2)">Format</button>
+        <button class="btn btn-post" onclick="doJsonPost()">&#9658; Send JSON POST</button>
+        <button class="btn btn-info" onclick="formatJson()">Format</button>
         <button class="btn btn-info" onclick="clearResponse('json-response')">Clear</button>
       </div>
       <div class="response-box" id="json-response">
@@ -106,40 +160,53 @@ name=John+Doe&amp;email=john%4042.fr&amp;school=42+Paris&amp;message=Hello+WebSe
     </div>
   </div>
 
-  <!-- ── 3. FILE UPLOAD ── -->
+  <!-- ══════════════════════════════════════════════════════
+       3. Direct file upload (octet-stream)
+  ══════════════════════════════════════════════════════════ -->
   <div class="section">
-    <div class="section-label">multipart/form-data — File Upload</div>
+    <div class="section-label">Direct file upload — application/octet-stream</div>
     <div class="card">
-      <h3>File Upload</h3>
+      <h3>POST direct file upload</h3>
       <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:1rem">
-        Tests multipart body parsing. WebServ must correctly handle <code style="color:var(--accent)">Content-Type: multipart/form-data; boundary=…</code> and extract file data.
+        The file is sent as-is in the request body with
+        <code style="color:var(--accent)">Content-Type: application/octet-stream</code>.
+        No multipart boundary, no encoding — just raw bytes.
+        Your server writes whatever it receives in the body straight to the destination path.
       </p>
-      <div class="form-group">
-        <label>Upload to (path)</label>
-        <input type="text" id="upload-path" value="/cgi-bin/form.py" />
-      </div>
-      <div class="form-group">
-        <label>Description</label>
-        <input type="text" id="upload-desc" value="My test file" />
-      </div>
-      <div class="form-group">
-        <label>File</label>
-        <input type="file" id="upload-file" style="color:var(--text-dim);font-family:var(--mono);font-size:.8rem" />
-      </div>
-      <div style="margin-top:.5rem;margin-bottom:.75rem">
-        <div class="code-block">POST /cgi-bin/form.py HTTP/1.1
-Content-Type: multipart/form-data; boundary=----WebKitFormBoundary
-Content-Length: &lt;calculated&gt;
 
-------WebKitFormBoundary
-Content-Disposition: form-data; name="description"
-...
-------WebKitFormBoundary
-Content-Disposition: form-data; name="file"; filename="..."
-Content-Type: &lt;mime-type&gt;</div>
+      <div class="form-group">
+        <label>Upload to (path — server will write the file here)</label>
+        <input type="text" id="upload-dest" value="/uploads/uploaded.txt" />
       </div>
-      <div class="flex">
-        <button class="btn btn-post" onclick="doFileUpload()">▶ Upload File</button>
+
+      <!-- Drop zone -->
+      <div class="drop-zone" id="drop-zone" onclick="document.getElementById('upload-file').click()">
+        <span class="icon">&#128196;</span>
+        <div>Click to choose a <strong>.txt</strong> file, or drag &amp; drop it here</div>
+        <div style="margin-top:.4rem;font-size:.7rem" id="drop-label">No file selected</div>
+      </div>
+      <input type="file" id="upload-file" accept=".txt,text/plain" style="display:none" />
+
+      <!-- OR type content directly -->
+      <div style="margin:.75rem 0;font-family:var(--mono);font-size:.7rem;color:var(--text-faint);text-align:center">
+        — or type the file content directly —
+      </div>
+      <div class="form-group">
+        <label>File content <span class="size-badge" id="upload-size">0 B</span></label>
+        <textarea id="upload-content" rows="5" placeholder="Type or paste text content here...">Hello from WebServ!
+This file was uploaded via a direct POST request.
+Content-Type: application/octet-stream</textarea>
+      </div>
+
+      <!-- Live request preview -->
+      <div class="code-block" id="upload-preview">POST /uploads/uploaded.txt HTTP/1.1
+Content-Type: application/octet-stream
+Content-Length: —
+
+&lt;raw file bytes&gt;</div>
+
+      <div class="flex" style="margin-top:.75rem">
+        <button class="btn btn-post" onclick="doDirectUpload()">&#9658; Upload File</button>
         <button class="btn btn-info" onclick="clearResponse('upload-response')">Clear</button>
       </div>
       <div class="response-box" id="upload-response">
@@ -149,75 +216,89 @@ Content-Type: &lt;mime-type&gt;</div>
     </div>
   </div>
 
-  <!-- ── 4. RAW BODY ── -->
-  <div class="section">
-    <div class="section-label">Raw / Custom Body</div>
-    <div class="card">
-      <h3>Custom POST body</h3>
-      <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:1rem">Send any raw body with a custom Content-Type. Useful to test edge cases.</p>
-      <div class="grid-2">
-        <div class="form-group">
-          <label>POST to (path)</label>
-          <input type="text" id="raw-path" value="/cgi-bin/form.py" />
-        </div>
-        <div class="form-group">
-          <label>Content-Type</label>
-          <input type="text" id="raw-ct" value="text/plain" />
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Body</label>
-        <textarea id="raw-body">Hello from a raw POST body!</textarea>
-      </div>
-      <div class="flex" style="margin-top:.5rem">
-        <button class="btn btn-post" onclick="doRawPost()">▶ Send Raw POST</button>
-        <button class="btn btn-info" onclick="clearResponse('raw-response')">Clear</button>
-      </div>
-      <div class="response-box" id="raw-response">
-        <div class="response-header"><span>RESPONSE</span><span class="response-status" id="raw-status">—</span></div>
-        <div class="response-body" id="raw-body-resp"></div>
-      </div>
-    </div>
-  </div>
-
 </main>
 
 <footer>WebServ Test Suite · POST Module</footer>
 
 <script>
+// ── Shared helpers ────────────────────────────────────────────
 function showResponse(boxId, statusId, bodyId, status, body, ok) {
-  const box = document.getElementById(boxId);
-  const sEl = document.getElementById(statusId);
-  const bEl = document.getElementById(bodyId);
-  box.classList.add('visible');
-  sEl.textContent = status;
-  sEl.className = 'response-status ' + (ok ? 'status-ok' : 'status-err');
-  bEl.textContent = body;
+  document.getElementById(boxId).classList.add('visible');
+  const s = document.getElementById(statusId);
+  s.textContent = status;
+  s.className = 'response-status ' + (ok ? 'status-ok' : 'status-err');
+  document.getElementById(bodyId).textContent = body;
 }
 
 function clearResponse(id) {
   document.getElementById(id).classList.remove('visible');
 }
 
-async function doFormPost() {
-  const path  = document.getElementById('form-path').value;
-  const body  = new URLSearchParams({
+function fmtSize(n) {
+  if (n < 1024) return n + ' B';
+  if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+  return (n / 1024 / 1024).toFixed(2) + ' MB';
+}
+
+// ── 1. URL-encoded ────────────────────────────────────────────
+function updateFormPreview() {
+  const path   = document.getElementById('form-path').value;
+  const body   = new URLSearchParams({
     name:    document.getElementById('form-name').value,
     email:   document.getElementById('form-email').value,
     school:  document.getElementById('form-school').value,
     message: document.getElementById('form-msg').value,
-  });
+  }).toString();
+  document.getElementById('form-preview').textContent =
+    'POST ' + path + ' HTTP/1.1\n' +
+    'Content-Type: application/x-www-form-urlencoded\n' +
+    'Content-Length: ' + new TextEncoder().encode(body).length + '\n\n' +
+    body;
+}
+
+['form-path','form-name','form-email','form-school','form-msg'].forEach(function(id) {
+  document.getElementById(id).addEventListener('input', updateFormPreview);
+});
+updateFormPreview();
+
+async function doFormPost() {
+  const path = document.getElementById('form-path').value;
+  const body = new URLSearchParams({
+    name:    document.getElementById('form-name').value,
+    email:   document.getElementById('form-email').value,
+    school:  document.getElementById('form-school').value,
+    message: document.getElementById('form-msg').value,
+  }).toString();
   try {
     const r = await fetch(path, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: body.toString(),
+      body: body,
     });
     const text = await r.text();
     showResponse('form-response', 'form-status', 'form-body',
-      `${r.status} ${r.statusText}`, text.slice(0,2000), r.ok);
+      r.status + ' ' + r.statusText, text.slice(0, 2000), r.ok);
   } catch(e) {
     showResponse('form-response', 'form-status', 'form-body', 'ERROR', e.message, false);
+  }
+}
+
+// ── 2. JSON ───────────────────────────────────────────────────
+document.getElementById('json-body').addEventListener('input', function() {
+  const len = new TextEncoder().encode(this.value).length;
+  document.getElementById('json-size').textContent = fmtSize(len);
+});
+// init
+document.getElementById('json-size').textContent =
+  fmtSize(new TextEncoder().encode(document.getElementById('json-body').value).length);
+
+function formatJson() {
+  const el = document.getElementById('json-body');
+  try {
+    el.value = JSON.stringify(JSON.parse(el.value), null, 2);
+    el.dispatchEvent(new Event('input'));
+  } catch(e) {
+    alert('Invalid JSON: ' + e.message);
   }
 }
 
@@ -232,44 +313,94 @@ async function doJsonPost() {
     });
     const text = await r.text();
     showResponse('json-response', 'json-status', 'json-body-response',
-      `${r.status} ${r.statusText}`, text.slice(0,2000), r.ok);
+      r.status + ' ' + r.statusText, text.slice(0, 2000), r.ok);
   } catch(e) {
     showResponse('json-response', 'json-status', 'json-body-response', 'ERROR', e.message, false);
   }
 }
 
-async function doFileUpload() {
-  const path  = document.getElementById('upload-path').value;
-  const desc  = document.getElementById('upload-desc').value;
-  const file  = document.getElementById('upload-file').files[0];
-  const fd    = new FormData();
-  fd.append('description', desc);
-  if (file) fd.append('file', file);
-  try {
-    const r = await fetch(path, { method: 'POST', body: fd });
-    const text = await r.text();
-    showResponse('upload-response', 'upload-status', 'upload-body',
-      `${r.status} ${r.statusText}`, text.slice(0,2000), r.ok);
-  } catch(e) {
-    showResponse('upload-response', 'upload-status', 'upload-body', 'ERROR', e.message, false);
-  }
+// ── 3. Direct file upload ─────────────────────────────────────
+var selectedFile = null; // holds a File object when user picks a file
+
+function updateUploadPreview(content) {
+  const dest = document.getElementById('upload-dest').value;
+  const len  = new TextEncoder().encode(content).length;
+  document.getElementById('upload-size').textContent = fmtSize(len);
+  document.getElementById('upload-preview').textContent =
+    'POST ' + dest + ' HTTP/1.1\n' +
+    'Content-Type: application/octet-stream\n' +
+    'Content-Length: ' + len + '\n\n' +
+    (content.length > 80 ? content.slice(0, 80) + '...' : content);
 }
 
-async function doRawPost() {
-  const path = document.getElementById('raw-path').value;
-  const ct   = document.getElementById('raw-ct').value;
-  const body = document.getElementById('raw-body').value;
+// Textarea → preview
+document.getElementById('upload-content').addEventListener('input', function() {
+  selectedFile = null; // typed content takes over from any picked file
+  setDropLabel('Using typed content (' + fmtSize(this.value.length) + ')');
+  document.getElementById('drop-zone').className = 'drop-zone';
+  updateUploadPreview(this.value);
+});
+
+// Destination path → preview
+document.getElementById('upload-dest').addEventListener('input', function() {
+  updateUploadPreview(document.getElementById('upload-content').value);
+});
+
+// File picker
+document.getElementById('upload-file').addEventListener('change', function() {
+  if (this.files[0]) handleFile(this.files[0]);
+});
+
+// Drag & drop
+var dz = document.getElementById('drop-zone');
+dz.addEventListener('dragover',  function(e) { e.preventDefault(); this.classList.add('drag-over'); });
+dz.addEventListener('dragleave', function()  { this.classList.remove('drag-over'); });
+dz.addEventListener('drop', function(e) {
+  e.preventDefault();
+  this.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+
+function handleFile(file) {
+  selectedFile = file;
+  setDropLabel(file.name + ' — ' + fmtSize(file.size));
+  document.getElementById('drop-zone').className = 'drop-zone has-file';
+  // Read text content into the textarea so the user can see it
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    document.getElementById('upload-content').value = e.target.result;
+    updateUploadPreview(e.target.result);
+  };
+  reader.readAsText(file);
+}
+
+function setDropLabel(text) {
+  document.getElementById('drop-label').textContent = text;
+}
+
+// Init preview
+updateUploadPreview(document.getElementById('upload-content').value);
+
+async function doDirectUpload() {
+  const dest    = document.getElementById('upload-dest').value;
+  const content = document.getElementById('upload-content').value;
+  const body    = selectedFile
+    ? selectedFile          // send raw File bytes
+    : new Blob([content], { type: 'application/octet-stream' }); // send textarea text
+
   try {
-    const r = await fetch(path, {
+    const r = await fetch(dest, {
       method: 'POST',
-      headers: { 'Content-Type': ct },
+      headers: { 'Content-Type': 'application/octet-stream' },
       body: body,
     });
     const text = await r.text();
-    showResponse('raw-response', 'raw-status', 'raw-body-resp',
-      `${r.status} ${r.statusText}`, text.slice(0,2000), r.ok);
+    showResponse('upload-response', 'upload-status', 'upload-body',
+      r.status + ' ' + r.statusText,
+      text || '(empty body — server stored the file without responding)',
+      r.ok);
   } catch(e) {
-    showResponse('raw-response', 'raw-status', 'raw-body-resp', 'ERROR', e.message, false);
+    showResponse('upload-response', 'upload-status', 'upload-body', 'ERROR', e.message, false);
   }
 }
 </script>

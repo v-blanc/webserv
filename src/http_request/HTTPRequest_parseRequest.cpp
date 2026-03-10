@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/19 16:19:40 by vblanc            #+#    #+#             */
-/*   Updated: 2026/03/10 04:42:36 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/03/10 06:20:28 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -104,10 +104,10 @@ bool HTTPRequest::parseHeader(std::string &line, bool checkedHost, bool isLastLi
     if (headerName != "Host" && !checkedHost && isLastLine)
         return (false);
 
-    if (headerName == "Host")
+    else if (headerName == "Host")
         this->_host = line.substr(pos + 1);
 
-    if (headerName == "Content-Length")
+    else if (headerName == "Content-Length")
     {
         std::stringstream ss(line.substr(pos + 1));
         ss >> this->_contentLength;
@@ -115,10 +115,10 @@ bool HTTPRequest::parseHeader(std::string &line, bool checkedHost, bool isLastLi
             throw StatusException("400", "HTTP Request error during stringstream");
     }
 
-    if (headerName == "Content-Type")
+    else if (headerName == "Content-Type")
         this->_contentType = line.substr(pos + 1);
 
-    if (headerName == "Connection")
+    else if (headerName == "Connection")
     {
         if (line.substr(pos + 1) == "keep-alive")
             this->_connection = true;
@@ -128,11 +128,13 @@ bool HTTPRequest::parseHeader(std::string &line, bool checkedHost, bool isLastLi
             throw std::runtime_error("HTTP Request wrong format");
     }
 
-    if (headerName == "Transfer-Encoding")
+    else if (headerName == "Transfer-Encoding")
+    {
         if (line.substr(pos + 1) == "chunked")
             this->_isChunked = true;
+    }
 
-    if (headerName == "Cookie")
+    else if (headerName == "Cookie")
     {
         std::string cookieStr = line.substr(pos + 1);
         while (!cookieStr.empty())
