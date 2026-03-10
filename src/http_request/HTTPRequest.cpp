@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/07 14:57:52 by vblanc            #+#    #+#             */
-/*   Updated: 2026/03/09 18:15:00 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/03/10 01:08:32 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,7 @@ HTTPRequest::HTTPRequest(ServerConfig &serverConfig, std::string &request, std::
     {
         this->parseRequest(request);
         this->_isValidRequest = true;
-        this->debugPrintSession(sessionManager);
+        // this->debugPrintSession(sessionManager); // DEBUG
         HTTPResponse myResponse(*this, "", serverConfig, "", sessionManager);
         responseBuff = myResponse.getResponse();
     }
@@ -29,22 +29,26 @@ HTTPRequest::HTTPRequest(ServerConfig &serverConfig, std::string &request, std::
     }
 }
 
-void    HTTPRequest::debugPrintSession(const SessionManager &sessionManager) const
+void HTTPRequest::debugPrintSession(const SessionManager &sessionManager) const
 {
     for (std::map<std::string, std::string>::const_iterator it = _cookies.begin(); it != _cookies.end(); ++it)
         std::cout << "[Cookie] " << it->first << " = " << it->second << std::endl;
+
     std::string sessionId = this->getCookie("session_id");
     if (sessionId.empty())
-        return ;
+        return;
     if (sessionManager.sessionExists(sessionId))
     {
         SessionData data = sessionManager.getSessionData(sessionId);
         char createdAtStr[20];
         char lastAccessStr[20];
+
         std::strftime(createdAtStr, sizeof(createdAtStr), "%Y-%m-%d %H:%M:%S", std::localtime(&data.createdAt));
         std::strftime(lastAccessStr, sizeof(lastAccessStr), "%Y-%m-%d %H:%M:%S", std::localtime(&data.lastAccess));
+
         std::cout << "[Session] id=" << sessionId << std::endl;
         std::cout << "[Session] createdAt=" << createdAtStr << " lastAccess=" << lastAccessStr << std::endl;
+
         if (data.values.empty())
             std::cout << "[Session] values: (empty)" << std::endl;
         else
@@ -73,7 +77,7 @@ std::string HTTPRequest::getPathWithoutQuery() const
     for (std::size_t i = 0; i < path.size(); ++i)
     {
         if (path[i] == '/' && !normalized.empty() && normalized[normalized.size() - 1] == '/')
-            continue ;
+            continue;
         normalized += path[i];
     }
     return (normalized);
@@ -155,34 +159,15 @@ bool HTTPRequest::resolveCgiInterpreter(const std::vector<stringPair> &cgiHandle
     return (false);
 }
 
-void printHTTPRequest(HTTPRequest &request)
+std::string HTTPRequest::getCookie(const std::string &name) const
 {
-    std::string pad(4, ' ');
-
-    std::cout << "First line:" << std::endl;
-    std::cout << pad << "Method: \'" << request.getMethod() << "\'" << std::endl;
-    std::cout << pad << "Path: \'" << request.getPath() << "\'" << std::endl;
-    std::cout << std::endl;
-
-    std::cout << "Header:" << std::endl;
-    std::cout << pad << "Host: \'" << request.getHost() << "\'" << std::endl;
-    std::cout << pad << "ContentLength: \'" << request.getContentLength() << "\'" << std::endl;
-    std::cout << pad << "Connection: \'" << request.getConnection() << "\'" << std::endl;
-    std::cout << std::endl;
-
-    std::cout << "Body:" << std::endl;
-    std::cout << "\"" << request.getBody() << "\"" << std::endl;
+    std::map<std::string, std::string>::const_iterator it = _cookies.find(name);
+    if (it != _cookies.end())
+        return (it->second);
+    return ("");
 }
 
-std::string	HTTPRequest::getCookie(const std::string &name) const
+void HTTPRequest::pushBackCookies(const std::string key, const std::string value)
 {
-	std::map<std::string, std::string>::const_iterator	it = _cookies.find(name);
-	if (it != _cookies.end())
-		return (it->second);
-	return ("");
-}
-
-void	HTTPRequest::pushBackCookies(const std::string key, const std::string value)
-{
-	_cookies[key] = value;
+    _cookies[key] = value;
 }

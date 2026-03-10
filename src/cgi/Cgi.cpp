@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/13 14:58:49 by yabokhar          #+#    #+#             */
-/*   Updated: 2026/03/09 23:38:36 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/03/10 00:56:52 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -101,29 +101,37 @@ CgiContext *executeCgi(
 	}
 
 	std::string scriptFilename = resolvePath(1, cgiInfo.pathWithoutQuery.c_str());
+	std::string fullPath = resolvePath(2, cgiInfo.root.c_str(), scriptFilename.c_str());
 
-	std::string scriptDir2 = resolvePath(2, cgiInfo.root.c_str(), scriptFilename.c_str());
-	std::size_t pos = scriptDir2.rfind('/');
+	std::size_t pos = fullPath.rfind('/');
+	std::string scriptDir = fullPath;
+	std::string scriptBase = fullPath;
 	if (pos != std::string::npos)
-		scriptDir2 = scriptDir2.substr(0, pos);
-	std::cout << RED "scriptDir2: " << scriptDir2 << std::endl;
-	// std::string scriptBase = resolvePath(2, cgiInfo.root.c_str(), scriptFilename.c_str());
-
-	// std::string fullPath = "www" + resolvePath(2, scriptDir.c_str(), scriptBase.c_str());
-
-	std::string scriptDir = cgiInfo.root;
-	std::string scriptBase = scriptFilename;
-	std::size_t slashPos = scriptFilename.rfind('/');
-	if (slashPos != std::string::npos)
 	{
-		scriptDir += "/" + scriptFilename.substr(0, slashPos);
-		scriptBase = scriptFilename.substr(slashPos + 1);
+		scriptDir = fullPath.substr(0, pos);
+		scriptBase = fullPath.substr(pos + 1);
 	}
-	std::cout << RED "scriptDir: " << scriptDir << std::endl;
-	std::cout << "scriptBase: " << scriptBase << std::endl;
 
-	std::string fullPath = cgiInfo.root + "/" + scriptFilename;
-	std::cout << "fullPath: " << fullPath << DEFAULT << std::endl;
+	// ----
+	// std::string scriptFilename = cgiInfo.pathWithoutQuery;
+	// if (!scriptFilename.empty() && scriptFilename[0] == '/')
+	// 	scriptFilename.erase(0, 1);
+	// std::cout << GREEN "scriptFilename: " << scriptFilename << std::endl;
+	// std::string scriptDir = cgiInfo.root;
+	// std::string scriptBase = scriptFilename;
+	// std::size_t slashPos = scriptFilename.rfind('/');
+	// if (slashPos != std::string::npos)
+	// {
+	// 	scriptDir += "/" + scriptFilename.substr(0, slashPos);
+	// 	scriptBase = scriptFilename.substr(slashPos + 1);
+	// }
+
+	// std::string fullPath = cgiInfo.root + "/" + scriptFilename;
+	// std::cout << GREEN "scriptDir: " << scriptDir << DEFAULT << std::endl;
+	// std::cout << GREEN "scriptBase: " << scriptBase << DEFAULT << std::endl;
+	// std::cout << GREEN "fullPath: " << fullPath << DEFAULT << std::endl;
+	// ----
+
 	struct stat fileStat;
 	if (stat(fullPath.c_str(), &fileStat) != 0)
 	{

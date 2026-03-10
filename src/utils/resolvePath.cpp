@@ -17,7 +17,7 @@ static std::vector<std::string> splitPath(const std::string &path)
     return parts;
 }
 
-static std::string resolveParts(const std::vector<std::string> &segments, bool isAbsolute)
+static std::string resolveParts(const std::vector<std::string> &segments)
 {
     std::vector<std::string> stack;
     int pendingUps = 0;
@@ -30,7 +30,7 @@ static std::string resolveParts(const std::vector<std::string> &segments, bool i
         {
             if (!stack.empty())
                 stack.pop_back();
-            else if (!isAbsolute)
+            else
                 pendingUps++;
         }
         else
@@ -51,9 +51,6 @@ static std::string resolveParts(const std::vector<std::string> &segments, bool i
         result += *it;
     }
 
-    if (isAbsolute)
-        return result.empty() ? "/" : "/" + result;
-
     return result.empty() ? "." : result;
 }
 
@@ -63,7 +60,6 @@ std::string resolvePath(int count, ...)
     va_start(args, count);
 
     std::vector<std::string> allSegments;
-    bool isAbsolute = false;
 
     for (int i = 0; i < count; i++)
     {
@@ -73,12 +69,6 @@ std::string resolvePath(int count, ...)
 
         std::string path(raw);
 
-        if (!path.empty() && path[0] == '/')
-        {
-            allSegments.clear();
-            isAbsolute = true;
-        }
-
         std::vector<std::string> parts = splitPath(path);
         for (std::vector<std::string>::iterator it = parts.begin(); it != parts.end(); ++it)
             allSegments.push_back(*it);
@@ -86,5 +76,5 @@ std::string resolvePath(int count, ...)
 
     va_end(args);
 
-    return resolveParts(allSegments, isAbsolute);
+    return resolveParts(allSegments);
 }

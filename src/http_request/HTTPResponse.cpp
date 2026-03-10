@@ -6,13 +6,21 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 14:04:09 by yassinefahf       #+#    #+#             */
-/*   Updated: 2026/03/09 23:10:24 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/03/10 01:32:24 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "HTTPResponse.hpp"
-#include <sys/stat.h>
-#include <sys/wait.h>
+
+static void printRequestLog(HTTPRequest &request, const std::string &status, const std::string &message)
+{
+	if (status[0] == '2')
+		std::cout << GREEN;
+	else
+		std::cout << DARKEN RED;
+
+	std::cout << getTimeOfDay() + " [" << request.getMethod() << " " << request.getPath() << "] : " << status << " " << message << DEFAULT << std::endl;
+}
 
 HTTPResponse::HTTPResponse(HTTPRequest &request, const std::string &status, ServerConfig &serverConfig, std::string message, SessionManager &sessionManager) : _serverConfig(serverConfig), _sessionManager(sessionManager), _body(""), _contentLength(0), _response(""), _redirectCount(0)
 {
@@ -23,7 +31,10 @@ HTTPResponse::HTTPResponse(HTTPRequest &request, const std::string &status, Serv
 		_sessionId = _sessionManager.createSession();
 
 	if (status != "")
+	{
 		handleBadRequest(status, message);
+		printRequestLog(request, status, message);
+	}
 	else
 	{
 		if (request.getMethod() == "GET")
@@ -32,10 +43,12 @@ HTTPResponse::HTTPResponse(HTTPRequest &request, const std::string &status, Serv
 			{
 				handleGetMethod(request);
 				prepareGoodResponse();
+				printRequestLog(request, this->_status, this->_message);
 			}
 			catch (const HTTPRequest::StatusException &e)
 			{
 				handleBadRequest(e.getStatus(), e.getMessage());
+				printRequestLog(request, e.getStatus(), e.getMessage());
 			}
 		}
 		else if (request.getMethod() == "POST")
@@ -44,10 +57,12 @@ HTTPResponse::HTTPResponse(HTTPRequest &request, const std::string &status, Serv
 			{
 				handlePostMethod(request);
 				prepareGoodResponse();
+				printRequestLog(request, this->_status, this->_message);
 			}
 			catch (const HTTPRequest::StatusException &e)
 			{
 				handleBadRequest(e.getStatus(), e.getMessage());
+				printRequestLog(request, e.getStatus(), e.getMessage());
 			}
 		}
 		else if (request.getMethod() == "DELETE")
@@ -56,10 +71,12 @@ HTTPResponse::HTTPResponse(HTTPRequest &request, const std::string &status, Serv
 			{
 				handleDeleteMethod(request);
 				prepareGoodResponse();
+				printRequestLog(request, this->_status, this->_message);
 			}
 			catch (const HTTPRequest::StatusException &e)
 			{
 				handleBadRequest(e.getStatus(), e.getMessage());
+				printRequestLog(request, e.getStatus(), e.getMessage());
 			}
 		}
 		else

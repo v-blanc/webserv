@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:25 by vblanc            #+#    #+#             */
-/*   Updated: 2026/03/09 18:53:15 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/03/10 00:59:00 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,8 @@
 #include "HTTPRequest.hpp"
 #include "Server.hpp"
 #include "SessionManager.hpp"
+#include "Cgi.hpp"
+#include "HTTPStatusException.hpp"
 
 class GlobalServer
 {
