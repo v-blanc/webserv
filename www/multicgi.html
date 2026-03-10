@@ -168,12 +168,15 @@
         <button class="btn btn-cgi" onclick="runScript('py')">&#9658; Run Python CGI</button>
         <button class="btn btn-info" onclick="clearPanel('py')">Clear</button>
       </div>
-      <div class="response-box" id="py-resp" style="margin-top:.75rem">
+      <div class="response-box" id="py-resp">
         <div class="response-header">
-          <span>RESPONSE</span>
-          <span class="response-status" id="py-status">&#8212;</span>
+          <span class="resp-label">RESPONSE</span>
+          <button class="resp-tab active" onclick="respTab(this,'raw')">RAW</button>
+          <button class="resp-tab"        onclick="respTab(this,'render')">RENDER</button>
+          <span class="response-status" id="py-status">—</span>
         </div>
         <div class="response-body" id="py-body"></div>
+        <iframe class="response-render" id="py-resp-render" sandbox="allow-same-origin allow-scripts"></iframe>
       </div>
     </div>
   </div>
@@ -210,12 +213,15 @@
         <button class="btn btn-cgi" onclick="runScript('pl')">&#9658; Run Perl CGI</button>
         <button class="btn btn-info" onclick="clearPanel('pl')">Clear</button>
       </div>
-      <div class="response-box" id="pl-resp" style="margin-top:.75rem">
+      <div class="response-box" id="pl-resp">
         <div class="response-header">
-          <span>RESPONSE</span>
-          <span class="response-status" id="pl-status">&#8212;</span>
+          <span class="resp-label">RESPONSE</span>
+          <button class="resp-tab active" onclick="respTab(this,'raw')">RAW</button>
+          <button class="resp-tab"        onclick="respTab(this,'render')">RENDER</button>
+          <span class="response-status" id="pl-status">—</span>
         </div>
         <div class="response-body" id="pl-body"></div>
+        <iframe class="response-render" id="pl-resp-render" sandbox="allow-same-origin allow-scripts"></iframe>
       </div>
     </div>
   </div>
@@ -253,12 +259,15 @@
         <button class="btn btn-cgi" onclick="runScript('php')">&#9658; Run PHP CGI</button>
         <button class="btn btn-info" onclick="clearPanel('php')">Clear</button>
       </div>
-      <div class="response-box" id="php-resp" style="margin-top:.75rem">
+      <div class="response-box" id="php-resp">
         <div class="response-header">
-          <span>RESPONSE</span>
-          <span class="response-status" id="php-status">&#8212;</span>
+          <span class="resp-label">RESPONSE</span>
+          <button class="resp-tab active" onclick="respTab(this,'raw')">RAW</button>
+          <button class="resp-tab"        onclick="respTab(this,'render')">RENDER</button>
+          <span class="response-status" id="php-status">—</span>
         </div>
         <div class="response-body" id="php-body"></div>
+        <iframe class="response-render" id="php-resp-render" sandbox="allow-same-origin allow-scripts"></iframe>
       </div>
     </div>
   </div>
@@ -268,6 +277,49 @@
 <footer>WebServ Test Suite &middot; Multi-CGI Module</footer>
 
 <script>
+
+// ── Response tab system ───────────────────────────────────────
+function respTab(btn, mode) {
+  const box    = btn.closest('.response-box');
+  const rawEl  = box.querySelector('.response-body');
+  const renEl  = box.querySelector('.response-render');
+  const tabs   = box.querySelectorAll('.resp-tab');
+  tabs.forEach(function(t) { t.classList.remove('active'); });
+  btn.classList.add('active');
+  if (mode === 'render') {
+    rawEl.style.display = 'none';
+    renEl.style.display = 'block';
+  } else {
+    rawEl.style.display = '';
+    renEl.style.display = 'none';
+  }
+}
+
+function showResponse(boxId, statusId, bodyId, status, body, ok) {
+  const box   = document.getElementById(boxId);
+  const sEl   = document.getElementById(statusId);
+  const bEl   = document.getElementById(bodyId);
+  const renEl = document.getElementById(boxId + '-render');
+  box.classList.add('visible');
+  sEl.textContent = status;
+  sEl.className   = 'response-status ' + (ok ? 'status-ok' : 'status-err');
+  bEl.textContent = body;
+  bEl.style.display = '';
+  // push content into iframe
+  if (renEl) {
+    renEl.srcdoc       = body;
+    renEl.style.display = 'none';
+  }
+  // reset tabs to RAW active
+  const tabs = box.querySelectorAll('.resp-tab');
+  tabs.forEach(function(t) { t.classList.remove('active'); });
+  if (tabs[0]) tabs[0].classList.add('active');
+}
+
+function clearResponse(id) {
+  document.getElementById(id).classList.remove('visible');
+}
+
 // ── Helpers ──────────────────────────────────────────────────
 function show(respId, statusId, bodyId, status, body, ok) {
   document.getElementById(respId).classList.add('visible');

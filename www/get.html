@@ -60,10 +60,13 @@
       </div>
       <div class="response-box" id="get-response">
         <div class="response-header">
-          <span>RESPONSE</span>
+          <span class="resp-label">RESPONSE</span>
+          <button class="resp-tab active" onclick="respTab(this,'raw')">RAW</button>
+          <button class="resp-tab"        onclick="respTab(this,'render')">RENDER</button>
           <span class="response-status" id="get-status">—</span>
         </div>
         <div class="response-body" id="get-body"></div>
+        <iframe class="response-render" id="get-response-render" sandbox="allow-same-origin allow-scripts"></iframe>
       </div>
     </div>
   </div>
@@ -71,16 +74,20 @@
   <!-- ── 2. QUICK TESTS ── -->
   <div class="section">
     <div class="section-label">Quick Tests</div>
-    <div class="grid-3">
-
       <div class="card">
         <h3>✓ &nbsp;200 OK — Root</h3>
         <div class="code-block">GET / HTTP/1.1</div>
         <button class="btn btn-get" style="margin-top:.75rem" onclick="quickGet('/', 'q1')">Run</button>
         <div class="response-box" id="q1">
-          <div class="response-header"><span>RESPONSE</span><span class="response-status" id="q1-status">—</span></div>
-          <div class="response-body" id="q1-body"></div>
+        <div class="response-header">
+          <span class="resp-label">RESPONSE</span>
+          <button class="resp-tab active" onclick="respTab(this,'raw')">RAW</button>
+          <button class="resp-tab"        onclick="respTab(this,'render')">RENDER</button>
+          <span class="response-status" id="q1-status">—</span>
         </div>
+        <div class="response-body" id="q1-body"></div>
+        <iframe class="response-render" id="q1-render" sandbox="allow-same-origin allow-scripts"></iframe>
+      </div>
       </div>
 
       <div class="card">
@@ -88,9 +95,15 @@
         <div class="code-block">GET /no-such-page HTTP/1.1</div>
         <button class="btn btn-get" style="margin-top:.75rem" onclick="quickGet('/no-such-page-xyz', 'q2')">Run</button>
         <div class="response-box" id="q2">
-          <div class="response-header"><span>RESPONSE</span><span class="response-status" id="q2-status">—</span></div>
-          <div class="response-body" id="q2-body"></div>
+        <div class="response-header">
+          <span class="resp-label">RESPONSE</span>
+          <button class="resp-tab active" onclick="respTab(this,'raw')">RAW</button>
+          <button class="resp-tab"        onclick="respTab(this,'render')">RENDER</button>
+          <span class="response-status" id="q2-status">—</span>
         </div>
+        <div class="response-body" id="q2-body"></div>
+        <iframe class="response-render" id="q2-render" sandbox="allow-same-origin allow-scripts"></iframe>
+      </div>
       </div>
 
       <div class="card">
@@ -98,11 +111,16 @@
         <div class="code-block">GET /style.css HTTP/1.1</div>
         <button class="btn btn-get" style="margin-top:.75rem" onclick="quickGet('/style.css', 'q3')">Run</button>
         <div class="response-box" id="q3">
-          <div class="response-header"><span>RESPONSE</span><span class="response-status" id="q3-status">—</span></div>
-          <div class="response-body" id="q3-body"></div>
+        <div class="response-header">
+          <span class="resp-label">RESPONSE</span>
+          <button class="resp-tab active" onclick="respTab(this,'raw')">RAW</button>
+          <button class="resp-tab"        onclick="respTab(this,'render')">RENDER</button>
+          <span class="response-status" id="q3-status">—</span>
         </div>
+        <div class="response-body" id="q3-body"></div>
+        <iframe class="response-render" id="q3-render" sandbox="allow-same-origin allow-scripts"></iframe>
       </div>
-
+      </div>
     </div>
   </div>
 
@@ -127,8 +145,14 @@
       </div>
       <button class="btn btn-get" style="margin-top:.75rem" onclick="doQueryGet()">▶ Send</button>
       <div class="response-box" id="qs-response">
-        <div class="response-header"><span>RESPONSE</span><span class="response-status" id="qs-status">—</span></div>
+        <div class="response-header">
+          <span class="resp-label">RESPONSE</span>
+          <button class="resp-tab active" onclick="respTab(this,'raw')">RAW</button>
+          <button class="resp-tab"        onclick="respTab(this,'render')">RENDER</button>
+          <span class="response-status" id="qs-status">—</span>
+        </div>
         <div class="response-body" id="qs-body"></div>
+        <iframe class="response-render" id="qs-response-render" sandbox="allow-same-origin allow-scripts"></iframe>
       </div>
     </div>
   </div>
@@ -150,11 +174,132 @@
     </div>
   </div>
 
+  <!-- ── 5. CHUNKED REQUEST ── -->
+  <div class="section">
+    <div class="section-label">Chunked Transfer Encoding</div>
+    <div class="card">
+      <h3>Send a chunked GET request</h3>
+      <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:1rem">
+        Sends <code style="color:var(--accent)">Transfer-Encoding: chunked</code> by streaming
+        the request body in small pieces. Your server must reassemble the chunks before processing.
+        A GET has no body, so this tests that your server correctly handles the header on a bodyless request
+        — and does <em>not</em> hang waiting for chunks that will never come.
+      </p>
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Path</label>
+          <input type="text" id="chunk-path" value="/" />
+        </div>
+        <div class="form-group">
+          <label>Chunk size (bytes)</label>
+          <input type="number" id="chunk-size" value="16" min="1" max="512" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Optional body (leave empty for a standard bodyless GET)</label>
+        <textarea id="chunk-body" rows="3" placeholder="Optional body text to send in chunks..."></textarea>
+      </div>
+      <div class="code-block" id="chunk-preview">GET / HTTP/1.1
+Host: localhost
+Transfer-Encoding: chunked</div>
+      <div class="flex" style="margin-top:.75rem">
+        <button class="btn btn-get" onclick="doChunked()">&#9658; Send Chunked</button>
+        <button class="btn btn-info" onclick="clearResponse('chunk-response')">Clear</button>
+      </div>
+      <div class="response-box" id="chunk-response">
+        <div class="response-header">
+          <span class="resp-label">RESPONSE</span>
+          <button class="resp-tab active" onclick="respTab(this,'raw')">RAW</button>
+          <button class="resp-tab"        onclick="respTab(this,'render')">RENDER</button>
+          <span class="response-status" id="chunk-status">—</span>
+        </div>
+        <div class="response-body" id="chunk-body-resp"></div>
+        <iframe class="response-render" id="chunk-response-render" sandbox="allow-same-origin allow-scripts"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 6. AUTOINDEX ── -->
+  <div class="section">
+    <div class="section-label">Autoindex — Directory Listing</div>
+    <div class="card">
+      <h3>Browse a directory with autoindex on</h3>
+      <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:1rem">
+        When a directory has no <code style="color:var(--accent)">index.html</code> and
+        <code style="color:var(--accent)">autoindex on</code> is set in the config, your server
+        must generate a directory listing. The iframe below shows the live response from your server.
+      </p>
+      <div class="form-group">
+        <label>Directory path (must have autoindex on in config)</label>
+        <input type="text" id="autoindex-path" value="/autoindex_dir/" />
+      </div>
+      <div class="flex" style="margin-bottom:.75rem">
+        <button class="btn btn-get" onclick="loadAutoindex()">&#9658; Load Directory</button>
+        <a id="autoindex-link" href="/autoindex_dir/" target="_blank" class="btn btn-info">&#8599; Open in new tab</a>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:6px;overflow:hidden;background:var(--bg)">
+        <div style="background:var(--bg2);border-bottom:1px solid var(--border);padding:.45rem .85rem;
+                    font-family:var(--mono);font-size:.68rem;color:var(--text-faint);
+                    display:flex;align-items:center;justify-content:space-between">
+          <span>IFRAME PREVIEW</span>
+          <span id="autoindex-status" style="color:var(--text-faint)">not loaded</span>
+        </div>
+        <iframe id="autoindex-frame"
+                src="about:blank"
+                style="width:100%;height:260px;border:none;background:#fff"
+                sandbox="allow-same-origin"></iframe>
+      </div>
+    </div>
+  </div>
+
 </main>
 
 <footer>WebServ Test Suite · GET Module</footer>
 
 <script>
+
+// ── Response tab system ───────────────────────────────────────
+function respTab(btn, mode) {
+  const box    = btn.closest('.response-box');
+  const rawEl  = box.querySelector('.response-body');
+  const renEl  = box.querySelector('.response-render');
+  const tabs   = box.querySelectorAll('.resp-tab');
+  tabs.forEach(function(t) { t.classList.remove('active'); });
+  btn.classList.add('active');
+  if (mode === 'render') {
+    rawEl.style.display = 'none';
+    renEl.style.display = 'block';
+  } else {
+    rawEl.style.display = '';
+    renEl.style.display = 'none';
+  }
+}
+
+function showResponse(boxId, statusId, bodyId, status, body, ok) {
+  const box   = document.getElementById(boxId);
+  const sEl   = document.getElementById(statusId);
+  const bEl   = document.getElementById(bodyId);
+  const renEl = document.getElementById(boxId + '-render');
+  box.classList.add('visible');
+  sEl.textContent = status;
+  sEl.className   = 'response-status ' + (ok ? 'status-ok' : 'status-err');
+  bEl.textContent = body;
+  bEl.style.display = '';
+  // push content into iframe
+  if (renEl) {
+    renEl.srcdoc       = body;
+    renEl.style.display = 'none';
+  }
+  // reset tabs to RAW active
+  const tabs = box.querySelectorAll('.resp-tab');
+  tabs.forEach(function(t) { t.classList.remove('active'); });
+  if (tabs[0]) tabs[0].classList.add('active');
+}
+
+function clearResponse(id) {
+  document.getElementById(id).classList.remove('visible');
+}
+
 const host = window.location.host;
 
 function updateGetPreview() {
@@ -174,19 +319,11 @@ document.getElementById('get-header-val').addEventListener('input', updateGetPre
 
 updateGetPreview(); // initialise on load
 
-function showResponse(boxId, statusId, bodyId, status, body, ok) {
-  const box  = document.getElementById(boxId);
-  const sEl  = document.getElementById(statusId);
-  const bEl  = document.getElementById(bodyId);
-  box.classList.add('visible');
-  sEl.textContent = status;
-  sEl.className = 'response-status ' + (ok ? 'status-ok' : 'status-err');
-  bEl.textContent = body;
-}
 
-function clearResponse(id) {
-  document.getElementById(id).classList.remove('visible');
-}
+
+
+
+
 
 async function doGet() {
   const path = document.getElementById('get-path').value || '/';
@@ -258,6 +395,87 @@ async function doHeaderInspect() {
     tbl.style.display = 'block';
   }
 }
+// ── Chunked ──────────────────────────────────────────────────
+function updateChunkPreview() {
+  const path = document.getElementById('chunk-path').value || '/';
+  const body = document.getElementById('chunk-body').value;
+  let preview = 'GET ' + path + ' HTTP/1.1\nHost: ' + host + '\nTransfer-Encoding: chunked';
+  if (body) preview += '\n\n<body will be split into chunks>';
+  document.getElementById('chunk-preview').textContent = preview;
+}
+document.getElementById('chunk-path').addEventListener('input', updateChunkPreview);
+document.getElementById('chunk-body').addEventListener('input', updateChunkPreview);
+
+async function doChunked() {
+  const path      = document.getElementById('chunk-path').value || '/';
+  const bodyText  = document.getElementById('chunk-body').value;
+  const chunkSize = parseInt(document.getElementById('chunk-size').value) || 16;
+
+  // Use a ReadableStream to send the body in chunks.
+  // For a truly bodyless GET, pass null — fetch will still send the header.
+  let bodyInit = null;
+  if (bodyText) {
+    const encoder = new TextEncoder();
+    const bytes   = encoder.encode(bodyText);
+    bodyInit = new ReadableStream({
+      start(controller) {
+        let offset = 0;
+        while (offset < bytes.length) {
+          controller.enqueue(bytes.slice(offset, offset + chunkSize));
+          offset += chunkSize;
+        }
+        controller.close();
+      }
+    });
+  }
+
+  try {
+    const opts = {
+      method: 'GET',
+      headers: { 'Transfer-Encoding': 'chunked', 'Cache-Control': 'no-store' },
+      cache: 'no-store',
+    };
+    if (bodyInit) {
+      opts.body   = bodyInit;
+      opts.duplex = 'half'; // required by some browsers for streaming request bodies
+    }
+    const r    = await fetch(path, opts);
+    const text = await r.text();
+    showResponse('chunk-response', 'chunk-status', 'chunk-body-resp',
+      r.status + ' ' + r.statusText, text.slice(0, 2000), r.ok);
+  } catch(e) {
+    // Browsers may block Transfer-Encoding on the request side — show a clear message
+    showResponse('chunk-response', 'chunk-status', 'chunk-body-resp',
+      'NOTE', 'Browser fetch API does not allow setting Transfer-Encoding manually.\n' +
+      'Your server will see the request as a normal GET.\n\nError: ' + e.message, false);
+  }
+}
+
+// ── Autoindex ────────────────────────────────────────────────
+function updateAutoindexLink() {
+  const path = document.getElementById('autoindex-path').value || '/autoindex_dir/';
+  document.getElementById('autoindex-link').href = path;
+}
+document.getElementById('autoindex-path').addEventListener('input', updateAutoindexLink);
+
+function loadAutoindex() {
+  const path   = document.getElementById('autoindex-path').value || '/autoindex_dir/';
+  const frame  = document.getElementById('autoindex-frame');
+  const status = document.getElementById('autoindex-status');
+  status.textContent = 'loading…';
+  status.style.color = 'var(--text-faint)';
+  frame.src = path;
+  frame.onload = function() {
+    status.textContent = 'loaded \u2713';
+    status.style.color = 'var(--accent)';
+  };
+  frame.onerror = function() {
+    status.textContent = 'error loading';
+    status.style.color = 'var(--accent3)';
+  };
+  document.getElementById('autoindex-link').href = path;
+}
+
 </script>
 </body>
 </html>
