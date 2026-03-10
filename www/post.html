@@ -114,8 +114,14 @@ name=John+Doe&email=john%4042.fr&school=42+Paris&message=Hello+WebServ%21</div>
         <button class="btn btn-info" onclick="clearResponse('form-response')">Clear</button>
       </div>
       <div class="response-box" id="form-response">
-        <div class="response-header"><span>RESPONSE</span><span class="response-status" id="form-status">—</span></div>
+        <div class="response-header">
+          <span class="resp-label">RESPONSE</span>
+          <button class="resp-tab active" onclick="respTab(this,'raw')">RAW</button>
+          <button class="resp-tab"        onclick="respTab(this,'render')">RENDER</button>
+          <span class="response-status" id="form-status">—</span>
+        </div>
         <div class="response-body" id="form-body"></div>
+        <iframe class="response-render" id="form-response-render" sandbox="allow-same-origin allow-scripts"></iframe>
       </div>
     </div>
   </div>
@@ -154,8 +160,14 @@ name=John+Doe&email=john%4042.fr&school=42+Paris&message=Hello+WebServ%21</div>
         <button class="btn btn-info" onclick="clearResponse('json-response')">Clear</button>
       </div>
       <div class="response-box" id="json-response">
-        <div class="response-header"><span>RESPONSE</span><span class="response-status" id="json-status">—</span></div>
+        <div class="response-header">
+          <span class="resp-label">RESPONSE</span>
+          <button class="resp-tab active" onclick="respTab(this,'raw')">RAW</button>
+          <button class="resp-tab"        onclick="respTab(this,'render')">RENDER</button>
+          <span class="response-status" id="json-status">—</span>
+        </div>
         <div class="response-body" id="json-body-response"></div>
+        <iframe class="response-render" id="json-response-render" sandbox="allow-same-origin allow-scripts"></iframe>
       </div>
     </div>
   </div>
@@ -210,8 +222,14 @@ Content-Length: —
         <button class="btn btn-info" onclick="clearResponse('upload-response')">Clear</button>
       </div>
       <div class="response-box" id="upload-response">
-        <div class="response-header"><span>RESPONSE</span><span class="response-status" id="upload-status">—</span></div>
+        <div class="response-header">
+          <span class="resp-label">RESPONSE</span>
+          <button class="resp-tab active" onclick="respTab(this,'raw')">RAW</button>
+          <button class="resp-tab"        onclick="respTab(this,'render')">RENDER</button>
+          <span class="response-status" id="upload-status">—</span>
+        </div>
         <div class="response-body" id="upload-body"></div>
+        <iframe class="response-render" id="upload-response-render" sandbox="allow-same-origin allow-scripts"></iframe>
       </div>
     </div>
   </div>
@@ -221,18 +239,53 @@ Content-Length: —
 <footer>WebServ Test Suite · POST Module</footer>
 
 <script>
-// ── Shared helpers ────────────────────────────────────────────
+
+// ── Response tab system ───────────────────────────────────────
+function respTab(btn, mode) {
+  const box    = btn.closest('.response-box');
+  const rawEl  = box.querySelector('.response-body');
+  const renEl  = box.querySelector('.response-render');
+  const tabs   = box.querySelectorAll('.resp-tab');
+  tabs.forEach(function(t) { t.classList.remove('active'); });
+  btn.classList.add('active');
+  if (mode === 'render') {
+    rawEl.style.display = 'none';
+    renEl.style.display = 'block';
+  } else {
+    rawEl.style.display = '';
+    renEl.style.display = 'none';
+  }
+}
+
 function showResponse(boxId, statusId, bodyId, status, body, ok) {
-  document.getElementById(boxId).classList.add('visible');
-  const s = document.getElementById(statusId);
-  s.textContent = status;
-  s.className = 'response-status ' + (ok ? 'status-ok' : 'status-err');
-  document.getElementById(bodyId).textContent = body;
+  const box   = document.getElementById(boxId);
+  const sEl   = document.getElementById(statusId);
+  const bEl   = document.getElementById(bodyId);
+  const renEl = document.getElementById(boxId + '-render');
+  box.classList.add('visible');
+  sEl.textContent = status;
+  sEl.className   = 'response-status ' + (ok ? 'status-ok' : 'status-err');
+  bEl.textContent = body;
+  bEl.style.display = '';
+  // push content into iframe
+  if (renEl) {
+    renEl.srcdoc       = body;
+    renEl.style.display = 'none';
+  }
+  // reset tabs to RAW active
+  const tabs = box.querySelectorAll('.resp-tab');
+  tabs.forEach(function(t) { t.classList.remove('active'); });
+  if (tabs[0]) tabs[0].classList.add('active');
 }
 
 function clearResponse(id) {
   document.getElementById(id).classList.remove('visible');
 }
+
+// ── Shared helpers ────────────────────────────────────────────
+
+
+
 
 function fmtSize(n) {
   if (n < 1024) return n + ' B';
