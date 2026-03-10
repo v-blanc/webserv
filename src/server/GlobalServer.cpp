@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:14 by vblanc            #+#    #+#             */
-/*   Updated: 2026/03/10 03:58:13 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/03/10 06:34:48 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -285,6 +285,12 @@ static void handleHeaders(ClientContext *clientContext)
             {
                 std::size_t startSize = posContent + contentLengthFormat.size();
                 std::size_t endSize = clientContext->recvBuffer.find("\r\n", startSize);
+
+                for (std::size_t i = startSize; i < endSize; i++)
+                {
+                    if (clientContext->recvBuffer[i] < '0' || clientContext->recvBuffer[i] > '9')
+                        throw(HttpStatusException("400", "Bad Request"));
+                }
 
                 std::stringstream ss(clientContext->recvBuffer.substr(startSize, endSize - startSize));
                 ss >> clientContext->expectedBodySize;
