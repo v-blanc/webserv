@@ -6,48 +6,53 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/19 16:19:40 by vblanc            #+#    #+#             */
-/*   Updated: 2026/03/10 06:20:28 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/03/10 09:01:39 by yabokhar         ###   ########lyon.fr   */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "HTTPRequest.hpp"
 
-static std::vector<std::string> getHTTPLines(std::string &request)
+std::vector<std::string> getHTTPLines(std::string &request)
 {
-    std::vector<std::string> lines;
-    std::string currLine;
-    int realBody = 0;
+	std::vector<std::string> lines;
+	std::string currLine;
+	bool headersDone = false;
 
-    for (std::size_t i = 0; i < request.size(); i++)
-    {
-        if (request.at(i) == '\r')
-        {
-            if (i + 1 < request.size() && request.at(i + 1) == '\n')
-            {
-                if (!currLine.empty())
-                    lines.push_back(currLine);
-                currLine.clear();
-                if (i + 3 < request.size() && request.at(i + 2) == '\r' && request.at(i + 3) == '\n')
-                {
-                    if (realBody == 1)
-                    {
-                        std::vector<std::string>::iterator it = std::find(lines.begin(), lines.end(), "\r\n\r\n");
-                        if (it != lines.end())
-                            lines.erase(it);
-                    }
-                    else
-                        ++realBody;
-                    lines.push_back("\r\n\r\n");
-                }
-                ++i;
-                continue;
-            }
-        }
-        currLine += request.at(i);
-    }
-    if (!currLine.empty())
-        lines.push_back(currLine);
-    return lines;
+	for (std::size_t i = 0; i < request.size(); i++)
+	{
+		if (request.at(i) == '\r')
+		{
+			if (i + 1 < request.size() && request.at(i + 1) == '\n')
+			{
+				if (!headersDone)
+				{
+					if (!currLine.empty())
+						lines.push_back(currLine);
+					currLine.clear();
+					if (i + 3 < request.size() && request.at(i + 2) == '\r' && request.at(i + 3) == '\n')
+					{
+						lines.push_back("\r\n\r\n");
+						headersDone = true;
+						i += 3;
+						continue;
+					}
+				}
+				else
+				{
+					currLine += '\r';
+					currLine += '\n';
+					++i;
+					continue;
+				}
+				++i;
+				continue;
+			}
+		}
+		currLine += request.at(i);
+	}
+	if (!currLine.empty())
+		lines.push_back(currLine);
+	return (lines);
 }
 
 void HTTPRequest::parseFirstLine(std::string &firstLine)

@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 14:04:09 by yassinefahf       #+#    #+#             */
-/*   Updated: 2026/03/10 06:08:21 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/03/10 08:51:59 by yabokhar         ###   ########lyon.fr   */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -175,26 +175,79 @@ void HTTPResponse::handlePostMethod(HTTPRequest &request)
 		throw CgiRequiredException(cgiInfo);
 	}
 
-	if (!request.getFileName().empty())
+	if (!request.getFileName().empty() || request.getPathWithoutQuery().find('.') != std::string::npos)
 	{
 		if (myLocation.getUploadStore().empty())
 			throw HTTPRequest::StatusException("500", "Internal Server Error");
 
+		std::string fileName = request.getFileName();
+		if (fileName.empty())
+		{
+			std::string p = request.getPathWithoutQuery();
+			std::size_t slash = p.find_last_of('/');
+			if (slash != std::string::npos)
+				fileName = p.substr(slash + 1);
+			else
+				fileName = p;
+		}
+
 		std::string destPath = resolvePath(3,
 										   myLocation.getRoot().c_str(),
 										   myLocation.getUploadStore().c_str(),
-										   request.getFileName().c_str());
+										   fileName.c_str());
+
+		struct stat dirStat;
+		std::string uploadDir = resolvePath(2,
+										    myLocation.getRoot().c_str(),
+										    myLocation.getUploadStore().c_str());
+		if (stat(uploadDir.c_str(), &dirStat) < 0)
+			throw HTTPRequest::StatusException("500", "Internal Server Error");
+		if (!S_ISDIR(dirStat.st_mode))
+			throw HTTPRequest::StatusException("500", "Internal Server Error");
+
+		struct stat fileStat;
+		if (!stat(destPath.c_str(), &fileStat) && S_ISDIR(fileStat.st_mode))
+			throw HTTPRequest::StatusException("409", "Conflict");
 
 		std::ofstream file(destPath.c_str(), std::ios::binary);
 		if (!file.is_open())
 			throw HTTPRequest::StatusException("500", "Internal Server Error");
 
-		file << request.getBody();
+		const std::string &body = request.getBody();
+		const std::string &contentType = request.getContentType();
+		std::string fileContent = body;
+
+		std::size_t bpos = contentType.find("boundary=");
+		if (bpos != std::string::npos)
+		{
+			std::string boundary = contentType.substr(bpos + 9);
+			while (!boundary.empty() && (boundary[boundary.size() - 1] == '\r' || boundary[boundary.size() - 1] == '\n' || boundary[boundary.size() - 1] == ' '))
+			boundary.erase(boundary.size() - 1);
+
+			std::string startBoundary = "--" + boundary + "\r\n";
+			std::string endBoundary = "\r\n--" + boundary + "--";
+
+			std::string::size_type partStart = body.find(startBoundary);
+			if (partStart != std::string::npos)
+			{
+				partStart += startBoundary.size();
+				std::string::size_type partHeaderEnd = body.find("\r\n\r\n", partStart);
+				if (partHeaderEnd != std::string::npos)
+				{
+					std::string::size_type contentStart = partHeaderEnd + 4;
+					std::string::size_type contentEnd = body.find(endBoundary, contentStart);
+					if (contentEnd == std::string::npos)
+						contentEnd = body.size();
+				fileContent = body.substr(contentStart, contentEnd - contentStart);
+				}
+			}
+		}
+		file.write(fileContent.c_str(), static_cast<std::streamsize>(fileContent.size()));
 		file.close();
 
 		this->_status = "201";
 		this->_message = "Created";
-		this->_body = "File uploaded successfully: " + request.getFileName();
+		this->_body = "File uploaded successfully: " + fileName;
 		return;
 	}
 
