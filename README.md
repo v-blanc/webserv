@@ -37,7 +37,10 @@ To run the server:
 ## Resources
 
 - [Beej's Guide to Network Programming](https://beej.us/guide/bgnet/)
+- ["99% of Developers Don't Get Sockets"](https://www.youtube.com/watch?v=D26sUZ6DHNQ)
+- [Socket Programming in C++](https://www.geeksforgeeks.org/cpp/socket-programming-in-cpp/)
 - [HTTP Status Codes — Wikipedia (FR)](https://fr.wikipedia.org/wiki/Liste_des_codes_HTTP)
+- [Common Gateway Interface](https://en.wikipedia.org/wiki/Common_Gateway_Interface)
 - [HTTP Status Codes — MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status)
 - [HTTP Semantics — RFC 9110](https://datatracker.ietf.org/doc/html/rfc9110)
 - [HTTP Messages — MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Messages)
