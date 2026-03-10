@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/13 14:58:49 by yabokhar          #+#    #+#             */
-/*   Updated: 2026/03/10 00:56:52 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/03/10 12:32:27 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -111,26 +111,6 @@ CgiContext *executeCgi(
 		scriptDir = fullPath.substr(0, pos);
 		scriptBase = fullPath.substr(pos + 1);
 	}
-
-	// ----
-	// std::string scriptFilename = cgiInfo.pathWithoutQuery;
-	// if (!scriptFilename.empty() && scriptFilename[0] == '/')
-	// 	scriptFilename.erase(0, 1);
-	// std::cout << GREEN "scriptFilename: " << scriptFilename << std::endl;
-	// std::string scriptDir = cgiInfo.root;
-	// std::string scriptBase = scriptFilename;
-	// std::size_t slashPos = scriptFilename.rfind('/');
-	// if (slashPos != std::string::npos)
-	// {
-	// 	scriptDir += "/" + scriptFilename.substr(0, slashPos);
-	// 	scriptBase = scriptFilename.substr(slashPos + 1);
-	// }
-
-	// std::string fullPath = cgiInfo.root + "/" + scriptFilename;
-	// std::cout << GREEN "scriptDir: " << scriptDir << DEFAULT << std::endl;
-	// std::cout << GREEN "scriptBase: " << scriptBase << DEFAULT << std::endl;
-	// std::cout << GREEN "fullPath: " << fullPath << DEFAULT << std::endl;
-	// ----
 
 	struct stat fileStat;
 	if (stat(fullPath.c_str(), &fileStat) != 0)

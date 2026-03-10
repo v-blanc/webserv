@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>508 — Loop Detected</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Space+Grotesk:wght@400;700&display=swap');
+    :root {
+      --bg: #0a0a0f; --bg2: #111118; --border: #2a2a3d;
+      --accent: #00ff9d; --accent2: #7c6bff;
+      --text: #e8e8f0; --text-dim: #888899; --text-faint: #444455;
+      --mono: 'JetBrains Mono', monospace;
+      --sans: 'Space Grotesk', sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg); color: var(--text); font-family: var(--sans);
+      min-height: 100vh; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; padding: 2rem; overflow: hidden;
+    }
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 9999; opacity: 0.4;
+    }
+    .container { max-width: 620px; width: 100%; text-align: center; position: relative; z-index: 1; }
+    .code {
+      font-family: var(--mono); font-size: clamp(5rem, 20vw, 9rem);
+      font-weight: 700; line-height: 1; letter-spacing: -0.04em;
+      user-select: none; margin-bottom: -1rem;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; opacity: 0.2;
+    }
+    .title {
+      font-family: var(--mono); font-size: 1rem; font-weight: 700;
+      color: var(--accent); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 1rem;
+    }
+    .desc { color: var(--text-dim); font-size: 0.9rem; line-height: 1.7; margin-bottom: 2rem; }
+    /* Loop trace */
+    .loop-box {
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 6px;
+      padding: 1.25rem; margin-bottom: 2rem; text-align: left;
+    }
+    .loop-label { font-family: var(--mono); font-size: .65rem; color: var(--text-faint); letter-spacing: .12em; text-transform: uppercase; margin-bottom: .85rem; }
+    .loop-step {
+      display: flex; align-items: center; gap: .5rem;
+      font-family: var(--mono); font-size: .72rem; margin-bottom: .45rem;
+    }
+    .loop-step .n { color: var(--text-faint); min-width: 1.4rem; text-align: right; }
+    .loop-step .path { color: var(--accent2); }
+    .loop-step .arr  { color: var(--text-faint); }
+    .loop-step.repeat .path { color: var(--accent); animation: blink-path 1s step-end infinite; }
+    @keyframes blink-path { 0%,100% { opacity:1; } 50% { opacity:.3; } }
+    .loop-step .badge {
+      font-size: .6rem; padding: .1rem .45rem; border-radius: 3px; margin-left: auto;
+      background: rgba(0,255,157,.1); color: var(--accent); border: 1px solid rgba(0,255,157,.2);
+    }
+    .loop-step .badge.warn {
+      background: rgba(255,107,107,.1); color: #ff6b6b; border-color: rgba(255,107,107,.25);
+    }
+    .btn {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      font-family: var(--mono); font-size: 0.75rem; font-weight: 700;
+      letter-spacing: 0.08em; padding: 0.6rem 1.25rem; border-radius: 4px;
+      border: 1px solid rgba(0,255,157,0.3); background: rgba(0,255,157,0.08);
+      color: var(--accent); text-decoration: none; cursor: pointer; transition: all 0.15s; margin: 0.25rem;
+    }
+    .btn:hover { filter: brightness(1.3); }
+    .btn-sec { border-color: var(--border); background: transparent; color: var(--text-dim); }
+    footer { margin-top: 3rem; font-family: var(--mono); font-size: 0.65rem; color: var(--text-faint); letter-spacing: 0.1em; position: relative; z-index: 1; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="code">508</div>
+    <div class="title">Loop Detected</div>
+    <p class="desc">
+      The server detected an infinite loop while processing the request.
+      A redirect chain or internal reference is pointing back to itself.
+    </p>
+
+    <div class="loop-box">
+      <div class="loop-label">Redirect trace</div>
+      <div class="loop-step">
+        <span class="n">1</span>
+        <span class="arr">→</span>
+        <span class="path" id="origin-path">/loopA</span>
+        <span class="badge">302 redirect</span>
+      </div>
+      <div class="loop-step">
+        <span class="n">2</span>
+        <span class="arr">→</span>
+        <span class="path">/loopB</span>
+        <span class="badge">302 redirect</span>
+      </div>
+      <div class="loop-step">
+        <span class="n">3</span>
+        <span class="arr">→</span>
+        <span class="path">/loopA</span>
+        <span class="badge">302 redirect</span>
+      </div>
+      <div class="loop-step">
+        <span class="n">4</span>
+        <span class="arr">→</span>
+        <span class="path">/loopB</span>
+        <span class="badge">302 redirect</span>
+      </div>
+      <div class="loop-step repeat">
+        <span class="n">⚠</span>
+        <span class="arr">→</span>
+        <span class="path">∞ loop</span>
+        <span class="badge warn">ABORTED</span>
+      </div>
+    </div>
+
+    <div>
+      <a href="/" class="btn">← Home</a>
+      <a href="javascript:history.back()" class="btn btn-sec">↩ Go Back</a>
+    </div>
+  </div>
+  <footer>WebServ · HTTP/1.1 · Error 508</footer>
+  <script>
+    const path = window.location.pathname;
+    document.getElementById('origin-path').textContent = path || '/loopA';
+  </script>
+</body>
+</html>

@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 14:04:09 by yassinefahf       #+#    #+#             */
-/*   Updated: 2026/03/10 08:51:59 by yabokhar         ###   ########lyon.fr   */
+/*   Updated: 2026/03/10 13:57:21 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -81,14 +81,11 @@ std::string HTTPResponse::resolveRoot(const std::string &root)
 
 void HTTPResponse::handleBadRequest(const std::string &status, const std::string &message)
 {
-	if (message == "Page Not Found")
-	{
-		std::map<std::size_t, std::string> const errorPages = this->_serverConfig.getErrorPage();
-		std::map<std::size_t, std::string>::const_iterator it = errorPages.find(404);
-		if (it != errorPages.end())
-			this->_body = getLocalFileContent(resolveRoot(this->_serverConfig.getRoot()) + it->second);
-		this->_contentLength = this->_body.size();
-	}
+	std::map<std::size_t, std::string> const errorPages = this->_serverConfig.getErrorPage();
+	std::map<std::size_t, std::string>::const_iterator it = errorPages.find(atoi(status.c_str()));
+	if (it != errorPages.end())
+		this->_body = getLocalFileContent(resolveRoot(this->_serverConfig.getRoot()) + it->second);
+	this->_contentLength = this->_body.size();
 
 	std::ostringstream oss;
 	oss << "HTTP/1.1 " << status << " " << message << "\r\n";
@@ -198,8 +195,8 @@ void HTTPResponse::handlePostMethod(HTTPRequest &request)
 
 		struct stat dirStat;
 		std::string uploadDir = resolvePath(2,
-										    myLocation.getRoot().c_str(),
-										    myLocation.getUploadStore().c_str());
+											myLocation.getRoot().c_str(),
+											myLocation.getUploadStore().c_str());
 		if (stat(uploadDir.c_str(), &dirStat) < 0)
 			throw HTTPRequest::StatusException("500", "Internal Server Error");
 		if (!S_ISDIR(dirStat.st_mode))
@@ -222,7 +219,7 @@ void HTTPResponse::handlePostMethod(HTTPRequest &request)
 		{
 			std::string boundary = contentType.substr(bpos + 9);
 			while (!boundary.empty() && (boundary[boundary.size() - 1] == '\r' || boundary[boundary.size() - 1] == '\n' || boundary[boundary.size() - 1] == ' '))
-			boundary.erase(boundary.size() - 1);
+				boundary.erase(boundary.size() - 1);
 
 			std::string startBoundary = "--" + boundary + "\r\n";
 			std::string endBoundary = "\r\n--" + boundary + "--";
@@ -238,7 +235,7 @@ void HTTPResponse::handlePostMethod(HTTPRequest &request)
 					std::string::size_type contentEnd = body.find(endBoundary, contentStart);
 					if (contentEnd == std::string::npos)
 						contentEnd = body.size();
-				fileContent = body.substr(contentStart, contentEnd - contentStart);
+					fileContent = body.substr(contentStart, contentEnd - contentStart);
 				}
 			}
 		}

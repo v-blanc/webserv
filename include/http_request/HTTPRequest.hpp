@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/07 14:57:04 by vblanc            #+#    #+#             */
-/*   Updated: 2026/03/09 18:15:24 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/03/10 12:34:05 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,7 +37,7 @@ public:
     std::string getHost() const { return this->_host; };
     long long getContentLength() const { return this->_contentLength; };
     std::string getContentType() const { return this->_contentType; };
-    bool getConnection() const { return this->_connection; }; // ?
+    bool getConnection() const { return this->_connection; };
     std::string getBody() const { return this->_body; };
     bool isChunked() const { return this->_isChunked; };
     std::string getCookie(const std::string &name) const;
@@ -67,7 +67,7 @@ private:
     std::string _fileName;
     long long _contentLength;
     std::string _contentType;
-    bool _connection; // ? (keep-alive or close)
+    bool _connection;
 
     // Body
     std::string _body;
@@ -81,7 +81,6 @@ private:
     bool isCgiExtension(void) const;
     void sendCgiStubResponse(int &clientFd) const;
     std::string getNormalizedExtensionFromPath(void) const;
-    // (moved to public)
 
     void debugPrintSession(const SessionManager &sessionManager) const;
 

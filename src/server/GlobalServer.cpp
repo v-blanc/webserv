@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:14 by vblanc            #+#    #+#             */
-/*   Updated: 2026/03/10 10:44:49 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/03/10 14:02:32 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -240,7 +240,6 @@ static void disableEPOLLOUT(int &epfd, ClientContext *clientContext)
 }
 
 static std::string buildSimpleErrorResponse(const std::string &status, const std::string &message)
-
 {
     const std::string body = message + '\n';
     std::string response;
@@ -582,7 +581,7 @@ void GlobalServer::closeOldClientConnections()
 
     for (std::size_t i = 0; i < clientContextsToClose.size(); i++)
     {
-        std::cout << MAGENTA + getTimeOfDay() + " [debug] : Closing old client fd " << clientContextsToClose.at(i) << DEFAULT << std::endl;
+        std::cout << MAGENTA + getTimeOfDay() + " [connection] : Closing old client fd " << clientContextsToClose.at(i) << DEFAULT << std::endl;
         this->handleCloseConnection(this->_clientContexts.at(clientContextsToClose.at(i)));
     }
 }
@@ -652,7 +651,7 @@ void GlobalServer::closeTimedOutCgi()
     }
     for (unsigned long i = 0; i < cgiContextsToClose.size(); i++)
     {
-        std::cout << MAGENTA + getTimeOfDay() + " [debug] : CGI timeout for fd " << cgiContextsToClose.at(i) << DEFAULT << std::endl;
+        std::cout << MAGENTA + getTimeOfDay() + " [connection] : CGI timeout for fd " << cgiContextsToClose.at(i) << DEFAULT << std::endl;
 
         CgiContext *cgiContext = this->_cgiContexts.at(cgiContextsToClose.at(i));
 
