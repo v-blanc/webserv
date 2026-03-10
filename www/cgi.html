@@ -64,44 +64,6 @@ print("&lt;h1&gt;Hello from CGI!&lt;/h1&gt;")</div>
     </div>
   </div>
 
-  <!-- ── 2. ENV DUMP CGI ── -->
-  <div class="section">
-    <div class="section-label">Environment Variables</div>
-    <div class="card">
-      <h3>env.py — Dump CGI environment</h3>
-      <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:1rem">
-        Runs <code style="color:var(--accent)">env.py</code> which prints all env vars your server
-        injects: <code style="color:var(--accent)">REQUEST_METHOD</code>,
-        <code style="color:var(--accent)">QUERY_STRING</code>,
-        <code style="color:var(--accent)">SERVER_NAME</code>, etc.
-      </p>
-      <div class="grid-2">
-        <div class="form-group">
-          <label>CGI Path</label>
-          <input type="text" id="env-path" value="/cgi-bin/env.py" />
-        </div>
-        <div class="form-group">
-          <label>Query String</label>
-          <input type="text" id="env-qs" value="source=cgi-page" />
-        </div>
-      </div>
-      <div class="flex">
-        <button class="btn btn-cgi" onclick="runEnvCgi()">&#9658; Dump ENV</button>
-        <button class="btn btn-info" onclick="clearResponse('env-resp')">Clear</button>
-      </div>
-      <div class="response-box" id="env-resp">
-        <div class="response-header">
-          <span class="resp-label">RESPONSE</span>
-          <button class="resp-tab active" onclick="respTab(this,'raw')">RAW</button>
-          <button class="resp-tab"        onclick="respTab(this,'render')">RENDER</button>
-          <span class="response-status" id="env-status">—</span>
-        </div>
-        <div class="response-body" id="env-body"></div>
-        <iframe class="response-render" id="env-resp-render" sandbox="allow-same-origin allow-scripts"></iframe>
-      </div>
-    </div>
-  </div>
-
   <!-- ── 3. POST → STDIN ── -->
   <div class="section">
     <div class="section-label">POST Body → CGI stdin</div>
@@ -140,28 +102,6 @@ print("&lt;h1&gt;Hello from CGI!&lt;/h1&gt;")</div>
         <div class="response-body" id="cgi-post-body-resp"></div>
         <iframe class="response-render" id="cgi-post-resp-render" sandbox="allow-same-origin allow-scripts"></iframe>
       </div>
-    </div>
-  </div>
-
-  <!-- ── 4. HOW CGI WORKS ── -->
-  <div class="section">
-    <div class="section-label">How CGI Works</div>
-    <div class="card">
-      <div class="code-block"><span class="comment"># Server receives request:</span>
-<span class="method">GET</span> <span class="url">/cgi-bin/hello.py?name=42</span> HTTP/1.1
-
-<span class="comment"># Server forks a child process:</span>
-fork() → execve("/cgi-bin/hello.py", ...)
-
-<span class="comment"># Server sets environment variables:</span>
-<span class="header">REQUEST_METHOD</span>=<span class="value">GET</span>
-<span class="header">QUERY_STRING</span>=<span class="value">name=42</span>
-<span class="header">SERVER_NAME</span>=<span class="value">localhost</span>
-<span class="header">SERVER_PORT</span>=<span class="value">8080</span>
-
-<span class="comment"># For POST: server pipes body → stdin</span>
-<span class="comment"># CGI writes response → stdout</span>
-<span class="comment"># Server forwards stdout → client</span></div>
     </div>
   </div>
 

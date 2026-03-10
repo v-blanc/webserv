@@ -46,7 +46,7 @@
 <div class="page-header">
   <span class="tag">HTTP Method</span>
   <h1><span class="method-badge badge-delete" style="font-size:1.5rem;padding:.3rem .8rem">DELETE</span> Requests</h1>
-  <p>Test DELETE resource removal, verify 204/404 response codes, and check proper cleanup on our server.</p>
+  <p>Test DELETE resource removal, verify <strong>200, 204</strong> & ,<strong>403, 405</strong> response codes, and check proper cleanup on our server.</p>
 </div>
 
 <main>
@@ -64,8 +64,7 @@
         <label>Resource Path to DELETE</label>
         <input type="text" id="del-path" value="/uploads/test.txt" placeholder="/path/to/resource" />
       </div>
-      <div class="code-block" id="del-preview">
-DELETE /uploads/test.txt HTTP/1.1
+      <div class="code-block" id="del-preview">DELETE /uploads/test.txt HTTP/1.1
 Host: localhost
 Connection: close</div>
       <div class="flex" style="margin-top:1rem">
@@ -85,7 +84,51 @@ Connection: close</div>
     </div>
   </div>
 
-  <!-- ── 2. SCENARIO: CREATE THEN DELETE ── -->
+  <!-- ── 2. QUICK TESTS ── -->
+  <div class="section">
+    <div class="section-label">Edge Cases</div>
+    <div class="grid-2">
+      <div class="card">
+        <h3>403 — Delete protected resource</h3>
+        <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:.75rem">
+          Attempting to delete a protected file should yield <strong>403 Forbidden</strong>
+        <div class="code-block">DELETE /uploads/protected.txt HTTP/1.1</div>
+        <button class="btn btn-del" style="margin-top:.75rem" onclick="quickDel('/uploads/protected.txt','qt1')">Run</button>
+        <div class="response-box" id="qt1">
+        <div class="response-header">
+          <span class="resp-label">RESPONSE</span>
+          <button class="resp-tab active" onclick="respTab(this,'raw')">RAW</button>
+          <button class="resp-tab"        onclick="respTab(this,'render')">RENDER</button>
+          <span class="response-status" id="qt1-status">—</span>
+        </div>
+        <div class="response-body" id="qt1-body"></div>
+        <iframe class="response-render" id="qt1-render" sandbox="allow-same-origin allow-scripts"></iframe>
+      </div>
+      </div>
+
+      <div class="card">
+        <h3>405 — Method is not allowed</h3>
+        <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:.75rem">
+          Server should return <strong>405 Method Not Allowed</strong> if method is not allowed.
+        </p>
+        <div class="code-block">DELETE /uploads/not_allowed/test.txt HTTP/1.1</div>
+        <button class="btn btn-del" style="margin-top:.75rem" onclick="quickDel('/uploads/not_allowed/test.txt','qt2')">Run</button>
+        <div class="response-box" id="qt2">
+        <div class="response-header">
+          <span class="resp-label">RESPONSE</span>
+          <button class="resp-tab active" onclick="respTab(this,'raw')">RAW</button>
+          <button class="resp-tab"        onclick="respTab(this,'render')">RENDER</button>
+          <span class="response-status" id="qt2-status">—</span>
+        </div>
+        <div class="response-body" id="qt2-body"></div>
+        <iframe class="response-render" id="qt2-render" sandbox="allow-same-origin allow-scripts"></iframe>
+      </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── 3. SCENARIO: CREATE THEN DELETE ── -->
   <div class="section">
     <div class="section-label">Create → Verify → Delete → Verify Workflow</div>
     <div class="card">
@@ -115,79 +158,6 @@ Connection: close</div>
         <div id="lc-log" style="font-family:var(--mono);font-size:.75rem;line-height:2;color:var(--text-dim)">
           Waiting for steps…
         </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── 3. QUICK TESTS ── -->
-  <div class="section">
-    <div class="section-label">Edge Cases</div>
-    <div class="grid-2">
-
-      <div class="card">
-        <h3>404 — Delete non-existent</h3>
-        <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:.75rem">
-          Server should return <strong>404 Not Found</strong> when the resource doesn't exist.
-        </p>
-        <div class="code-block">DELETE /uploads/ghost_file.txt HTTP/1.1</div>
-        <button class="btn btn-del" style="margin-top:.75rem" onclick="quickDel('/uploads/ghost_file.txt','qt1')">Run</button>
-        <div class="response-box" id="qt1">
-        <div class="response-header">
-          <span class="resp-label">RESPONSE</span>
-          <button class="resp-tab active" onclick="respTab(this,'raw')">RAW</button>
-          <button class="resp-tab"        onclick="respTab(this,'render')">RENDER</button>
-          <span class="response-status" id="qt1-status">—</span>
-        </div>
-        <div class="response-body" id="qt1-body"></div>
-        <iframe class="response-render" id="qt1-render" sandbox="allow-same-origin allow-scripts"></iframe>
-      </div>
-      </div>
-
-      <div class="card">
-        <h3>403 — Delete protected resource</h3>
-        <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:.75rem">
-          Attempting to delete a protected file should yield <strong>403 Forbidden</strong> or <strong>405 Method Not Allowed</strong>.
-        </p>
-        <div class="code-block">DELETE /index.html HTTP/1.1</div>
-        <button class="btn btn-del" style="margin-top:.75rem" onclick="quickDel('/index.html','qt2')">Run</button>
-        <div class="response-box" id="qt2">
-        <div class="response-header">
-          <span class="resp-label">RESPONSE</span>
-          <button class="resp-tab active" onclick="respTab(this,'raw')">RAW</button>
-          <button class="resp-tab"        onclick="respTab(this,'render')">RENDER</button>
-          <span class="response-status" id="qt2-status">—</span>
-        </div>
-        <div class="response-body" id="qt2-body"></div>
-        <iframe class="response-render" id="qt2-render" sandbox="allow-same-origin allow-scripts"></iframe>
-      </div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- ── 4. RESPONSE CODES TABLE ── -->
-  <div class="section">
-    <div class="section-label">Expected Response Codes</div>
-    <div class="card">
-      <div class="info-row">
-        <span class="key">204 No Content</span>
-        <span class="val">Resource deleted successfully (no body)</span>
-      </div>
-      <div class="info-row">
-        <span class="key">200 OK</span>
-        <span class="val">Resource deleted, response body included</span>
-      </div>
-      <div class="info-row">
-        <span class="key">404 Not Found</span>
-        <span class="val">Resource to delete does not exist</span>
-      </div>
-      <div class="info-row">
-        <span class="key">403 Forbidden</span>
-        <span class="val">No permission to delete this resource</span>
-      </div>
-      <div class="info-row">
-        <span class="key">405 Method Not Allowed</span>
-        <span class="val">DELETE not permitted on this route</span>
       </div>
     </div>
   </div>
