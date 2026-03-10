@@ -14,15 +14,15 @@
   <a href="get.html" class="active">GET</a>
   <a href="post.html">POST</a>
   <a href="delete.html">DELETE</a>
-  <a href="cookies.html">COOKIES</a>
   <a href="cgi.html">CGI</a>
   <a href="multicgi.html">MULTI-CGI</a>
+  <a href="cookies.html">COOKIES</a>
 </nav>
 
 <div class="page-header">
   <span class="tag">HTTP Method</span>
   <h1><span class="method-badge badge-get" style="font-size:1.5rem;padding:.3rem .8rem">GET</span> Requests</h1>
-  <p>Test your server's ability to serve static files, handle query strings, return correct status codes and headers.</p>
+  <p>Test our server's ability to serve static files, handle query strings, return correct status codes and headers.</p>
 </div>
 
 <main>
@@ -111,7 +111,7 @@
     <div class="section-label">Query String Parameters</div>
     <div class="card">
       <h3>Build a query string</h3>
-      <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:1rem">Tests that your server correctly parses and forwards <code style="color:var(--accent)">QUERY_STRING</code> to CGI or ignores it for static files.</p>
+      <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:1rem">Tests that our server correctly parses and forwards <code style="color:var(--accent)">QUERY_STRING</code> to CGI or ignores it for static files.</p>
       <div class="grid-2">
         <div>
           <label>Base Path</label>
@@ -139,7 +139,7 @@
     <div class="card">
       <h3>Inspect server response headers</h3>
       <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:1rem">
-        Check that your server sends the correct <code style="color:var(--accent)">Content-Type</code>, <code style="color:var(--accent)">Content-Length</code>, <code style="color:var(--accent)">Server</code> and <code style="color:var(--accent)">Date</code> headers.
+        Check that our server sends the correct <code style="color:var(--accent)">Content-Type</code>, <code style="color:var(--accent)">Content-Length</code>, <code style="color:var(--accent)">Server</code> and <code style="color:var(--accent)">Date</code> headers.
       </p>
       <div class="form-group">
         <label>URL to inspect</label>
@@ -158,21 +158,21 @@
 const host = window.location.host;
 
 function updateGetPreview() {
-  const path = document.getElementById('get-path').value || '/';
-  const key  = document.getElementById('get-header-key').value;
-  const val  = document.getElementById('get-header-val').value;
-  document.getElementById('get-url-display').textContent  = path;
-  document.getElementById('get-host-display').textContent = host;
-  let extra = key ? `\n<span class="header">${key}:</span> <span class="value">${val}</span>` : '';
+  const path  = document.getElementById('get-path').value || '/';
+  const key   = document.getElementById('get-header-key').value;
+  const val   = document.getElementById('get-header-val').value;
+  const extra = key ? `\n<span class="header">${key}:</span> <span class="value">${val}</span>` : '';
   document.getElementById('get-preview').innerHTML =
-    `<span class="method">GET</span> <span class="url">${path}</span> <span>HTTP/1.1</span>
-<span class="header">Host:</span> <span class="value">${host}</span>
-<span class="header">Connection:</span> <span class="value">close</span>${extra}`;
+    `<span class="method">GET</span> <span class="url">${path}</span> <span>HTTP/1.1</span>\n` +
+    `<span class="header">Host:</span> <span class="value">${host}</span>\n` +
+    `<span class="header">Connection:</span> <span class="value">close</span>${extra}`;
 }
 
 document.getElementById('get-path').addEventListener('input', updateGetPreview);
 document.getElementById('get-header-key').addEventListener('input', updateGetPreview);
 document.getElementById('get-header-val').addEventListener('input', updateGetPreview);
+
+updateGetPreview(); // initialise on load
 
 function showResponse(boxId, statusId, bodyId, status, body, ok) {
   const box  = document.getElementById(boxId);
@@ -229,7 +229,6 @@ async function doQueryGet() {
   const p = document.getElementById('qs-path').value;
   const q = document.getElementById('qs-params').value;
   const url = p + (q ? '?' + q : '');
-  console.log(url);
   try {
     const r = await fetch(url, { method: 'GET', cache: 'no-store' });
     const text = await r.text();

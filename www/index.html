@@ -179,9 +179,9 @@
   <a href="get.html">GET</a>
   <a href="post.html">POST</a>
   <a href="delete.html">DELETE</a>
-  <a href="cookies.html">COOKIES</a>
   <a href="cgi.html">CGI</a>
   <a href="multicgi.html">MULTI-CGI</a>
+  <a href="cookies.html">COOKIES</a>
 </nav>
 
 <section class="hero">
@@ -192,7 +192,7 @@
     <span class="dim">Suite</span>
   </h1>
   <p class="hero-desc">
-    A comprehensive testing interface for your 42 WebServ implementation.
+    A comprehensive testing interface for our 42 WebServ implementation.
     Validate every feature — HTTP methods, CGI execution, cookies & sessions, 
     and edge cases — all from a single place.
   </p>
@@ -248,27 +248,17 @@
     <span class="card-num">03 / 05</span>
     <span class="card-icon">✕</span>
     <h2>DELETE Requests</h2>
-    <p>Delete server resources, test 204/404 responses, and verify proper cleanup and authorization behaviour.</p>
+    <p>Delete server resources, test responses, and verify proper cleanup and authorization behaviour.</p>
     <div class="card-methods">
       <span class="method-badge badge-delete">DELETE</span>
     </div>
     <span class="arrow">↗</span>
   </a>
 
-  <a class="test-card" href="cookies.html">
-    <span class="card-num">04 / 05</span>
-    <span class="card-icon">🍪</span>
-    <h2>Cookies & Sessions</h2>
-    <p>Set, read, update and delete cookies. Simulate session management and test Set-Cookie / Cookie headers.</p>
-    <div class="card-methods">
-      <span class="method-badge badge-get">GET</span>
-      <span class="method-badge badge-post">POST</span>
-    </div>
-    <span class="arrow">↗</span>
-  </a>
+  
 
   <a class="test-card" href="cgi.html">
-    <span class="card-num">05a / 05</span>
+    <span class="card-num">04a / 05</span>
     <span class="card-icon">⚙</span>
     <h2>Single CGI</h2>
     <p>Execute a single CGI script. Inspect environment variables, stdin/stdout piping, and response generation.</p>
@@ -279,12 +269,24 @@
   </a>
 
   <a class="test-card" href="multicgi.html">
-    <span class="card-num">05b / 05</span>
+    <span class="card-num">04b / 05</span>
     <span class="card-icon">⚙⚙</span>
     <h2>Multiple CGIs</h2>
     <p>Run several CGI scripts in parallel: env dumper, form processor, cookie manager, and request counter.</p>
     <div class="card-methods">
       <span class="method-badge badge-cgi">CGI</span>
+      <span class="method-badge badge-post">POST</span>
+    </div>
+    <span class="arrow">↗</span>
+  </a>
+
+  <a class="test-card" href="cookies.html">
+    <span class="card-num">05 / 05</span>
+    <span class="card-icon">🍪</span>
+    <h2>Cookies & Sessions</h2>
+    <p>Set, read, update and delete cookies. Simulate session management and test Set-Cookie / Cookie headers.</p>
+    <div class="card-methods">
+      <span class="method-badge badge-get">GET</span>
       <span class="method-badge badge-post">POST</span>
     </div>
     <span class="arrow">↗</span>

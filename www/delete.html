@@ -38,15 +38,15 @@
   <a href="get.html">GET</a>
   <a href="post.html">POST</a>
   <a href="delete.html" class="active">DELETE</a>
-  <a href="cookies.html">COOKIES</a>
   <a href="cgi.html">CGI</a>
   <a href="multicgi.html">MULTI-CGI</a>
+  <a href="cookies.html">COOKIES</a>
 </nav>
 
 <div class="page-header">
   <span class="tag">HTTP Method</span>
   <h1><span class="method-badge badge-delete" style="font-size:1.5rem;padding:.3rem .8rem">DELETE</span> Requests</h1>
-  <p>Test DELETE resource removal, verify 204/404 response codes, and check proper cleanup on your server.</p>
+  <p>Test DELETE resource removal, verify response, and check proper cleanup on our server.</p>
 </div>
 
 <main>
@@ -58,16 +58,15 @@
       <h3>Send a DELETE request</h3>
       <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:1rem">
         Sends <code style="color:var(--accent3)">DELETE /path HTTP/1.1</code>. 
-        Expect <strong>204 No Content</strong> on success, <strong>404</strong> if the resource does not exist, or <strong>403</strong> if deletion is not allowed.
+        Expect <strong>200 OK</strong> or <strong>204 No Content</strong> on success or <strong>403</strong> if deletion is not allowed.
       </p>
       <div class="form-group">
         <label>Resource Path to DELETE</label>
         <input type="text" id="del-path" value="/uploads/test.txt" placeholder="/path/to/resource" />
       </div>
-      <div class="code-block" id="del-preview">
-DELETE /uploads/test.txt HTTP/1.1
-Host: localhost
-Connection: close</div>
+      <div class="code-block" id="del-preview"><span class="method">DELETE</span> <span class="url">/uploads/test.txt</span> <span>HTTP/1.1</span>
+<span class="header">Host:</span> <span class="value" id="get-host-display">localhost</span>
+<span class="header">Connection:</span> <span class="value">close</span></div>
       <div class="flex" style="margin-top:1rem">
         <button class="btn btn-del" onclick="doDel()">✕ Send DELETE</button>
         <button class="btn btn-info" onclick="clearResponse('del-response')">Clear</button>
@@ -117,14 +116,12 @@ Connection: close</div>
   <div class="section">
     <div class="section-label">Edge Cases</div>
     <div class="grid-2">
-
       <div class="card">
-        <h3>404 — Delete non-existent</h3>
+        <h3>403 — Delete protected resource</h3>
         <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:.75rem">
-          Server should return <strong>404 Not Found</strong> when the resource doesn't exist.
-        </p>
-        <div class="code-block">DELETE /uploads/ghost_file.txt HTTP/1.1</div>
-        <button class="btn btn-del" style="margin-top:.75rem" onclick="quickDel('/uploads/ghost_file.txt','qt1')">Run</button>
+          Attempting to delete a protected file should yield <strong>403 Forbidden</strong>
+        <div class="code-block">DELETE /uploads/protected.txt HTTP/1.1</div>
+        <button class="btn btn-del" style="margin-top:.75rem" onclick="quickDel('/uploads/protected.txt','qt1')">Run</button>
         <div class="response-box" id="qt1">
           <div class="response-header"><span>RESPONSE</span><span class="response-status" id="qt1-status">—</span></div>
           <div class="response-body" id="qt1-body"></div>
@@ -132,18 +129,17 @@ Connection: close</div>
       </div>
 
       <div class="card">
-        <h3>403 — Delete protected resource</h3>
+        <h3>405 — Method is not allowed</h3>
         <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:.75rem">
-          Attempting to delete a protected file should yield <strong>403 Forbidden</strong> or <strong>405 Method Not Allowed</strong>.
+          Server should return <strong>405 Method Not Allowed</strong> if method is not allowed.
         </p>
-        <div class="code-block">DELETE /index.html HTTP/1.1</div>
-        <button class="btn btn-del" style="margin-top:.75rem" onclick="quickDel('/index.html','qt2')">Run</button>
+        <div class="code-block">DELETE /uploads/not_allowed/special_file.txt HTTP/1.1</div>
+        <button class="btn btn-del" style="margin-top:.75rem" onclick="quickDel('/uploads/not_allowed/special_file.txt','qt2')">Run</button>
         <div class="response-box" id="qt2">
           <div class="response-header"><span>RESPONSE</span><span class="response-status" id="qt2-status">—</span></div>
           <div class="response-body" id="qt2-body"></div>
         </div>
       </div>
-
     </div>
   </div>
 
@@ -195,8 +191,10 @@ function clearResponse(id) {
 
 document.getElementById('del-path').addEventListener('input', () => {
   const p = document.getElementById('del-path').value;
-  document.getElementById('del-preview').textContent =
-    `DELETE ${p} HTTP/1.1\nHost: ${window.location.host}\nConnection: close`;
+  document.getElementById('del-preview').innerHTML =
+    `<span class="method">DELETE</span> <span class="url">${p}</span> <span>HTTP/1.1</span>\n` +
+    `<span class="header">Host:</span> <span class="value">${window.location.host}</span>\n` +
+    `<span class="header">Connection:</span> <span class="value">close</span>`;
 });
 
 async function doDel() {
