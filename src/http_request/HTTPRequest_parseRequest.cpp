@@ -74,7 +74,9 @@ void HTTPRequest::parseFirstLine(std::string &firstLine)
     pos = firstLine.find(' ', prevPos);
     if (pos != std::string::npos)
     {
-        std::string const path = firstLine.substr(prevPos, pos - prevPos);
+        std::string path = firstLine.substr(prevPos, pos - prevPos);
+        
+        //path = resolvePath(2, this->_serverConfig.getRoot().c_str(), path.c_str());
 
         if (pos != prevPos)
         {

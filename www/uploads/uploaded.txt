@@ -1,0 +1,121 @@
+*This project has been created as an introduction to Java programming and algorithmic problem solving.*
+
+## Description
+
+This project implements the classical **Biggest Square (BSQ)** problem using **Java**.
+It contains two programs:
+
+* a **BSQ solver**, which reads a map and finds the largest possible square that does not contain obstacles
+* a **map generator**, which produces random maps to test the solver
+
+The solver processes a grid where each cell can either be empty or contain an obstacle.
+Its goal is to locate the **largest square composed only of empty cells** and mark it in the output.
+
+The generator allows the creation of maps with configurable **height**, **width**, and **obstacle density**, making it easy to test the solver with many different cases.
+
+* The **first line** contains the characters used in the map.
+* The rest of the file represents the grid.
+
+Default characters used by MapGenerator:
+
+* `.` → empty cell
+* `o` → obstacle
+* `x` → largest square found by the solver
+
+This project was mainly created to **discover Java**.
+
+---
+
+## Features
+
+* BSQ solver
+* Random map generator
+* Configurable map size and obstacle density
+* Works with file input or standard input (pipes)
+
+---
+
+## Project Structure
+
+```id="qdbm6x"
+.
+├── Main.java          # BSQ solver
+├── MapGenerator.java  # Random map generator
+└── README.md
+```
+
+---
+
+## Usage
+
+### Generate a map
+
+```bash id="gnq8h6"
+java MapGenerator 20 40 0.2
+```
+
+This generates a **20×40 map** with approximately **20% obstacles**.
+
+You can save the map to a file:
+
+```bash id="6rbo3p"
+java MapGenerator 20 40 0.2 > map.txt
+```
+
+---
+
+### Solve a map
+
+```bash id="k4mwx0"
+java Main map.txt
+```
+
+The solver reads the map, finds the largest square without obstacles, and prints the solved map.
+
+---
+
+### Pipe generator directly into solver
+
+```bash id="07uhde"
+java MapGenerator 20 40 0.2 | java Main
+```
+
+This generates a map and immediately solves it.
+
+---
+
+## Example
+
+Generated map:
+
+```id="xj65t2"
+10.ox
+..........
+...o......
+..........
+.....o....
+..........
+..........
+..o.......
+..........
+..........
+.....o....
+```
+
+Solved map:
+
+```id="q9uv3u"
+10.ox
+..........
+...o......
+...xxx....
+...xxx....
+...xxx....
+..........
+..o.......
+..........
+..........
+.....o....
+```
+
+---

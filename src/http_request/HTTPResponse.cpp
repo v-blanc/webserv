@@ -109,6 +109,7 @@ std::string HTTPResponse::handleRequestPath(std::string requestPath, bool isFile
 			return (requestPath.substr(pos));
 		return (requestPath);
 	}
+	std::cout << YELLOW "No matching location for path: " << requestPath << ", using server root configuration" << DEFAULT << std::endl;
 
 	std::string path = requestPath;
 
@@ -312,8 +313,8 @@ void HTTPResponse::fillLocationWithServerRules(LocationConfig &location)
 void HTTPResponse::handleRessource(HTTPRequest &request)
 {
 	std::string ressource = handleRequestPath(request.getPathWithoutQuery(), true);
-	if (!ressource.empty() && ressource[0] == '/')
-		ressource.erase(0, 1);
+	/*if (!ressource.empty() && ressource[0] == '/')
+		ressource.erase(0, 1);*/
 	ressource = resolveRoot(this->_serverConfig.getRoot()) + request.getPathWithoutQuery();
 	std::ifstream file(ressource.c_str());
 	if (!file.is_open())
