@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/25 14:31:40 by vblanc            #+#    #+#             */
-/*   Updated: 2026/03/10 02:24:44 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/03/10 10:44:42 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,7 +20,7 @@ GlobalConfig::GlobalConfig(const char *fileName) : _fileName(fileName), _file(fi
         this->_rootNode = ParserConfig(this->_file, this->_fileName).parse();
         this->fillGlobalConfig();
 
-        printGlobalConfig(*this); // DEBUG
+        // printGlobalConfig(*this); // DEBUG
     }
     catch (const std::runtime_error &e)
     {
