@@ -6,7 +6,7 @@
 /*   By: vblanc <vblanc@student.42lyon.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/08 15:12:14 by vblanc            #+#    #+#             */
-/*   Updated: 2026/03/10 06:34:48 by vblanc           ###   ########.fr       */
+/*   Updated: 2026/03/10 08:20:00 by vblanc           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -285,14 +285,17 @@ static void handleHeaders(ClientContext *clientContext)
             {
                 std::size_t startSize = posContent + contentLengthFormat.size();
                 std::size_t endSize = clientContext->recvBuffer.find("\r\n", startSize);
+                std::string contentLengthStr = clientContext->recvBuffer.substr(startSize, endSize - startSize);
 
-                for (std::size_t i = startSize; i < endSize; i++)
+                while (contentLengthStr[0] == ' ')
+                    contentLengthStr.erase(0, 1);
+                for (std::size_t i = 0; i < contentLengthStr.size(); i++)
                 {
-                    if (clientContext->recvBuffer[i] < '0' || clientContext->recvBuffer[i] > '9')
+                    if (contentLengthStr[i] < '0' || contentLengthStr[i] > '9')
                         throw(HttpStatusException("400", "Bad Request"));
                 }
 
-                std::stringstream ss(clientContext->recvBuffer.substr(startSize, endSize - startSize));
+                std::stringstream ss(contentLengthStr);
                 ss >> clientContext->expectedBodySize;
 
                 if (!ss.eof() || ss.fail())
